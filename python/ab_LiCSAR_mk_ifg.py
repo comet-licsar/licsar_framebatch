@@ -55,8 +55,8 @@ def main(argv):
     try:
         cacheDir = os.environ['BATCH_CACHE_DIR']
     except KeyError as error:
-        print 'I required you to set your cache directory using the'\
-                'enviroment variable BATCH_CACHE_DIR'
+        print('I required you to set your cache directory using the'\
+                'enviroment variable BATCH_CACHE_DIR')
         raise error
     tempDir = config.get('Env','TempDir')
     user = os.environ['USER']
@@ -64,7 +64,7 @@ def main(argv):
     mstrDate = lq.get_master(frameName)
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-    print "Processing job {0} in frame {1}".format( jobID, frameName)
+    print("Processing job {0} in frame {1}".format( jobID, frameName))
     lq.set_job_started(jobID)
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
@@ -81,9 +81,9 @@ def main(argv):
         set_lotus_job_status('Setting up {:%y-%m-%d}->{:%y-%m-%d}'.format(dateA, dateB))
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
         with MkIfgEnv(jobID,frameName,mstrDate,dateA,dateB,cacheDir,tempDir) as env:
-            print "created new processing enviroement {}".format(env.actEnv)
-            print "processing ifg {0} between dates {1:%Y%m%d} and {2:%Y%m%d}".format(
-                    row['ifg_id'],dateA,dateB)
+            print("created new processing enviroement {}".format(env.actEnv))
+            print("processing ifg {0} between dates {1:%Y%m%d} and {2:%Y%m%d}".format(
+                    row['ifg_id'],dateA,dateB))
 
             #Set failure status
             env.cleanHook = lambda : lq.set_ifg_status(row['ifg_id'],EXCEPTION)

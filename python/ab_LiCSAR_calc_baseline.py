@@ -11,8 +11,8 @@ def main(argv):
     try:
         cacheDir = os.environ['BATCH_CACHE_DIR']
     except KeyError as error:
-        print 'I required you to set your cache directory using the'\
-                'enviroment variable BATCH_CACHE_DIR'
+        print('I required you to set your cache directory using the'\
+                'enviroment variable BATCH_CACHE_DIR')
         raise error
     frameCache = os.path.join(cacheDir, frameName)
     mstrDate = get_master(frameName)

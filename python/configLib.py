@@ -1,4 +1,4 @@
-from ConfigParser import SafeConfigParser
+from configparser import SafeConfigParser
 from contextlib import contextmanager
 import os
 

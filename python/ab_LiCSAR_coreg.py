@@ -57,8 +57,8 @@ def main(argv):
     try:
         cacheDir = os.environ['BATCH_CACHE_DIR']
     except KeyError as error:
-        print 'I required you to set your cache directory using the'\
-                'enviroment variable BATCH_CACHE_DIR'
+        print('I required you to set your cache directory using the'\
+                'enviroment variable BATCH_CACHE_DIR')
         raise error
     tempDir = config.get('Env','TempDir')
     user = os.environ['USER']
@@ -66,7 +66,7 @@ def main(argv):
     mstrDate = lq.get_master(frameName)
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-    print "Processing job {0} in frame {1}".format( jobID, frameName)
+    print("Processing job {0} in frame {1}".format( jobID, frameName))
     lq.set_job_started(jobID)
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
@@ -94,9 +94,9 @@ def main(argv):
         set_lotus_job_status('Setting up {:%y-%m-%d}'.format(date))
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
         with CoregEnv(jobID,frameName,mstrDate,auxDate,date,cacheDir,tempDir) as env:
-            print "created new processing enviroement {}".format(env.actEnv)
-            print "processing rslc {0} on acquisition date {1:%Y%m%d}".format(
-                    row['rslc_id'],row['acq_date'])
+            print("created new processing enviroement {}".format(env.actEnv))
+            print("processing rslc {0} on acquisition date {1:%Y%m%d}".format(
+                    row['rslc_id'],row['acq_date']))
 
             #Set failure status
             env.cleanHook = lambda : lq.set_rslc_status(row['rslc_id'],UNKOWN_ERROR)
@@ -111,7 +111,7 @@ def main(argv):
                 rslc = os.path.join(env.actEnv,'RSLC',date.strftime('%Y%m%d'),
                                     date.strftime('%Y%m%d.rslc'))
                 if os.path.exists(rslc):
-                    print "Removing mosaiced image {0}".format(rslc)
+                    print("Removing mosaiced image {0}".format(rslc))
                     os.remove(rslc)
 
                 #Finally set rslc status to return code
@@ -130,7 +130,7 @@ def main(argv):
         if rc == 0 and not slc.empty:
             slcDateCache = os.path.join(slcCache,date.strftime('%Y%m%d'))
             shutil.rmtree(slcDateCache)
-            print "removed slc cache {:%Y%m%d}".format(date)
+            print("removed slc cache {:%Y%m%d}".format(date))
             lq.set_slc_status(int(slc.loc[0,'slc_id']),-6)
                 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 

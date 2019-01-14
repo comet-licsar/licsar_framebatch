@@ -63,8 +63,8 @@ def main(argv):
     try:
         cacheDir = os.environ['BATCH_CACHE_DIR']
     except KeyError as error:
-        print 'I required you to set your cache directory using the'\
-                'enviroment variable BATCH_CACHE_DIR'
+        print('I required you to set your cache directory using the'\
+                'enviroment variable BATCH_CACHE_DIR')
         raise error
     tempDir = config.get('Env','TempDir')
     user = os.environ['USER']
@@ -72,8 +72,8 @@ def main(argv):
     burstlist = lq.get_bursts_in_frame(frameName)
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-    print "Processing job {0} in frame {1}".format(
-            jobID,frameName)
+    print("Processing job {0} in frame {1}".format(
+            jobID,frameName))
     lq.set_job_started(jobID)
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
@@ -84,7 +84,7 @@ def main(argv):
         missing,missingFiles = check_all_files_on_disk(files)
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
         if missing:
-            print "Missing files for date {:%Y%m%d}".format(date)
+            print("Missing files for date {:%Y%m%d}".format(date))
             lq.set_slc_status(row['slc_id'],FILES_MISSING)
             with open('missingFiles','a') as f:
                 for missFile in missingFiles:
@@ -93,9 +93,9 @@ def main(argv):
         else:
             set_lotus_job_status('Setting up {:%y-%m-%d}'.format(date))
             with SlcEnv(jobID,frameName,date,cacheDir,tempDir) as env:
-                print "created new processing enviroement {}".format(env.actEnv)
-                print "processing slc {0} on acquisition date {1:%Y%m%d}".format(
-                        row['slc_id'],row['acq_date'])
+                print("created new processing enviroement {}".format(env.actEnv))
+                print("processing slc {0} on acquisition date {1:%Y%m%d}".format(
+                        row['slc_id'],row['acq_date']))
 
                 set_lotus_job_status('Processing {:%y-%m-%d}'.format(date))
                 env.cleanHook = lambda : lq.set_slc_status(row['slc_id'],UNKOWN_ERROR)
@@ -104,8 +104,8 @@ def main(argv):
                 imburstlist = lq.get_frame_bursts_on_date(frameName,date)
                 missingbursts = [b for b in burstlist if not b in imburstlist]
                 if not missingbursts or check_missing_bursts(burstlist,missingbursts):
-                    print "All bursts for frame {0} seem to be have been acquired "\
-                            "on {1}...".format(frameName,date)
+                    print("All bursts for frame {0} seem to be have been acquired "\
+                            "on {1}...".format(frameName,date))
                     lq.set_slc_status(row['slc_id'],BUILDING) #building....
                     rc = make_frame_image(date,frameName,imburstlist,env.actEnv, lq, -1) 
                     lq.set_slc_status(row['slc_id'],rc)

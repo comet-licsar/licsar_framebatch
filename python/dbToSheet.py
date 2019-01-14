@@ -45,7 +45,7 @@ def dump_dataframe_to_sheet(df,sheetName):
         sht.update_cells(hdrs)
         sht.update_cells(cells)
     else:
-        print "Warning either sheet or dataframe is empty"
+        print("Warning either sheet or dataframe is empty")
 # ################################################################################
 # # Create SQL engine
 # ################################################################################
@@ -66,7 +66,7 @@ if jobQryFile:
     jobQry = jobQryFile.read()
     jobDatFrm = pd.read_sql_query(jobQry,engine)
 else:
-    print 'Could not open job query file'
+    print('Could not open job query file')
 
 ################################################################################
 # Get SLC Table
@@ -76,7 +76,7 @@ if slcQryFile:
     slcQry = slcQryFile.read()
     slcDatFrm = pd.read_sql_query(slcQry,engine)
 else:
-    print 'Could not open slc query file'
+    print('Could not open slc query file')
 
 ################################################################################
 # Get RSLC Table
@@ -86,7 +86,7 @@ if rslcQryFile:
     rslcQry = rslcQryFile.read()
     rslcDatFrm = pd.read_sql_query(rslcQry,engine)
 else:
-    print 'Could not open rslc query file'
+    print('Could not open rslc query file')
 
 ################################################################################
 # Get IFG Table
@@ -96,7 +96,7 @@ if ifgQryFile:
     ifgQry = ifgQryFile.read()
     ifgDatFrm = pd.read_sql_query(ifgQry,engine)
 else:
-    print 'Could not open ifg query file'
+    print('Could not open ifg query file')
 
 ################################################################################
 # Get UNW Table
@@ -106,7 +106,7 @@ if unwQryFile:
     unwQry = unwQryFile.read()
     unwDatFrm = pd.read_sql_query(unwQry,engine)
 else:
-    print 'Could not open unw query file'
+    print('Could not open unw query file')
 
 ################################################################################
 # Get Frame Table
@@ -116,7 +116,7 @@ if frameQryFile:
     frameQry = frameQryFile.read()
     frameDatFrm = pd.read_sql_query(frameQry,engine)
 else:
-    print 'Could not open unw query file'
+    print('Could not open unw query file')
 
 ################################################################################
 # Setup Google workbook

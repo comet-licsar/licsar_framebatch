@@ -199,14 +199,14 @@ def create_ifgs(polyid,imgDtFrm):
         imgDtFrm['img_id'].iloc[:-3],
             ], axis=0, ignore_index=True)
     imgSrsA.name = 'img_id_1'
-    imgSrsA.index = range(0,imgSrsA.shape[0])
+    imgSrsA.index = list(range(0,imgSrsA.shape[0]))
     imgSrsB = pd.concat( [
         imgDtFrm['img_id'].iloc[1:],
         imgDtFrm['img_id'].iloc[2:],
         imgDtFrm['img_id'].iloc[3:],
             ], axis=0, ignore_index=True)
     imgSrsB.name = 'img_id_2'
-    imgSrsA.index = range(0,imgSrsA.shape[0])
+    imgSrsA.index = list(range(0,imgSrsA.shape[0]))
     polyidSrs = pd.Series(polyid,index=imgSrsA.index,name='polyid')
     statSrs = pd.Series(-1,index=imgSrsA.index,name='ifg_status')
     ifgDtFrm = pd.concat([polyidSrs,statSrs,imgSrsA,imgSrsB],axis=1)
@@ -231,14 +231,14 @@ def create_unws(polyid,imgDtFrm):
         imgDtFrm['img_id'].iloc[:-3],
             ], axis=0, ignore_index=True)
     imgSrsA.name = 'img_id_1'
-    imgSrsA.index = range(0,imgSrsA.shape[0])
+    imgSrsA.index = list(range(0,imgSrsA.shape[0]))
     imgSrsB = pd.concat( [
         imgDtFrm['img_id'].iloc[1:],
         imgDtFrm['img_id'].iloc[2:],
         imgDtFrm['img_id'].iloc[3:],
             ], axis=0, ignore_index=True)
     imgSrsB.name = 'img_id_2'
-    imgSrsA.index = range(0,imgSrsA.shape[0])
+    imgSrsA.index = list(range(0,imgSrsA.shape[0]))
     polyidSrs = pd.Series(polyid,index=imgSrsA.index,name='polyid')
     statSrs = pd.Series(-1,index=imgSrsA.index,name='unw_status')
     unwDtFrm = pd.concat([polyidSrs,statSrs,imgSrsA,imgSrsB],axis=1)
@@ -261,7 +261,7 @@ def batch_link_slcs_to_new_jobs(polyid,user,slcIds,batchN):
     for label,slcGroup in slcGrouped:
         jid = create_job(polyid,user,'mk_image')
         if pom:
-            print 'first_job_id is',jid
+            print('first_job_id is',jid)
         pom = 0
         slcGroup['slc_id'].map(lambda s:link_slc_to_job(s,jid))
 

@@ -28,14 +28,14 @@ def main(argv):
     try:
         cacheDir = os.environ['BATCH_CACHE_DIR']
     except KeyError as error:
-        print 'I required you to set your cache directory using the'\
-                'enviroment variable BATCH_CACHE_DIR'
+        print('I required you to set your cache directory using the'\
+                'enviroment variable BATCH_CACHE_DIR')
         raise error
 
     unw = lq.get_built_unws(polyID)
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-    print 'Recalculating unwapped percentages for {frame}'.format(frame=frameName)
+    print('Recalculating unwapped percentages for {frame}'.format(frame=frameName))
     
     frameDir = os.path.join(cacheDir,frameName)
     os.chdir(frameDir)
@@ -43,7 +43,7 @@ def main(argv):
     for ind,row in unw.iterrows():
         dateA = row['acq_date_1']
         dateB = row['acq_date_2']
-        print 'calculating for dates: {:%Y%m%d} - {:%Y%m%d}'.format(dateA,dateB)
+        print('calculating for dates: {:%Y%m%d} - {:%Y%m%d}'.format(dateA,dateB))
         unwPerc = get_ifg_perc_unwrapd(dateA,dateB)
         lq.set_unw_perc_unwrpd(polyID,unwPerc)
 

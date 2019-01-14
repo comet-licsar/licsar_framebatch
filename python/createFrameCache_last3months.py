@@ -32,8 +32,8 @@ srcDir = config.get('Env','SourceDir')
 try:
     cacheDir = os.environ['BATCH_CACHE_DIR']
 except KeyError as error:
-    print 'I required you to set your cache directory using the'\
-            'enviroment variable BATCH_CACHE_DIR'
+    print('I required you to set your cache directory using the'\
+            'enviroment variable BATCH_CACHE_DIR')
     raise error
 user = os.environ['USER']
 
