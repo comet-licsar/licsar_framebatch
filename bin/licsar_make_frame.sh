@@ -149,6 +149,10 @@ fi
  
  wait $jobno_start_unw $jobno_end_unw
 
+echo "Deactivating frame (will disappear from the spreadsheet)"
+echo "In order to activate it again, just do setFrameActive.py $frame"
+setFrameInactive.py $frame
+
 if [ $extra_steps -eq 0 ]; then
  echo "Processing finished. Not performing geocoding and export to public website"
  exit
