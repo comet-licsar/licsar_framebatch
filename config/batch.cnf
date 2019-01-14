@@ -1,0 +1,20 @@
+[Env]
+SourceDir : /gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current
+CacheDir : /work/scratch-nompiio/greenall/
+SpdCacheDir : /work/scratch-nompiio/greenall/
+TempDir : /gws/nopw/j04/nceo_geohazards_vol1/insar_temp
+
+[DB]
+User : lics
+Password : T34mLiCS
+#Host : 192.168.3.7
+Host : 130.246.129.18
+DBName : licsinfo_batch
+
+[Config]
+SQLPath = /gws/nopw/j04/nceo_geohazards_vol1/software/licsar_framebatch/sql
+JsonPath = /gws/nopw/j04/nceo_geohazards_vol1/software/licsar_framebatch/config
+
+[Sheets]
+Url = https://docs.google.com/spreadsheets/d/1Rbt_nd5nok-UZ7dfBXFHsZ66IqozrHwxiRj-TDnVDMY # Non-dev
+#Url = https://docs.google.com/spreadsheets/d/1wfusZSQPcdz8Om9JbIXmavhEBGh2wbUtSB_UcvDceCk # Dev

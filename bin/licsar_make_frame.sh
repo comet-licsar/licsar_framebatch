@@ -1,0 +1,180 @@
+#!/bin/bash
+# This function should fully update given frame by data from the last 3 months
+
+if [ -z $2 ]; then
+ echo "Usage: licsar_make_frame.sh FRAME_ID PROC_DIR [geocode_to_public_website] [full_scale]"
+ echo "e.g. licsar_make_frame.sh 089D_09935_080913 /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc 1 0"
+ echo "------"
+ echo "Use geocode_to_public_website=1 if you want to update the public website geotiffs."
+ echo "By default, only last 3 months of data are processed (full_scale=0) as they should exist in CEMS database."
+ echo "If full_scale processing is 1, then all data are processed. Please ensure that you run following command before:"
+ echo "LiCSAR_0_getFiles.py -f $FRAME -s $startdate -e $(date +%Y-%m-%d) -r -b Y -n -z $PROC_DIR/$FRAME/db_query.list"
+ echo "------"
+ echo "By default:"
+ echo "geocode_to_public_website=0"
+ echo "full_scale=0"
+ exit;
+fi
+
+#startup variables
+frame=$1
+basefolder=$2
+#basefolder=/gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc
+cd $basefolder; export BATCH_CACHE_DIR=`pwd`
+
+if [ ! -z $3 ]; then extra_steps=$3; else extra_steps=0; fi
+if [ ! -z $4 ]; then full_scale=$4; else full_scale=0; fi
+
+if [ $full_scale -eq 1 ]; then
+ no_of_jobs=20
+else
+ no_of_jobs=5 #enough for last 3 months data
+fi
+
+logdir=~/logs
+bsubquery=cpom-comet
+extra_steps=0
+
+#startup check
+if [ -z $LiCSAR_procdir ]; then
+ echo "The procdir is not set. Did you 'module load licsar_proc'?"
+ exit
+else
+ public=$LiCSAR_procdir
+fi
+if [ ! -d $basefolder ]; then
+ echo "The directory "$basefolder" does not exist. Create it first";
+ exit;
+fi
+
+mkdir -p $BATCH_CACHE_DIR/$frame
+cd $BATCH_CACHE_DIR/$frame
+echo "All log files will be saved to "$logdir/$frame
+mkdir -p $logdir/$frame 2>/dev/null
+#this is only to easy up the manual process..
+#jobno_start=`cat $logdir/$frame/job_start.txt 2>/dev/null`
+#let jobno_end=$jobno_start+$no_of_jobs'-1'
+
+
+###functions
+function wait {
+ #old waiting way
+ #while [ `bjobs | grep -c $USER` -gt 0 ]; do sleep 10; done
+ pom=0; jobno_start=$1; jobno_end=$2;
+ echo "Waiting for the jobs to finish"
+ while [ $pom -eq 0 ] ; do
+  bjobs -w -p -r -noheader | grep $USER | gawk {'print $7'} | rev | cut -d '_' -f1 | rev > tmp_running.txt
+  pom=1 #it means that if there is no unfinished process, we would continue
+  for A in `seq $jobno_start $jobno_end`; do if [ `grep -c $A tmp_running.txt` -gt 0 ]; then pom=0; fi; done
+  rm tmp_running.txt
+  sleep 60
+ done
+}
+
+
+
+
+
+
+## MAIN CODE
+############### 
+ #do not do if restarting
+ echo "Activating the frame"
+ date
+ setFrameInactive.py $frame
+ setFrameActive.py $frame
+if [ $full_scale -eq 0 ]; then
+ echo "Preparing the frame cache (last 3 months)"
+ createFrameCache_last3months.py $frame $no_of_jobs > tmp_jobid.txt
+else
+ echo "Preparing the frame cache (full scale processing)"
+ createFrameCache.py $frame $no_of_jobs > tmp_jobid.txt
+fi
+ grep first_job_id tmp_jobid.txt | gawk {'print $3'} > $logdir/$frame/job_start.txt
+ if [ -z `cat $logdir/$frame/job_start.txt` ]; then echo "The frame "$frame "is erroneous and cannot be processed"; exit; fi
+ rm tmp_jobid.txt
+#################
+ 
+###################################################### Making images
+## #to restart, begin here
+ date
+ echo "ok, preparing the images using existing data"
+ jobno_start=`cat $logdir/$frame/job_start.txt`
+ let jobno_end=$jobno_start+$no_of_jobs'-1'
+ for A in `seq $jobno_start $jobno_end`; do
+  bsub -o "mk_image_$A.out" -e "mk_image_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "mk_image_$A" \
+    -q $bsubquery -n 1 -W 12:00 ab_LiCSAR_mk_image.py $A
+ done
+ wait $jobno_start $jobno_end
+
+###################################################### Coregistering
+ date
+ echo "ok, processing the next stage - coreg"
+ echo "updating jobno_start to coreg"
+ let jobno_start_coreg=$jobno_start+$no_of_jobs
+ let jobno_end_coreg=$jobno_end+$no_of_jobs
+ for A in `seq $jobno_start_coreg $jobno_end_coreg`; do
+  bsub -o "coreg_$A.out" -e "coreg_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "coreg_$A" \
+            -q $bsubquery -n 4 -W 36:00 ab_LiCSAR_coreg.py $A
+ done
+ 
+ wait $jobno_start_coreg $jobno_end_coreg
+ 
+###################################################### Make ifgs
+ date
+ echo "ok, processing the next stage - make_ifg"
+ echo "updating jobno_start to make_ifg"
+ let jobno_start_ifg=$jobno_start+$no_of_jobs+$no_of_jobs
+ let jobno_end_ifg=$jobno_end+$no_of_jobs+$no_of_jobs
+   
+ for A in `seq $jobno_start_ifg $jobno_end_ifg`; do
+  bsub -o "mk_ifg_$A.out" -e "mk_ifg_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "mk_ifg_$A" \
+       -q $bsubquery -n 1 -W 24:00 ab_LiCSAR_mk_ifg.py $A
+ done
+ 
+ wait $jobno_start_ifg $jobno_end_ifg
+ 
+###################################################### Unwrapping
+ date
+ echo "ok, processing the next stage - unwrap"
+ echo "updating jobno_start to unwrap"
+ let jobno_start_unw=$jobno_start+$no_of_jobs+$no_of_jobs+$no_of_jobs
+ let jobno_end_unw=$jobno_end+$no_of_jobs+$no_of_jobs+$no_of_jobs
+
+ for A in `seq $jobno_start_unw $jobno_end_unw`; do
+ # let A=$A+$no_of_jobs+$no_of_jobs+$no_of_jobs
+  bsub -o "unwrap_$A.out" -e "unwrap_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "unwrap_$A" \
+       -q $bsubquery -n 4 -W 36:00 ab_LiCSAR_unwrap.py $A
+ done
+ 
+ wait $jobno_start_unw $jobno_end_unw
+
+if [ $extra_steps -eq 0 ]; then
+ echo "Processing finished. Not performing geocoding and export to public website"
+ exit
+else
+echo "Processing finished, now generating geotiffs and exporting to public website"
+###################################################### Geocoding to tiffs
+echo "Hopefully the unwrap is done and now we will need only to update the geotiffs..."
+for ifg in `ls $BATCH_CACHE_DIR/$frame/IFG/*_* -d | rev | cut -d '/' -f1 | rev`; do
+ if [ -f $BATCH_CACHE_DIR/$frame/IFG/$ifg/$ifg.unw ]; then
+ echo "geocoding "$ifg
+ create_geoctiffs_to_pub.sh $BATCH_CACHE_DIR/$frame $ifg > $logdir/$frame/geocode_$ifg.log 2>$logdir/$frame/geocode_$ifg.err
+ fi
+done
+
+###################################################### Publishing tiffs
+track=`echo $frame | cut -d '_' -f1 | rev | cut -c 2- | rev`
+for geoifg in `ls $BATCH_CACHE_DIR/$frame/GEOC/2*_2* -d | rev | cut -d '/' -f1 | rev`; do
+ echo "copying geocoded "$geoifg
+ for toexp in cc.bmp cc.tif diff.bmp diff_mag.tif diff_pha.tif unw.bmp unw.tif disp.png; do
+  if [ -f $BATCH_CACHE_DIR/$frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
+   mkdir -p $public/$track/$frame/products/$geoifg 2>/dev/null
+   if [ ! -f $public/$track/$frame/products/$geoifg/$geoifg.geo.$toexp ]; then
+    cp $BATCH_CACHE_DIR/$frame/GEOC/$geoifg/$geoifg.geo.$toexp $public/$track/$frame/products/$geoifg/.
+   fi
+  fi
+ done
+done
+
+fi
