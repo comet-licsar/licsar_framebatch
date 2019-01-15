@@ -1,29 +1,34 @@
 #!/bin/bash
 # This function should fully update given frame by data from the last 3 months
 
-if [ -z $2 ]; then
- echo "Usage: licsar_make_frame.sh FRAME_ID PROC_DIR [geocode_to_public_website] [full_scale]"
- echo "e.g. licsar_make_frame.sh 089D_09935_080913 /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc 1 0"
+if [ -z $1 ] || [ `echo $1 | grep -c '_'` -lt 1 ]; then
+ echo "Usage: licsar_make_frame.sh FRAME_ID [full_scale] [geocode_to_public_website]"
+ echo "e.g. licsar_make_frame.sh 124D_05278_081106 0 1"
  echo "------"
  echo "Use geocode_to_public_website=1 if you want to update the public website geotiffs."
  echo "By default, only last 3 months of data are processed (full_scale=0) as they should exist in CEMS database."
  echo "If full_scale processing is 1, then all data are processed. Please ensure that you run following command before:"
- echo "LiCSAR_0_getFiles.py -f $FRAME -s $startdate -e $(date +%Y-%m-%d) -r -b Y -n -z $PROC_DIR/$FRAME/db_query.list"
+ echo "LiCSAR_0_getFiles.py -f $FRAME -s $startdate -e $(date +%Y-%m-%d) -r -b Y -n -z $BATCH_CACHE_DIR/$FRAME/db_query.list"
+ echo "Also, you should have BATCH_CACHE_DIR defined prior to use the function - all data will be processed and save to this directory"
  echo "------"
  echo "By default:"
- echo "geocode_to_public_website=0"
  echo "full_scale=0"
+ echo "geocode_to_public_website=0"
  exit;
 fi
 
 #startup variables
 frame=$1
-basefolder=$2
+if [ -z $BATCH_CACHE_DIR ] || [ ! -d $BATCH_CACHE_DIR ]; then
+ echo "There is no BATCH_CACHE_DIR existing. Did you define it properly?"
+ exit
+fi
+basefolder=$BATCH_CACHE_DIR
 #basefolder=/gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc
-cd $basefolder; export BATCH_CACHE_DIR=`pwd`
+cd $basefolder
 
+if [ ! -z $2 ]; then full_scale=$2; else full_scale=0; fi
 if [ ! -z $3 ]; then extra_steps=$3; else extra_steps=0; fi
-if [ ! -z $4 ]; then full_scale=$4; else full_scale=0; fi
 
 if [ $full_scale -eq 1 ]; then
  no_of_jobs=20
