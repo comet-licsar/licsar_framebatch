@@ -8,7 +8,7 @@ if [ -z $1 ] || [ `echo $1 | grep -c '_'` -lt 1 ]; then
  echo "Use geocode_to_public_website=1 if you want to update the public website geotiffs."
  echo "By default, only last 3 months of data are processed (full_scale=0) as they should exist in CEMS database."
  echo "If full_scale processing is 1, then all data are processed. Please ensure that you run following command before:"
- echo "LiCSAR_0_getFiles.py -f $FRAME -s $startdate -e $(date +%Y-%m-%d) -r -b Y -n -z $BATCH_CACHE_DIR/$FRAME/db_query.list"
+ echo "LiCSAR_0_getFiles.py -f \$FRAME -s \$startdate -e $(date +%Y-%m-%d) -r -b Y -n -z $BATCH_CACHE_DIR/\$FRAME/db_query.list"
  echo "Also, you should have BATCH_CACHE_DIR defined prior to use the function - all data will be processed and save to this directory"
  echo "------"
  echo "By default:"
