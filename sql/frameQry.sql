@@ -1,5 +1,5 @@
 SELECT polygs.polyid_name AS "Frame", 
-acq_img.acq_date AS "Master Date",
+date(acq_img.acq_date) AS "Master Date",
 CASE WHEN slcB.slc_N IS NOT NULL THEN slcB.slc_N/slcA.slc_N ELSE 0 END AS "SLC Coverage",
 CASE WHEN rslcB.rslc_N IS NOT NULL THEN rslcB.rslc_N/rslcA.rslc_N ELSE 0 END AS "RSLC Coverage",
 CASE WHEN ifgB.ifg_N IS NOT NULL THEN ifgB.ifg_N/ifgA.ifg_N ELSE 0 END AS "IFG Coverage",
@@ -50,4 +50,5 @@ LEFT OUTER JOIN (
 	FROM unw 
 	WHERE unw_status=0
 	GROUP BY polyid
-) AS unwB ON unwB.polyid = polygs.polyid;
+) AS unwB ON unwB.polyid = polygs.polyid
+where active=1;

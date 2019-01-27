@@ -9,7 +9,11 @@ import pymysql
 from batchDBLib import engine
 from configLib import config
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+#oauth2client libraries are deprecated!
+#from oauth2client.service_account import ServiceAccountCredentials
+#from google.oauth2.service_account import Credentials
+from google.oauth2 import service_account
+
 import os
 
 sqlPath = config.get('Config','SQLPath')
@@ -19,9 +23,18 @@ jsonPath = config.get('Config','JsonPath')
 ################################################################################
 scope = ['https://spreadsheets.google.com/feeds', 
          'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name(
-        jsonPath+'/LiCS-Track.json', scope)
-gc = gspread.authorize(creds)
+#creds = ServiceAccountCredentials.from_json_keyfile_name(
+#        jsonPath+'/LiCS-Track.json', scope)
+print('authenticating to google spreadsheets')
+SERVICE_ACCOUNT_FILE=jsonPath+'/LiCS-Track.json'
+
+creds = service_account.Credentials.from_service_account_file(
+        SERVICE_ACCOUNT_FILE, scopes=scope)
+
+from google.auth.transport.requests import AuthorizedSession
+gc = gspread.Client(auth=creds)
+gc.session = AuthorizedSession(creds)
+#gc = gspread.authorize(creds)
 
 ################################################################################
 # Dump dataframe to sheet
@@ -33,6 +46,12 @@ def dump_dataframe_to_sheet(df,sheetName):
         hdrs = sht.range(1,1,1,sz[1])
         for hdr in hdrs:
             hdr.value = df.columns[hdr.col-1]
+        #clear the old values
+        range_of_cells = sht.range('A2:J'+str(sht.row_count))
+        for cell in range_of_cells:
+            cell.value = ''
+        sht.update_cells(range_of_cells)
+        #and now put the new values here
         cells = sht.range(2,1,sz[0]+1,sz[1])
         for cell in cells:
             if isinstance(df.values[cell.row-2,cell.col-1],numbers.Number):
@@ -127,9 +146,11 @@ wrkBk = gc.open_by_url(gsUrl)
 ################################################################################
 # Setup sheets
 ################################################################################
+print('exporting from database')
 dump_dataframe_to_sheet(jobDatFrm,'Jobs')
 dump_dataframe_to_sheet(slcDatFrm,'SLC')
 dump_dataframe_to_sheet(rslcDatFrm,'RSLC')
 dump_dataframe_to_sheet(ifgDatFrm,'IFG')
 dump_dataframe_to_sheet(unwDatFrm,'UNW')
 dump_dataframe_to_sheet(frameDatFrm,'Frames')
+print('done')
