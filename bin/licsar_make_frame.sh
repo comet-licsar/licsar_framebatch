@@ -107,7 +107,7 @@ fi
  jobno_start=`cat $logdir/$frame/job_start.txt`
  let jobno_end=$jobno_start+$no_of_jobs'-1'
  for A in `seq $jobno_start $jobno_end`; do
-  bsub -o "mk_image_$A.out" -e "mk_image_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "mk_image_$A" \
+  bsub -o "$logdir/$frame/mk_image_$A.out" -e "$logdir/$frame/mk_image_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "mk_image_$A" \
     -q $bsubquery -n 1 -W 12:00 ab_LiCSAR_mk_image.py $A
  done
  wait $jobno_start $jobno_end
@@ -119,7 +119,7 @@ fi
  let jobno_start_coreg=$jobno_start+$no_of_jobs
  let jobno_end_coreg=$jobno_end+$no_of_jobs
  for A in `seq $jobno_start_coreg $jobno_end_coreg`; do
-  bsub -o "coreg_$A.out" -e "coreg_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "coreg_$A" \
+  bsub -o "$logdir/$frame/coreg_$A.out" -e "$logdir/$frame/coreg_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "coreg_$A" \
             -q $bsubquery -n 4 -W 36:00 ab_LiCSAR_coreg.py $A
  done
  
@@ -133,7 +133,7 @@ fi
  let jobno_end_ifg=$jobno_end+$no_of_jobs+$no_of_jobs
    
  for A in `seq $jobno_start_ifg $jobno_end_ifg`; do
-  bsub -o "mk_ifg_$A.out" -e "mk_ifg_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "mk_ifg_$A" \
+  bsub -o "$logdir/$frame/mk_ifg_$A.out" -e "$logdir/$frame/mk_ifg_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "mk_ifg_$A" \
        -q $bsubquery -n 1 -W 24:00 ab_LiCSAR_mk_ifg.py $A
  done
  
@@ -148,7 +148,7 @@ fi
 
  for A in `seq $jobno_start_unw $jobno_end_unw`; do
  # let A=$A+$no_of_jobs+$no_of_jobs+$no_of_jobs
-  bsub -o "unwrap_$A.out" -e "unwrap_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "unwrap_$A" \
+  bsub -o "$logdir/$frame/unwrap_$A.out" -e "$logdir/$frame/unwrap_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "unwrap_$A" \
        -q $bsubquery -n 4 -W 36:00 ab_LiCSAR_unwrap.py $A
  done
  
