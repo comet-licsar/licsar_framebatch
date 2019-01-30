@@ -8,11 +8,11 @@ TempDir : /gws/nopw/j04/nceo_geohazards_vol1/insar_temp
 User : lics
 Password : T34mLiCS
 #Host : 192.168.3.7
-#Host : 130.246.129.18
+Host : 130.246.129.18
 #i had to do an ssh tunnel here...
 #you may need it also, using:
 #ssh -L 3306:192.168.3.7:3306 -N $USER@130.246.129.19
-Host : 127.0.0.1
+#Host : 127.0.0.1
 DBName : licsinfo_batch
 
 [Config]
