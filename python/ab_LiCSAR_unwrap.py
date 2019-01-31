@@ -72,8 +72,8 @@ def main(argv):
 
         #Parse multi look options
         slcCache = os.path.join(cacheDir,frameName,'SLC')
-        gc.rglks = int(grep('range_looks',os.path.join(slcCache,mstrDate.strftime('%Y%m%d/%Y%m%d.slc.mli.par'))).split(':')[1].strip())
-        gc.aglks = int(grep('azimuth_looks',os.path.join(slcCache,mstrDate.strftime('%Y%m%d/%Y%m%d.slc.mli.par'))).split(':')[1].strip())
+        gc.rglks = int(grep1('range_looks',os.path.join(slcCache,mstrDate.strftime('%Y%m%d/%Y%m%d.slc.mli.par'))).split(':')[1].strip())
+        gc.aglks = int(grep1('azimuth_looks',os.path.join(slcCache,mstrDate.strftime('%Y%m%d/%Y%m%d.slc.mli.par'))).split(':')[1].strip())
 
         set_lotus_job_status('Setting up {:%y-%m-%d}->{:%y-%m-%d}'.format(dateA, dateB))
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 

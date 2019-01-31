@@ -26,7 +26,6 @@ fi
 basefolder=$BATCH_CACHE_DIR
 #basefolder=/gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc
 cd $basefolder
-
 if [ ! -z $2 ]; then full_scale=$2; else full_scale=0; fi
 if [ ! -z $3 ]; then extra_steps=$3; else extra_steps=0; fi
 
@@ -77,10 +76,6 @@ function wait {
 }
 
 
-
-
-
-
 ## MAIN CODE
 ############### 
  #do not do if restarting
@@ -106,10 +101,12 @@ fi
  echo "ok, preparing the images using existing data"
  jobno_start=`cat $logdir/$frame/job_start.txt`
  let jobno_end=$jobno_start+$no_of_jobs'-1'
+ rm mk_image.sh 2>/dev/null
  for A in `seq $jobno_start $jobno_end`; do
-  bsub -o "$logdir/$frame/mk_image_$A.out" -e "$logdir/$frame/mk_image_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "mk_image_$A" \
-    -q $bsubquery -n 1 -W 12:00 ab_LiCSAR_mk_image.py $A
+  echo bsub -o "$logdir/$frame/mk_image_$A.out" -e "$logdir/$frame/mk_image_$A.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $A\" -J "mk_image_$A" \
+    -q $bsubquery -n 1 -W 12:00 ab_LiCSAR_mk_image.py $A >> mk_image.sh
  done
+ chmod 770 mk_image.sh; ./mk_image.sh
  wait $jobno_start $jobno_end
 
 ###################################################### Coregistering
@@ -118,11 +115,12 @@ fi
  echo "updating jobno_start to coreg"
  let jobno_start_coreg=$jobno_start+$no_of_jobs
  let jobno_end_coreg=$jobno_end+$no_of_jobs
+ rm coreg.sh 2>/dev/null
  for A in `seq $jobno_start_coreg $jobno_end_coreg`; do
-  bsub -o "$logdir/$frame/coreg_$A.out" -e "$logdir/$frame/coreg_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "coreg_$A" \
-            -q $bsubquery -n 4 -W 36:00 ab_LiCSAR_coreg.py $A
+  echo bsub -o "$logdir/$frame/coreg_$A.out" -e "$logdir/$frame/coreg_$A.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $A\" -J "coreg_$A" \
+            -q $bsubquery -n 4 -W 36:00 ab_LiCSAR_coreg.py $A >> coreg.sh
  done
- 
+ chmod 770 coreg.sh; ./coreg.sh
  wait $jobno_start_coreg $jobno_end_coreg
  
 ###################################################### Make ifgs
@@ -131,12 +129,12 @@ fi
  echo "updating jobno_start to make_ifg"
  let jobno_start_ifg=$jobno_start+$no_of_jobs+$no_of_jobs
  let jobno_end_ifg=$jobno_end+$no_of_jobs+$no_of_jobs
-   
+ rm mk_ifg.sh 2>/dev/null
  for A in `seq $jobno_start_ifg $jobno_end_ifg`; do
-  bsub -o "$logdir/$frame/mk_ifg_$A.out" -e "$logdir/$frame/mk_ifg_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "mk_ifg_$A" \
-       -q $bsubquery -n 1 -W 24:00 ab_LiCSAR_mk_ifg.py $A
+  echo bsub -o "$logdir/$frame/mk_ifg_$A.out" -e "$logdir/$frame/mk_ifg_$A.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $A\" -J "mk_ifg_$A" \
+       -q $bsubquery -n 1 -W 24:00 ab_LiCSAR_mk_ifg.py $A >> mk_ifg.sh
  done
- 
+ chmod 770 mk_ifg.sh; ./mk_ifg.sh
  wait $jobno_start_ifg $jobno_end_ifg
  
 ###################################################### Unwrapping
@@ -145,18 +143,22 @@ fi
  echo "updating jobno_start to unwrap"
  let jobno_start_unw=$jobno_start+$no_of_jobs+$no_of_jobs+$no_of_jobs
  let jobno_end_unw=$jobno_end+$no_of_jobs+$no_of_jobs+$no_of_jobs
-
+ rm unwrap.sh 2>/dev/null
  for A in `seq $jobno_start_unw $jobno_end_unw`; do
  # let A=$A+$no_of_jobs+$no_of_jobs+$no_of_jobs
-  bsub -o "$logdir/$frame/unwrap_$A.out" -e "$logdir/$frame/unwrap_$A.err" -Ep "ab_LiCSAR_lotus_cleanup.py $A" -J "unwrap_$A" \
-       -q $bsubquery -n 4 -W 36:00 ab_LiCSAR_unwrap.py $A
+  echo bsub -o "$logdir/$frame/unwrap_$A.out" -e "$logdir/$frame/unwrap_$A.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $A\" -J "unwrap_$A" \
+       -q $bsubquery -n 4 -W 36:00 ab_LiCSAR_unwrap.py $A >> unwrap.sh
  done
- 
+ chmod 770 unwrap.sh; ./unwrap.sh
  wait $jobno_start_unw $jobno_end_unw
 
-echo "Deactivating frame (will disappear from the spreadsheet)"
-echo "In order to activate it again, just do setFrameActive.py $frame"
-setFrameInactive.py $frame
+echo "...please check the results manually. If everything is processed fine, including unwrapping,"
+echo "you may run following to deactivate the frame from the spreadsheet:"
+echo setFrameInactive.py $frame
+
+#echo "Deactivating frame (will disappear from the spreadsheet)"
+#echo "In order to activate it again, just do setFrameActive.py $frame"
+#setFrameInactive.py $frame
 
 if [ $extra_steps -eq 0 ]; then
  echo "Processing finished. Not performing geocoding and export to public website"
