@@ -36,7 +36,14 @@ else
 fi
 
 logdir=~/logs
-bsubquery=cpom-comet
+#decide for query based on user rights
+if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
+  bsubquery='cpom-comet'
+ else
+  bsubquery='par-single'
+fi
+
+#these extra_steps are now just 'export to comet website'
 extra_steps=0
 
 #startup check
@@ -160,13 +167,8 @@ echo setFrameInactive.py $frame
 #echo "In order to activate it again, just do setFrameActive.py $frame"
 #setFrameInactive.py $frame
 
-if [ $extra_steps -eq 0 ]; then
- echo "Processing finished. Not performing geocoding and export to public website"
- exit
-else
-echo "Processing finished, now generating geotiffs and exporting to public website"
+echo "Processing finished, now generating geotiffs"
 ###################################################### Geocoding to tiffs
-echo "Hopefully the unwrap is done and now we will need only to update the geotiffs..."
 for ifg in `ls $BATCH_CACHE_DIR/$frame/IFG/*_* -d | rev | cut -d '/' -f1 | rev`; do
  if [ -f $BATCH_CACHE_DIR/$frame/IFG/$ifg/$ifg.unw ]; then
  echo "geocoding "$ifg
@@ -174,6 +176,7 @@ for ifg in `ls $BATCH_CACHE_DIR/$frame/IFG/*_* -d | rev | cut -d '/' -f1 | rev`;
  fi
 done
 
+if [ $extra_steps -eq 1 ]; then
 ###################################################### Publishing tiffs
 track=`echo $frame | cut -d '_' -f1 | rev | cut -c 2- | rev`
 for geoifg in `ls $BATCH_CACHE_DIR/$frame/GEOC/2*_2* -d | rev | cut -d '/' -f1 | rev`; do
