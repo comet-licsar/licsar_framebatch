@@ -2,8 +2,8 @@
 # This function should fully update given frame by data from the last 3 months
 
 if [ -z $1 ] || [ `echo $1 | grep -c '_'` -lt 1 ]; then
- echo "Usage: licsar_make_frame.sh FRAME_ID [full_scale] [geocode_to_public_website]"
- echo "e.g. licsar_make_frame.sh 124D_05278_081106 0 1"
+ echo "Usage: licsar_make_frame.sh FRAME_ID [full_scale]" #[geocode_to_public_website]"
+ echo "e.g. licsar_make_frame.sh 124D_05278_081106 0" #1"
  echo "------"
  echo "Use geocode_to_public_website=1 if you want to update the public website geotiffs."
  echo "By default, only last 3 months of data are processed (full_scale=0) as they should exist in CEMS database."
@@ -13,7 +13,7 @@ if [ -z $1 ] || [ `echo $1 | grep -c '_'` -lt 1 ]; then
  echo "------"
  echo "By default:"
  echo "full_scale=0"
- echo "geocode_to_public_website=0"
+ #echo "geocode_to_public_website=0"
  exit;
 fi
 
@@ -59,6 +59,15 @@ fi
 #testing.. but perhaps helps in getting proper num threads in CEMS environment
 export OMP_NUM_THREADS=16
 
+#getting access to database
+mysqlhost=`grep ^Host $framebatch_config | cut -d ':' -f2 | sed 's/^\ //'`
+mysqluser=`grep ^User $framebatch_config | cut -d ':' -f2 | sed 's/^\ //'`
+mysqlpass=`grep ^Password $framebatch_config | cut -d ':' -f2 | sed 's/^\ //'`
+mysqldbname=`grep ^DBName $framebatch_config | cut -d ':' -f2 | sed 's/^\ //'`
+SQLPath=`grep ^SQLPath $framebatch_config | cut -d '=' -f2 | sed 's/^\ //'`
+#i should test it here..
+
+
 #startup check
 if [ -z $LiCSAR_procdir ]; then
  echo "The procdir is not set. Did you 'module load licsar_proc'?"
@@ -103,6 +112,41 @@ function wait {
  done
 }
 
+function prepare_job_script {
+ step=$1
+ stepcmd=$2
+ stepsql=$3
+ stepprev=$4
+
+ rm $step.sh 2>/dev/null
+ mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/$stepsql.sql | grep $USER | grep $frame | sort -n > $step.list
+ #if [ $realjobno != `cat $step.list | wc -l` ]; then
+ # echo "WARNING, THE NO OF JOBS DIFFER BETWEEN mk_img AND $step. This should NOT happen and will NOT work properly."
+ #fi
+ 
+# jline=0
+ for jobid in `cat $step.list | gawk {'print $1'} | sort -un`; do
+  #get connected images from previous step
+  waitText=""
+  rm tmpText 2>/dev/null
+  for image in `grep ^$jobid $step.list | gawk {'print $3'}`; do
+   #get jobid from previous step that is connected to this image
+   grep $image $stepprev.list | gawk {'print $1'} >> tmpText
+  done
+  for jobid_prev in `cat tmpText | sort -nu`; do
+#   grep $image $stepprev.list | gawk {'print $1'}`; do
+   waitText=$waitText" && ended("$stepprev"_"$jobid_prev")"
+  done
+  waitText=`echo $waitText | cut -c 4-`
+#  let jline=$jline+1
+#  B=`sed -n $jline'p' $stepprev.list | gawk {'print $1'}`
+  echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
+     -q $bsubquery -n 1 -W 36:00 -w \"$waitText\" $stepcmd $jobid >> $step.sh
+ done
+ rm tmpText 2>/dev/null
+ chmod 770 $step.sh
+ #./$step.sh
+}
 
 ## MAIN CODE
 ############### 
@@ -131,68 +175,67 @@ fi
 ## #to restart, begin here
  
  echo "..preparing the input images using existing data (SLC)"
- jobno_start=`cat $logdir/job_start.txt`
- let jobno_end=$jobno_start+$no_of_jobs'-1'
- rm framebatch_01_mk_image.sh 2>/dev/null
- for A in `seq $jobno_start $jobno_end`; do
-  echo bsub -o "$logdir/mk_image_$A.out" -e "$logdir/mk_image_$A.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $A\" -J "mk_image_$A" \
-    -q $bsubquery -n 1 -W 12:00 ab_LiCSAR_mk_image.py $A >> framebatch_01_mk_image.sh
+ 
+ 
+ #logically good approach, but doesn't work always:
+# jobno_start=`cat $logdir/job_start.txt`
+# let jobno_end=$jobno_start+$no_of_jobs'-1' # oh... but sometimes there is less tasks... carramba
+# 
+ #getting jobIDs for mk_image:
+ step=framebatch_01_mk_image
+ rm $step.sh 2>/dev/null
+ mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/slcQry.sql | grep $USER | grep $frame | sort -n > $step.list
+ realjobno=`cat framebatch_01_mk_image.list | wc -l`
+ for jobid in `cat framebatch_01_mk_image.list | gawk {'print $1'} | sort -un`; do
+  echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" \
+       -J "$step"_"$jobid" -q $bsubquery -n 1 -W 12:00 ab_LiCSAR_mk_image.py $jobid >> $step.sh
  done
- chmod 770 framebatch_01_mk_image.sh; ./framebatch_01_mk_image.sh
+
+# for A in `seq $jobno_start $jobno_end`; do
+#  echo bsub -o "$logdir/mk_image_$A.out" -e "$logdir/mk_image_$A.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $A\" -J "mk_image_$A" \
+#    -q $bsubquery -n 1 -W 12:00 ab_LiCSAR_mk_image.py $A >> framebatch_01_mk_image.sh
+# done
+ chmod 770 $step.sh; ./$step.sh
  #wait $jobno_start $jobno_end
 
 ###################################################### Coregistering
- #date
  echo "..setting coregistration stage (RSLC)"
- #echo "updating jobno_start to coreg"
- let jobno_start_coreg=$jobno_start+$no_of_jobs
- let jobno_end_coreg=$jobno_end+$no_of_jobs
- rm framebatch_02_coreg.sh 2>/dev/null
- for A in `seq $jobno_start_coreg $jobno_end_coreg`; do
-  let B=$A-$no_of_jobs
-  echo bsub -o "$logdir/coreg_$A.out" -e "$logdir/coreg_$A.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $A\" -J "coreg_$A" \
-            -q $bsubquery -n 4 -W 36:00 -w \""ended(mk_image_$B)"\" ab_LiCSAR_coreg.py $A >> framebatch_02_coreg.sh
- done
- chmod 770 framebatch_02_coreg.sh; ./framebatch_02_coreg.sh
- #wait $jobno_start_coreg $jobno_end_coreg
- 
+
+ step=framebatch_02_coreg
+ stepcmd=ab_LiCSAR_coreg.py
+ stepsql=rslcQry
+ stepprev=framebatch_01_mk_image
+
+ prepare_job_script $step $stepcmd $stepsql $stepprev
+ ./$step.sh
 ###################################################### Make ifgs
- #date
  echo "..setting make_ifg job (IFG)"
- #echo "updating jobno_start to make_ifg"
- let jobno_start_ifg=$jobno_start_coreg+$no_of_jobs
- let jobno_end_ifg=$jobno_end_coreg+$no_of_jobs
- rm framebatch_03_mk_ifg.sh 2>/dev/null
- for A in `seq $jobno_start_ifg $jobno_end_ifg`; do
-  let B=$A-$no_of_jobs
-  echo bsub -o "$logdir/mk_ifg_$A.out" -e "$logdir/mk_ifg_$A.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $A\" -J "mk_ifg_$A" \
-       -q $bsubquery -n 1 -W 24:00 -w \""ended(coreg_$B)"\" ab_LiCSAR_mk_ifg.py $A >> framebatch_03_mk_ifg.sh
- done
- chmod 770 framebatch_03_mk_ifg.sh; ./framebatch_03_mk_ifg.sh
- #wait $jobno_start_ifg $jobno_end_ifg
  
+ step=framebatch_03_mk_ifg
+ stepcmd=ab_LiCSAR_mk_ifg.py
+ stepsql=ifgQry
+ stepprev=framebatch_02_coreg
+ 
+ prepare_job_script $step $stepcmd $stepsql $stepprev
+ ./$step.sh
+
 ###################################################### Unwrapping
  #date
  echo "..setting unwrapping (UNW)"
  #echo "updating jobno_start to unwrap"
- let jobno_start_unw=$jobno_start_ifg+$no_of_jobs
- let jobno_end_unw=$jobno_end_ifg+$no_of_jobs
- rm framebatch_04_unwrap.sh 2>/dev/null
- #adding the waiting parameters for step 05 already here.. more mess but bit easier for me J
- step5_wait=""
- for A in `seq $jobno_start_unw $jobno_end_unw`; do
- # let A=$A+$no_of_jobs+$no_of_jobs+$no_of_jobs
-  let B=$A-$no_of_jobs
-  echo bsub -o "$logdir/unwrap_$A.out" -e "$logdir/unwrap_$A.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $A\" -J "unwrap_$A" \
-       -q $bsubquery -n 4 -W 36:00 -w \""mk_ifg_$B"\" ab_LiCSAR_unwrap.py $A >> framebatch_04_unwrap.sh
-  step5_wait=$step5_wait" && ended(unwrap_"$A")"
- done
- step5_wait=`echo $step5_wait | cut -c 5-`
- chmod 770 framebatch_04_unwrap.sh; ./framebatch_04_unwrap.sh
- #wait $jobno_start_unw $jobno_end_unw
+
+ step=framebatch_04_unwrap
+ stepcmd=ab_LiCSAR_unwrap.py
+ stepsql=unwQry
+ stepprev=framebatch_03_mk_ifg
+ 
+ prepare_job_script $step $stepcmd $stepsql $stepprev
+ ./$step.sh
+
 
 ###################################################### Geocoding to tiffs
-echo "All bsub jobs are sent for processing. Sending request to generate geotiffs after it all finishes"
+echo "All bsub jobs are sent for processing."
+#echo "Sending request to generate geotiffs after it all finishes"
 cat << EOF > framebatch_05_geotiffs.sh
 for ifg in \`ls $BATCH_CACHE_DIR/$frame/IFG/*_* -d | rev | cut -d '/' -f1 | rev\`; do
  if [ -f $BATCH_CACHE_DIR/$frame/IFG/\$ifg/\$ifg.unw ]; then
@@ -203,9 +246,11 @@ done
 EOF
 chmod 770 framebatch_05_geotiffs.sh
 
-bsub -o "$logdir/geotiffs.out" -e "$logdir/geotiffs.out" -J "geotiffs_$frame" \
- -q $bsubquery -n 1 -W 12:00 -w "$step5_wait" ./framebatch_05_geotiffs.sh
-
+# I disabled it since it wasn't really starting.. too complicated -w , I guess J
+# bsub -o "$logdir/geotiffs.out" -e "$logdir/geotiffs.out" -J "geotiffs_$frame" \
+# -q $bsubquery -n 1 -W 12:00 -w "$step5_wait" ./framebatch_05_geotiffs.sh
+echo ""
+echo ""
 echo "...please check the results manually."
 echo "You may be checking 'bjobs' or the spreadsheet:"
 echo "https://docs.google.com/spreadsheets/d/1Rbt_nd5nok-UZ7dfBXFHsZ66IqozrHwxiRj-TDnVDMY"
@@ -215,8 +260,9 @@ echo "module load licsar_framebatch"
 echo setFrameInactive.py $frame
 echo ".. and if not, try rerunning the framebatch_XX scripts in this folder:"
 pwd
-ls framebatch*
-
+ls framebatch*.sh
+echo ""
+echo ""
 #echo "Deactivating frame (will disappear from the spreadsheet)"
 #echo "In order to activate it again, just do setFrameActive.py $frame"
 #setFrameInactive.py $frame

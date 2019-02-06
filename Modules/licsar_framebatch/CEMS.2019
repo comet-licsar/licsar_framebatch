@@ -20,8 +20,10 @@ set gwsSoftwarePath "$grouppath/software"
 
 set LiCSFBpath "$gwsSoftwarePath/licsar_framebatch"
 set configpath "$LiCSFBpath/config/"
-                
+ 
+# this again does not work... whyyyy               
 setenv FRAME_BATCH_CONFIG "$configpath/batch.cnf"
+setenv framebatch_config "$configpath/batch.cnf"
                 
 prepend-path PATH "$LiCSFBpath/bin:$LiCSFBpath/python"
 prepend-path PYTHONPATH "$LiCSFBpath/python"
