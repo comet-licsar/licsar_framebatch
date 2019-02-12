@@ -20,5 +20,7 @@ SQLPath = /gws/nopw/j04/nceo_geohazards_vol1/software/licsar_framebatch/sql
 JsonPath = /gws/nopw/j04/nceo_geohazards_vol1/software/licsar_framebatch/config
 
 [Sheets]
-Url = https://docs.google.com/spreadsheets/d/1Rbt_nd5nok-UZ7dfBXFHsZ66IqozrHwxiRj-TDnVDMY # Non-dev
+Url = https://docs.google.com/spreadsheets/d/1UcCmv8rqyMrDvjD0OAY2IT4HdSapvxXgWsKbbecXO9k # Feb 2019, author: COMET LiCSAR at google
+#Url = https://docs.google.com/spreadsheets/d/1C2xDreZi8FRp7u51TN-Ir-8E1LY1geLM3YqA7zr0uZ0 # Feb 2019, author: espiritocz
+#Url = https://docs.google.com/spreadsheets/d/1Rbt_nd5nok-UZ7dfBXFHsZ66IqozrHwxiRj-TDnVDMY # Non-dev -- but full
 #Url = https://docs.google.com/spreadsheets/d/1wfusZSQPcdz8Om9JbIXmavhEBGh2wbUtSB_UcvDceCk # Dev

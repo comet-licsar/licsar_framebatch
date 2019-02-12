@@ -119,7 +119,27 @@ function prepare_job_script {
  stepprev=$4
 
  rm $step.sh 2>/dev/null
+# mysql command is much faster, but it is not available in every server:
+if [ ! -z `which mysql 2>/dev/null` ]; then
  mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/$stepsql.sql | grep $USER | grep $frame | sort -n > $step.list
+else
+ cat << EOF > getit.py
+import pandas as pd
+from batchDBLib import engine
+from configLib import config
+sqlPath = config.get('Config','SQLPath')
+QryFile = open(sqlPath+'/$stepsql.sql','r')
+if QryFile:
+    Qry = QryFile.read()
+    DatFrm = pd.read_sql_query(Qry,engine)
+    DatFrm.to_csv('$step.list', header=False, index=False, sep='\t', mode='a')
+else:
+    print('Could not open SQL query file')
+EOF
+ python getit.py
+ rm getit.py
+ cat $step.list | grep $USER | grep $frame | sort -n > $step.list 
+fi
  #if [ $realjobno != `cat $step.list | wc -l` ]; then
  # echo "WARNING, THE NO OF JOBS DIFFER BETWEEN mk_img AND $step. This should NOT happen and will NOT work properly."
  #fi
