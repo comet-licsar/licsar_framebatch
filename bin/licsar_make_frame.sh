@@ -2,17 +2,19 @@
 # This function should fully update given frame by data from the last 3 months
 
 if [ -z $1 ] || [ `echo $1 | grep -c '_'` -lt 1 ]; then
- echo "Usage: licsar_make_frame.sh FRAME_ID [full_scale]" #[geocode_to_public_website]"
- echo "e.g. licsar_make_frame.sh 124D_05278_081106 0" #1"
+ echo "Usage: licsar_make_frame.sh FRAME_ID [full_scale] [fillgaps]" #[geocode_to_public_website]"
+ echo "e.g. licsar_make_frame.sh 124D_05278_081106 0 1" #1"
  echo "------"
  echo "Use geocode_to_public_website=1 if you want to update the public website geotiffs."
  echo "By default, only last 3 months of data are processed (full_scale=0) as they should exist in CEMS database."
  echo "If full_scale processing is 1, then all data are processed. Please ensure that you run following command before:"
  echo "LiCSAR_0_getFiles.py -f \$FRAME -s \$startdate -e $(date +%Y-%m-%d) -r -b Y -n -z $BATCH_CACHE_DIR/\$FRAME/db_query.list"
  echo "Also, you should have BATCH_CACHE_DIR defined prior to use the function - all data will be processed and save to this directory"
+ echo "The fillgaps would attempt to download all related SLC files from internet. Note that this is long and not recommended temporary solution"
  echo "------"
  echo "By default:"
  echo "full_scale=0"
+ echo "fillgaps=1"
  #echo "geocode_to_public_website=0"
  exit;
 fi
@@ -32,7 +34,8 @@ frame=$1
 #settings of full_scale and extra_steps - by default 0
 #these extra_steps are now just 'export to comet website'
 if [ ! -z $2 ]; then full_scale=$2; else full_scale=0; fi
-if [ ! -z $3 ]; then extra_steps=$3; else extra_steps=0; fi
+if [ ! -z $3 ]; then fillgaps=$3; else fillgaps=$full_scale; fi #ye, if only last 3 months then we should not need fillgaps
+if [ ! -z $4 ]; then extra_steps=$4; else extra_steps=0; fi
 
 if [ $full_scale -eq 1 ]; then
  echo "WARNING:"
@@ -73,7 +76,8 @@ if [ -z $LiCSAR_procdir ]; then
  echo "The procdir is not set. Did you 'module load licsar_proc'?"
  exit
 else
- public=$LiCSAR_procdir
+ public=$LiCSAR_public
+ current=$LiCSAR_procdir
 fi
 if [ ! -d $basefolder ]; then
  echo "The directory "$basefolder" does not exist. Create it first";
@@ -176,10 +180,18 @@ fi
  setFrameInactive.py $frame
  setFrameActive.py $frame
 if [ $full_scale -eq 0 ]; then
+ if [ $fillgaps -eq 1 ]; then
+  echo "Refilling the data gaps (should be ok for last 3 months data)"
+  framebatch_data_refill.sh $frame `date -d "90 days ago" +'%Y-%m-%d'`
+ fi
  echo "Preparing the frame cache (last 3 months)"
  echo "..may take some 5 minutes"
  createFrameCache_last3months.py $frame $no_of_jobs > tmp_jobid.txt
 else
+ if [ $fillgaps -eq 1 ]; then
+  echo "Refilling the data gaps"
+  framebatch_data_refill.sh $frame `date -d "90 days ago" +'%Y-%m-%d'`
+ fi
  echo "Preparing the frame cache (full scale processing)"
  echo "..may take some 15 minutes or more"
  createFrameCache.py $frame $no_of_jobs > tmp_jobid.txt
