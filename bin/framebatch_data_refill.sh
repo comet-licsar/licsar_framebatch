@@ -22,7 +22,8 @@ make_simple_polygon.sh ${frame}-poly.txt
 # to get list of files that are missing:
 ## make list from scihub
  echo "getting scihub data"
- query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date +'%Y%m%d'` 2>/dev/null
+ query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date +'%Y%m%d'` >/dev/null 2>/dev/null
+ echo "identified "`cat ${frame}_zipfile_names.list | wc -l`" extra images"
  echo "getting their expected CEMS path"
  zips2cemszips.sh ${frame}_zipfile_names.list ${frame}_zipfile.list >/dev/null
  sort -o ${frame}_zipfile.list ${frame}_zipfile.list
