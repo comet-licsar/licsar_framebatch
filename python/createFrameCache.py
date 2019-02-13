@@ -14,6 +14,7 @@ from batchEnvLib import create_lics_cache_dir
 import sys
 import datetime as dt
 import os
+import glob
 
 ################################################################################
 #get parameters
@@ -37,10 +38,12 @@ create_lics_cache_dir(frame,srcDir,cacheDir)
 ################################################################################
 # Get master date
 ################################################################################
-rslcDir = os.path.join(cacheDir,frame,'RSLC')
-dateStr = os.listdir(rslcDir)[0]
+#rslcDir = os.path.join(cacheDir,frame,'RSLC')
+#dateStr = os.listdir(rslcDir)[0]
+#mstrDate = dt.datetime.strptime(dateStr,'%Y%m%d')
+geoDir = os.path.join(cacheDir,frame,'geo')
+dateStr = glob.glob(geoDir+'/*[0-9].hgt')[0].split('/')[-1].split('.')[0]
 mstrDate = dt.datetime.strptime(dateStr,'%Y%m%d')
-
 ################################################################################
 #setup database for processing
 ################################################################################

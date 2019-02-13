@@ -53,10 +53,14 @@ def create_lics_cache_dir(frame,srcDir,cacheDir,masterDate=None):
         dateStr = masterDate.strftime('%Y%m%d')
         rslcDir = os.path.join(frameCacheDir,'RSLC',dateStr)
         if os.path.exists(rslcDir):
-            shutil.rmtree(rslcDir)
-        os.makedirs(rslcDir)
+            print('The project exists..will try to use existing RSLCs')
+            #    shutil.rmtree(rslcDir)
+        else:
+            os.makedirs(rslcDir)
         slcDir = os.path.join(frameCacheDir,'SLC',dateStr)
         slcFiles = os.listdir(slcDir)
+        #print('debug')
+        #print(slcFiles)
         while slcFiles: #Link all "slc" type files
             oldFile = slcFiles.pop()
             mtch = re.search('.*slc.*',oldFile)
@@ -64,7 +68,7 @@ def create_lics_cache_dir(frame,srcDir,cacheDir,masterDate=None):
                 newFile = re.sub('slc','rslc',oldFile)
                 oldFile = os.path.join(slcDir,oldFile)
                 newFile = os.path.join(rslcDir,newFile)
-                os.symlink(oldFile,newFile)
+                if not os.path.exists(newFile): os.symlink(oldFile,newFile)
     else:
         raise InvalidFrameError
 
