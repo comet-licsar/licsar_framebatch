@@ -108,6 +108,7 @@ if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
    echo "..downloaded correctly, ingesting to database"
    arch2DB.py -f $SLCdir/$x >/dev/null 2>/dev/null
   fi
+  chmod 777 $SLCdir/$x 2>/dev/null
  done
 fi
 
