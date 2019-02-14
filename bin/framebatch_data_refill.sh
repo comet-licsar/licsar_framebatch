@@ -25,14 +25,30 @@ make_simple_polygon.sh ${frame}-poly.txt
  query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date +'%Y%m%d'` >/dev/null 2>/dev/null
  echo "identified "`cat ${frame}_zipfile_names.list | wc -l`" extra images"
  echo "getting their expected CEMS path"
- zips2cemszips.sh ${frame}_zipfile_names.list ${frame}_zipfile.list >/dev/null
- sort -o ${frame}_zipfile.list ${frame}_zipfile.list
+ zips2cemszips.sh ${frame}_zipfile_names.list ${frame}_scihub.list >/dev/null
+ sort -o ${frame}_scihub.list ${frame}_scihub.list
 ## make list from nla
- echo "getting expected filelist from NLA"
+ echo "getting expected filelist from NLA (takes quite long)"
  LiCSAR_0_getFiles.py -f $frame -s $startdate -e `date +'%Y-%m-%d'` -z ${frame}_db_query.list
  sort -o ${frame}_db_query.list ${frame}_db_query.list
- diff  ${frame}_zipfile.list ${frame}_db_query.list | grep '^<' | cut -c 3- > ${frame}_todown
+ diff  ${frame}_scihub.list ${frame}_db_query.list | grep '^<' | cut -c 3- > ${frame}_todown
  echo "There are "`cat ${frame}_todown | wc -l`" extra images from scihub queue"
+# checking if the files from scihub exist in SLC or SLC folders..
+ if [ -d RSLC ]; then
+  echo "Previous processing exists. Preprocessed files will be removed from db_query files."
+  ls RSLC > tmp_processed.txt
+  ls SLC >> tmp_processed.txt
+  cp ${frame}_db_query.list tmp_dbquery.list
+  for file in `cat tmp_dbquery.list`; do 
+   filedate=`echo $file | rev | cut -d '/' -f1 | rev | cut -c 18-25`
+   if [ `grep -c $filedate tmp_processed.txt` -gt 0 ]; then
+    echo "The image from "$filedate" has been already processed, ignoring."
+    sed -i '/'$filedate'/d' ${frame}_db_query.list
+    sed -i '/'$filedate'/d' ${frame}_todown
+   fi
+  done
+  rm tmp_processed.txt tmp_dbquery.list
+ fi
 # checking if the NLA files exist. If not, include them for redownload
  pom=0
  for file in `cat ${frame}_db_query.list`; do 
@@ -73,26 +89,27 @@ make_simple_polygon.sh ${frame}-poly.txt
 
 ## update what is not physically existing on disk 
 ## (we assume users did the nla request before and want to fill all the unavailable data
-
-cd $SLCdir
-for x in `cat $BATCH_CACHE_DIR/$frame/${frame}_todown | rev | cut -d '/' -f1 | rev`; do
- echo "downloading file "$x" from alaska server"
- wget_alaska.sh $x >/dev/null 2>/dev/null
- zipcheck=`7za l $x | grep ERROR -A1 | tail -n1`
- if [ `echo $zipcheck | wc -c` -gt 1 ]; then echo "download error, trying once more (verbosed)"; wget_alaska.sh $x; fi
- zipcheck=`7za l $x | grep ERROR -A1 | tail -n1`
- if [ `echo $zipcheck | wc -c` -gt 1 ]; then
-  echo "The downloaded file is corrupted:"
-  ls -alh $x
-  echo $zipcheck
-  echo "...removing it (sorry)"
-  rm -rf $x
-  echo $x >> $BATCH_CACHE_DIR/$frame/${frame}_download_errors
- else
-  echo "..downloaded correctly, ingesting to database"
-  arch2DB.py -f $SLCdir/$x >/dev/null 2>/dev/null
- fi
-done
+if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
+ cd $SLCdir
+ for x in `cat $BATCH_CACHE_DIR/$frame/${frame}_todown | rev | cut -d '/' -f1 | rev`; do
+  echo "downloading file "$x" from alaska server"
+  wget_alaska.sh $x >/dev/null 2>/dev/null
+  zipcheck=`7za l $x | grep ERROR -A1 | tail -n1`
+  if [ `echo $zipcheck | wc -c` -gt 1 ]; then echo "download error, trying once more (verbosed)"; wget_alaska.sh $x; fi
+  zipcheck=`7za l $x | grep ERROR -A1 | tail -n1`
+  if [ `echo $zipcheck | wc -c` -gt 1 ]; then
+   echo "The downloaded file is corrupted:"
+   ls -alh $x
+   echo $zipcheck
+   echo "...removing it (sorry)"
+   rm -rf $x
+   echo $x >> $BATCH_CACHE_DIR/$frame/${frame}_download_errors
+  else
+   echo "..downloaded correctly, ingesting to database"
+   arch2DB.py -f $SLCdir/$x >/dev/null 2>/dev/null
+  fi
+ done
+fi
 
 cd $BATCH_CACHE_DIR/$frame
 echo "Data gap filling done"
@@ -101,4 +118,4 @@ if [ -f ${frame}_download_errors ]; then
  cat ${frame}_download_errors
 fi
 
-#note that licsar_clean should (weekly) remove files older than... a week.. from this folder
+#note that licsar_clean will (weekly) remove files older than... a week.. from this folder
