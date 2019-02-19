@@ -94,21 +94,26 @@ if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
  for x in `cat $BATCH_CACHE_DIR/$frame/${frame}_todown | rev | cut -d '/' -f1 | rev`; do
   echo "downloading file "$x" from alaska server"
   wget_alaska.sh $x >/dev/null 2>/dev/null
-  zipcheck=`7za l $x | grep ERROR -A1 | tail -n1`
-  if [ `echo $zipcheck | wc -c` -gt 1 ]; then echo "download error, trying once more (verbosed)"; wget_alaska.sh $x; fi
-  zipcheck=`7za l $x | grep ERROR -A1 | tail -n1`
-  if [ `echo $zipcheck | wc -c` -gt 1 ]; then
-   echo "The downloaded file is corrupted:"
-   ls -alh $x
-   echo $zipcheck
-   echo "...removing it (sorry)"
-   rm -rf $x
-   echo $x >> $BATCH_CACHE_DIR/$frame/${frame}_download_errors
+  if [ ! -f $x ]; then
+   echo "Some download error appeared, trying again (verbosed)"
+   wget_alaska.sh $x
   else
-   echo "..downloaded correctly, ingesting to database"
-   arch2DB.py -f $SLCdir/$x >/dev/null 2>/dev/null
+   zipcheck=`7za l $x | grep ERROR -A1 | tail -n1`
+   if [ `echo $zipcheck | wc -c` -gt 1 ]; then echo "download error, trying once more (verbosed)"; wget_alaska.sh $x; fi
+   zipcheck=`7za l $x | grep ERROR -A1 | tail -n1`
+   if [ `echo $zipcheck | wc -c` -gt 1 ]; then
+    echo "The downloaded file is corrupted:"
+    ls -alh $x
+    echo $zipcheck
+    echo "...removing it (sorry)"
+    rm -rf $x
+    echo $x >> $BATCH_CACHE_DIR/$frame/${frame}_download_errors
+   else
+    echo "..downloaded correctly, ingesting to database"
+    arch2DB.py -f $SLCdir/$x >/dev/null 2>/dev/null
+   fi
+   chmod 777 $SLCdir/$x 2>/dev/null
   fi
-  chmod 777 $SLCdir/$x 2>/dev/null
  done
 fi
 

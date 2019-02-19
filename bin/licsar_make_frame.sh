@@ -14,7 +14,7 @@ if [ -z $1 ] || [ `echo $1 | grep -c '_'` -lt 1 ]; then
  echo "------"
  echo "By default:"
  echo "full_scale=0"
- echo "fillgaps=1"
+ echo "fillgaps=1 if full_scale, otherwise 0"
  #echo "geocode_to_public_website=0"
  exit;
 fi

@@ -118,7 +118,28 @@ def set_inactive(polyid):
     conn = engine.connect()
     #Update polygon
     polyUpd = polygs.update().where(polygs.c.polyid==polyid).values(active=False)
-    return conn.execute(polyUpd)
+    a=conn.execute(polyUpd)
+    
+    #but i will also remove the non-active data:
+    acqDlt = acq_img.delete().where(acq_img.c.polyid==polyid)
+    conn.execute(acqDlt)
+    
+    slcDlt = slc.delete().where(slc.c.polyid==polyid)
+    conn.execute(slcDlt)
+    
+    rslcDlt = rslc.delete().where(rslc.c.polyid==polyid)
+    conn.execute(rslcDlt)
+    
+    ifgDlt = ifg.delete().where(ifg.c.polyid==polyid)
+    conn.execute(ifgDlt)
+    
+    unwDlt = unw.delete().where(unw.c.polyid==polyid)
+    conn.execute(unwDlt)
+    
+    jobDlt = jobs.delete().where(jobs.c.polyid==polyid)
+    conn.execute(jobDlt)
+    
+    return a
 
 ################################################################################
 def get_master(frameName):
