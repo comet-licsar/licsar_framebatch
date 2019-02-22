@@ -114,6 +114,14 @@ def set_active(polyid):
     return conn.execute(polyUpd)
 
 ################################################################################
+#def update_existing_rslcs(polyid,rslcs):
+#    conn = engine.connect()
+#    for rslc in rslcs:
+#        
+#    polyUpd = polygs.update().where(polygs.c.polyid==polyid).values(active=True)
+#    return conn.execute(polyUpd)
+
+################################################################################
 def set_inactive(polyid):
     conn = engine.connect()
     #Update polygon
@@ -368,6 +376,14 @@ def get_unbuilt_rslcs(jobID):
             .join(slc,onclause=slc.c.img_id==rslc.c.img_id)
             ).where(and_(rslc.c.job_id==jobID,rslc.c.rslc_status!=0,
                 rslc.c.rslc_status!=-6,slc.c.slc_status==0))
+
+    return pd.read_sql_query(rslcSel,engine,parse_dates=['acq_date'])
+
+def get_all_rslcs(polyid):
+
+    rslcSel = select([rslc.c.rslc_id,acq_img.c.acq_date]).select_from(
+            rslc.join(acq_img,onclause=acq_img.c.img_id==rslc.c.img_id)\
+            ).where(rslc.c.polyid==polyid)
 
     return pd.read_sql_query(rslcSel,engine,parse_dates=['acq_date'])
 

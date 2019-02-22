@@ -4,6 +4,7 @@
 #imports
 ################################################################################
 import os
+import fnmatch
 import re
 import shutil
 import glob
@@ -72,6 +73,17 @@ def create_lics_cache_dir(frame,srcDir,cacheDir,masterDate=None):
     else:
         raise InvalidFrameError
 
+def get_rslcs_from_lics(frame,srcDir,cacheDir,masterstr):
+    frameDir = srcDir + '/' + frame.split('_')[0].lstrip("0")[:-1] + '/' + frame
+    rslcs=''
+    if os.path.isdir(frameDir):
+        rslcs = fnmatch.filter(os.listdir(frameDir+'/RSLC'), '20??????')
+        if masterstr in rslcs: rslcs.remove(masterstr)
+        for r in rslcs:
+            if not os.path.exists(os.path.join(cacheDir,frame,'RSLC',r)):
+                os.symlink(os.path.join(frameDir,'RSLC',r),os.path.join(cacheDir,frame,'RSLC',r))
+        #update_existing_rslcs(frame,rslcs)
+    return rslcs
 ################################################################################
 # LiCS env
 ################################################################################

@@ -11,6 +11,7 @@ import shutil
 import sys
 import global_config as gc
 import re
+import fnmatch
 import pandas as pd
 from LiCSAR_lib.coreg_lib import *
 from LiCSAR_lib.LiCSAR_misc import *
@@ -76,7 +77,8 @@ def main(argv):
 
         #Get closes date and use as an aux
         rslcCache = os.path.join(cacheDir,frameName,'RSLC')
-        builtRslcDates = pd.to_datetime(os.listdir(rslcCache))
+        #builtRslcDates = pd.to_datetime(os.listdir(rslcCache))
+        builtRslcDates = pd.to_datetime(fnmatch.filter(os.listdir(rslcCache), '20??????'))
         builtRslcs = pd.DataFrame({'acq_date': builtRslcDates})
         builtRslcs['date_diff'] = builtRslcs['acq_date'].apply(
                 lambda x: abs(x-date)

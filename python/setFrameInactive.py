@@ -4,5 +4,5 @@ import sys
 
 frame=sys.argv[1]
 polyID = get_polyid(sys.argv[1])
-print('Deactivating polyID '+frame+' and removing related fields from framebatch database')
+print('Deactivating frame '+frame+' and removing related fields from framebatch database')
 set_inactive(polyID)

@@ -2,8 +2,8 @@
 # This function should fully update given frame by data from the last 3 months
 
 if [ -z $1 ] || [ `echo $1 | grep -c '_'` -lt 1 ]; then
- echo "Usage: licsar_make_frame.sh FRAME_ID [full_scale] [fillgaps]" #[geocode_to_public_website]"
- echo "e.g. licsar_make_frame.sh 124D_05278_081106 0 1" #1"
+ echo "Usage: licsar_make_frame.sh FRAME_ID [full_scale] [fillgaps] [startdate]" #[geocode_to_public_website]"
+ echo "e.g. licsar_make_frame.sh 124D_05278_081106 0 1 2017-06-30" #1"
  echo "------"
  echo "Use geocode_to_public_website=1 if you want to update the public website geotiffs."
  echo "By default, only last 3 months of data are processed (full_scale=0) as they should exist in CEMS database."
@@ -35,7 +35,22 @@ frame=$1
 #these extra_steps are now just 'export to comet website'
 if [ ! -z $2 ]; then full_scale=$2; else full_scale=0; fi
 if [ ! -z $3 ]; then fillgaps=$3; else fillgaps=$full_scale; fi #ye, if only last 3 months then we should not need fillgaps
-if [ ! -z $4 ]; then extra_steps=$4; else extra_steps=0; fi
+if [ ! -z $4 ]; then startdate=$4; else startdate="2014-10-10"; fi
+if [ ! -z $5 ]; then extra_steps=$5; else extra_steps=0; fi
+
+if [ `echo $startdate | cut -c8` != '-' ]; then echo "You provided wrong startdate: "$startdate; exit; fi
+if [ $fillgaps -eq 1 ]; then
+ ssh -q cems-login1.cems.rl.ac.uk exit
+ test_conn=$?
+ if [ $test_conn -gt 0 ]; then
+  echo "ERROR: No connection to your login server."
+  echo "The automatic SLC download will not work"
+  echo "(try log-out and log-in back to sci server, maybe you are in tmux since yesterday and ssh session expired?)"
+  echo "I will continue without it in 5 seconds (cancel me)"
+  sleep 5
+  fillgaps=0
+ fi
+fi
 
 if [ $full_scale -eq 1 ]; then
  echo "WARNING:"
@@ -101,28 +116,29 @@ fi
 
 
 ###functions
-function wait {
+#function wait {
  #this function has its flaws and it will not be used..
  #old waiting way
  #while [ `bjobs | grep -c $USER` -gt 0 ]; do sleep 10; done
- pom=0; jobno_start=$1; jobno_end=$2;
- echo "Waiting for the jobs to finish"
- while [ $pom -eq 0 ] ; do
-  bjobs -w -p -r -noheader | grep $USER | gawk {'print $7'} | rev | cut -d '_' -f1 | rev > tmp_running.txt
-  pom=1 #it means that if there is no unfinished process, we would continue
-  for A in `seq $jobno_start $jobno_end`; do if [ `grep -c $A tmp_running.txt` -gt 0 ]; then pom=0; fi; done
-  rm tmp_running.txt
-  sleep 60
- done
-}
+# pom=0; jobno_start=$1; jobno_end=$2;
+# echo "Waiting for the jobs to finish"
+# while [ $pom -eq 0 ] ; do
+#  bjobs -w -p -r -noheader | grep $USER | gawk {'print $7'} | rev | cut -d '_' -f1 | rev > tmp_running.txt
+#  pom=1 #it means that if there is no unfinished process, we would continue
+#  for A in `seq $jobno_start $jobno_end`; do if [ `grep -c $A tmp_running.txt` -gt 0 ]; then pom=0; fi; done
+#  rm tmp_running.txt
+#  sleep 60
+# done
+#}
 
 function prepare_job_script {
  step=$1
  stepcmd=$2
  stepsql=$3
  stepprev=$4
-
+ 
  rm $step.sh 2>/dev/null
+ rm $step.list 2>/dev/null
 # mysql command is much faster, but it is not available in every server:
 if [ ! -z `which mysql 2>/dev/null` ]; then
  mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/$stepsql.sql | grep $USER | grep $frame | sort -n > $step.list
@@ -142,6 +158,8 @@ else:
 EOF
  python getit.py
  rm getit.py
+ #too quick to write to disk J
+ sleep 2
  cat $step.list | grep $USER | grep $frame | sort -n > $step.list 
 fi
  #if [ $realjobno != `cat $step.list | wc -l` ]; then
@@ -152,21 +170,26 @@ fi
  for jobid in `cat $step.list | gawk {'print $1'} | sort -un`; do
   #get connected images from previous step
   waitText=""
+  waitcmd=""
   rm tmpText 2>/dev/null
-  for image in `grep ^$jobid $step.list | gawk {'print $3'}`; do
-   #get jobid from previous step that is connected to this image
-   grep $image $stepprev.list | gawk {'print $1'} >> tmpText
-  done
-  for jobid_prev in `cat tmpText | sort -nu`; do
+  if [ ! -z $stepprev ]; then
+   for image in `grep ^$jobid $step.list | gawk {'print $3'}`; do
+    #get jobid from previous step that is connected to this image
+    grep $image $stepprev.list | gawk {'print $1'} >> tmpText
+   done
+   for jobid_prev in `cat tmpText | sort -nu`; do
 #   grep $image $stepprev.list | gawk {'print $1'}`; do
-   waitText=$waitText" && ended("$stepprev"_"$jobid_prev")"
-  done
-  waitText=`echo $waitText | cut -c 4-`
+    waitText=$waitText" && ended("$stepprev"_"$jobid_prev")"
+   done
+   waitText=`echo $waitText | cut -c 4-`
+   waitcmd='-w "'$waitText'"'
+  fi
 #  let jline=$jline+1
 #  B=`sed -n $jline'p' $stepprev.list | gawk {'print $1'}`
   echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
-     -q $bsubquery -n 1 -W 36:00 -w \"$waitText\" $stepcmd $jobid >> $step.sh
+     -q $bsubquery -n 1 -W 36:00 $waitcmd $stepcmd $jobid >> $step.sh
  done
+ 
  rm tmpText 2>/dev/null
  chmod 770 $step.sh
  #./$step.sh
@@ -175,26 +198,29 @@ fi
 ## MAIN CODE
 ############### 
  #do not do if restarting - it will re-create the job IDs etc.
- echo "Activating the frame"
  date
  setFrameInactive.py $frame
+ echo "Activating the frame"
  setFrameActive.py $frame
 if [ $full_scale -eq 0 ]; then
+#if we work only in last 3 months data
  if [ $fillgaps -eq 1 ]; then
   echo "Refilling the data gaps (should be ok for last 3 months data)"
   framebatch_data_refill.sh $frame `date -d "90 days ago" +'%Y-%m-%d'`
  fi
  echo "Preparing the frame cache (last 3 months)"
  echo "..may take some 5 minutes"
- createFrameCache_last3months.py $frame $no_of_jobs > tmp_jobid.txt
+ #createFrameCache_last3months.py $frame $no_of_jobs > tmp_jobid.txt
+ createFrameCache.py $frame $no_of_jobs `date -d "90 days ago" +'%Y-%m-%d'` > tmp_jobid.txt
 else
+#if we want to fill gaps throughout the whole time period
  if [ $fillgaps -eq 1 ]; then
   echo "Refilling the data gaps"
-  framebatch_data_refill.sh $frame `date -d "90 days ago" +'%Y-%m-%d'`
+  framebatch_data_refill.sh $frame $startdate
  fi
  echo "Preparing the frame cache (full scale processing)"
  echo "..may take some 15 minutes or more"
- createFrameCache.py $frame $no_of_jobs > tmp_jobid.txt
+ createFrameCache.py $frame $no_of_jobs $startdate > tmp_jobid.txt
 fi
  grep first_job_id tmp_jobid.txt | gawk {'print $3'} > $logdir/job_start.txt
  if [ -z `cat $logdir/job_start.txt` ]; then echo "The frame "$frame "is erroneous and cannot be processed"; exit; fi
@@ -215,19 +241,20 @@ fi
 # 
  #getting jobIDs for mk_image:
  step=framebatch_01_mk_image
- rm $step.sh 2>/dev/null
- mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/slcQry.sql | grep $USER | grep $frame | sort -n > $step.list
+ stepcmd=ab_LiCSAR_mk_image.py
+ stepsql=slcQry
+ stepprev=''
+ #rm $step.sh 2>/dev/null
+ prepare_job_script $step $stepcmd $stepsql $stepprev
+ ./$step.sh
+ #mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/slcQry.sql | grep $USER | grep $frame | sort -n > $step.list
  realjobno=`cat framebatch_01_mk_image.list | wc -l`
- for jobid in `cat framebatch_01_mk_image.list | gawk {'print $1'} | sort -un`; do
-  echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" \
-       -J "$step"_"$jobid" -q $bsubquery -n 1 -W 12:00 ab_LiCSAR_mk_image.py $jobid >> $step.sh
- done
 
 # for A in `seq $jobno_start $jobno_end`; do
 #  echo bsub -o "$logdir/mk_image_$A.out" -e "$logdir/mk_image_$A.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $A\" -J "mk_image_$A" \
 #    -q $bsubquery -n 1 -W 12:00 ab_LiCSAR_mk_image.py $A >> framebatch_01_mk_image.sh
 # done
- chmod 770 $step.sh; ./$step.sh
+ #chmod 770 $step.sh; ./$step.sh
  #wait $jobno_start $jobno_end
 
 ###################################################### Coregistering
