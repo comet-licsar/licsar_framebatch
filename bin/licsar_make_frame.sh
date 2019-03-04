@@ -139,6 +139,7 @@ function prepare_job_script {
  
  rm $step.sh 2>/dev/null
  rm $step.list 2>/dev/null
+ echo "mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/$stepsql.sql | grep $USER | grep $frame | sort -n" > $step.sql
 # mysql command is much faster, but it is not available in every server:
 if [ ! -z `which mysql 2>/dev/null` ]; then
  mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/$stepsql.sql | grep $USER | grep $frame | sort -n > $step.list
@@ -188,6 +189,8 @@ fi
 #  B=`sed -n $jline'p' $stepprev.list | gawk {'print $1'}`
   echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
      -q $bsubquery -n 1 -W 36:00 $waitcmd $stepcmd $jobid >> $step.sh
+  echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
+     -q $bsubquery -n 1 -W 36:00 $stepcmd $jobid >> $step'_nowait.sh'
  done
  
  rm tmpText 2>/dev/null
