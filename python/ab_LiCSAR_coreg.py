@@ -35,12 +35,14 @@ class CoregEnv(LicsEnv):
         self.srcPats = ['SLC/{:%Y%m%d}.*'.format(date), #patterns to source
                 'RSLC/{:%Y%m%d}.*'.format(mstrDate),
                 'SLC/{:%Y%m%d}.*'.format(mstrDate),
-                'geo.*','DEM.*']
+                'geo','DEM']
         if auxDate:
             self.srcPats += ['RSLC/{:%Y%m%d}.*'.format(auxDate)]
         self.outPats = ['RSLC/{0:%Y%m%d}/{0:%Y%m%d}\.IW[1-3]\.rslc.*'.format(date), # Patterns to output
                         'RSLC/{0:%Y%m%d}/{0:%Y%m%d}\.rslc\.par'.format(date), # Patterns to output
                         'RSLC/{0:%Y%m%d}/{0:%Y%m%d}.*mli.*'.format(date), # Patterns to output
+                        'RSLC/{0:%Y%m%d}/{0:%Y%m%d}*.lt'.format(date),
+                        'RSLC/{0:%Y%m%d}/{0:%Y%m%d}*.off.ref*'.format(date),
                         'log.*',
                         'tab.*']
         self.srcSlcPath = 'SLC/{:%Y%m%d}'.format(date) #used to check source slc

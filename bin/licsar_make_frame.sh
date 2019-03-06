@@ -138,6 +138,7 @@ function prepare_job_script {
  stepprev=$4
  
  rm $step.sh 2>/dev/null
+ rm $step'_nowait.sh' 2>/dev/null
  rm $step.list 2>/dev/null
  echo "mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/$stepsql.sql | grep $USER | grep $frame | sort -n" > $step.sql
 # mysql command is much faster, but it is not available in every server:
@@ -194,7 +195,7 @@ fi
  done
  
  rm tmpText 2>/dev/null
- chmod 770 $step.sh
+ chmod 770 $step.sh $step'_nowait.sh'
  #./$step.sh
 }
 

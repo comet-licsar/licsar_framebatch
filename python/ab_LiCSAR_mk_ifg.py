@@ -33,7 +33,7 @@ class MkIfgEnv(LicsEnv):
                 'RSLC/{:%Y%m%d}.*'.format(dateB), 
                 'RSLC/{:%Y%m%d}.*'.format(mstrDate),
                 'SLC/{:%Y%m%d}.*'.format(mstrDate),
-                'geo.*','DEM.*']
+                'geo','DEM']
 
         self.outPats = ['IFG.*', # Patterns to output
                         'log.*',

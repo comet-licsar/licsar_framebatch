@@ -75,15 +75,25 @@ def create_lics_cache_dir(frame,srcDir,cacheDir,masterDate=None):
 
 def get_rslcs_from_lics(frame,srcDir,cacheDir,masterstr):
     frameDir = srcDir + '/' + frame.split('_')[0].lstrip("0")[:-1] + '/' + frame
-    rslcs=''
+    outrslcs=[]
     if os.path.isdir(frameDir):
         rslcs = fnmatch.filter(os.listdir(frameDir+'/RSLC'), '20??????')
         if masterstr in rslcs: rslcs.remove(masterstr)
         for r in rslcs:
-            if not os.path.exists(os.path.join(cacheDir,frame,'RSLC',r)):
-                os.symlink(os.path.join(frameDir,'RSLC',r),os.path.join(cacheDir,frame,'RSLC',r))
+            if fnmatch.filter(os.listdir(frameDir+'/RSLC/'+r), '20??????.IW?.rslc'):
+                if not os.path.exists(os.path.join(cacheDir,frame,'RSLC',r)):
+                    os.symlink(os.path.join(frameDir,'RSLC',r),os.path.join(cacheDir,frame,'RSLC',r))
+                    outrslcs.append(r)
+        #also un7zip existing RSLCs
+        rslcs7z = fnmatch.filter(os.listdir(frameDir+'/RSLC'), '20??????.7z')
+        for r in rslcs7z:
+            if not os.path.exists(os.path.join(cacheDir,frame,'RSLC',r.split('.')[0])):
+                print('Extracting '+r)
+                cmd="7za x -o"+os.path.join(cacheDir,frame,'RSLC')+" "+os.path.join(frameDir,'RSLC',r)+" >/dev/null"
+                b=os.system(cmd)
+                if os.path.exists(os.path.join(cacheDir,frame,'RSLC',r.split('.')[0])): outrslcs.append(r.split('.')[0])
         #update_existing_rslcs(frame,rslcs)
-    return rslcs
+    return outrslcs
 ################################################################################
 # LiCS env
 ################################################################################
