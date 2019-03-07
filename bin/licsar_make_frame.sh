@@ -5,9 +5,9 @@ if [ -z $1 ] || [ `echo $1 | grep -c '_'` -lt 1 ]; then
  echo "Usage: licsar_make_frame.sh FRAME_ID [full_scale] [fillgaps] [startdate]" #[geocode_to_public_website]"
  echo "e.g. licsar_make_frame.sh 124D_05278_081106 0 1 2017-06-30" #1"
  echo "------"
- echo "Use geocode_to_public_website=1 if you want to update the public website geotiffs."
+# echo "Use geocode_to_public_website=1 if you want to update the public website geotiffs."
  echo "By default, only last 3 months of data are processed (full_scale=0) as they should exist in CEMS database."
- echo "If full_scale processing is 1, then all data are processed. Please ensure that you run following command before:"
+ echo "If full_scale processing is 1, then all data are processed (unless startdate is specified). Please ensure that you run following command before:"
  echo "LiCSAR_0_getFiles.py -f \$FRAME -s \$startdate -e $(date +%Y-%m-%d) -r -b Y -n -z $BATCH_CACHE_DIR/\$FRAME/db_query.list"
  echo "Also, you should have BATCH_CACHE_DIR defined prior to use the function - all data will be processed and save to this directory"
  echo "The fillgaps would attempt to download all related SLC files from internet. Note that this is long and not recommended temporary solution"
@@ -35,7 +35,7 @@ frame=$1
 #these extra_steps are now just 'export to comet website'
 if [ ! -z $2 ]; then full_scale=$2; else full_scale=0; fi
 if [ ! -z $3 ]; then fillgaps=$3; else fillgaps=$full_scale; fi #ye, if only last 3 months then we should not need fillgaps
-if [ ! -z $4 ]; then startdate=$4; else startdate="2014-10-10"; fi
+if [ ! -z $4 ]; then startdate=$4; full_scale=1; else startdate="2014-10-10"; fi
 if [ ! -z $5 ]; then extra_steps=$5; else extra_steps=0; fi
 
 if [ `echo $startdate | cut -c8` != '-' ]; then echo "You provided wrong startdate: "$startdate; exit; fi
@@ -295,11 +295,24 @@ fi
  prepare_job_script $step $stepcmd $stepsql $stepprev
  ./$step.sh
 
+echo "All bsub jobs are sent for processing."
+
+###################################################### Gap Filling
+echo "Preparing script for gap filling"
+cat << EOF > framebatch_05_gap_filling.sh
+echo "This script is not ready yet, contact Milan or Jonathan.."
+#LiCSAR_03_mk_ifgs_jw.py -f $frame -d `pwd` > trash
+#sed 's/-//g' trash | awk '{print $1"_"$3}' | grep -v This > trash1
+#for ifg in `cat trash1`; do ls -lh IFG/$ifg/$ifg.diff | grep cannot; done &>> trash2
+#awk '{print $4}' trash2 | cut -c 5-21 | sed 's/_/ /g' > ifgs_missing.list
+#rm trash*
+EOF
+chmod 770 framebatch_05_gap_filling.sh
 
 ###################################################### Geocoding to tiffs
-echo "All bsub jobs are sent for processing."
-#echo "Sending request to generate geotiffs after it all finishes"
-cat << EOF > framebatch_05_geotiffs.sh
+echo "Preparing script for geocoding results"
+cat << EOF > framebatch_06_geotiffs.sh
+echo "This routine will be updated to allow parallel processing. Stay tuned"
 for ifg in \`ls $BATCH_CACHE_DIR/$frame/IFG/*_* -d | rev | cut -d '/' -f1 | rev\`; do
  if [ -f $BATCH_CACHE_DIR/$frame/IFG/\$ifg/\$ifg.unw ]; then
  echo "geocoding "\$ifg
@@ -307,7 +320,40 @@ for ifg in \`ls $BATCH_CACHE_DIR/$frame/IFG/*_* -d | rev | cut -d '/' -f1 | rev\
  fi
 done
 EOF
-chmod 770 framebatch_05_geotiffs.sh
+chmod 770 framebatch_06_geotiffs.sh
+
+###################################################### Baseline plot
+echo "Preparing script for generating baseline plot"
+#cat << EOF > framebatch_07_baseline_plot.sh
+#queue=cpom-comet;t=12:00
+#bsub -q $queue -W $t -o pix.out -e pix.err -J pix.txt 
+#Jonathan's approach
+#echo "Computing baselines"
+#make_bperp_4_matlab.sh
+#echo "Getting ratio of unwrapped pixels"
+#echo "(has to be parallelized)"
+#unwrapped_pixels_framebatch.sh > pix.out 2>pix.err
+#paste ${frame}_bp.list unwrapped_pixel_percent.list > ${frame}_bp_unw.list
+#echo "Generating baseline plot (takes time..)"
+#parse_list.sh ${frame}_db_query.list > ${frame}_db.list
+#baseline_qc_plot.sh ${frame}_bp_unw.list ${frame} 
+
+cat << EOF > framebatch_07_baseline_plot.sh
+make_bperp_4_matlab.sh
+if [ -f ${frame}_scihub.list ]; then
+ cp ${frame}_scihub.list tmp_scihub.list
+ parse_list.sh tmp_scihub.list > ${frame}_scihub.list
+fi
+master=\`ls geo/*.lt | xargs -I XX basename XX .lt\`
+ls RSLC/*/*.rslc.mli > base_calc.list.rslc
+ls RSLC/*/*.rslc.mli.par > base_calc.list.rslc.par
+paste base_calc.list.rslc base_calc.list.rslc.par > base_calc.list
+rm base_calc.list.rslc base_calc.list.rslc.par
+base_calc base_calc.list ./RSLC/${master}/${master}.rslc.mli.par bperp_aqs.list itab.list 0 0
+rm base_calc.log base.out
+bperp_framebatch.py -i bperp_aqs.list -f $frame -c 0
+EOF
+chmod 770 framebatch_07_baseline_plot.sh
 
 # I disabled it since it wasn't really starting.. too complicated -w , I guess J
 # bsub -o "$logdir/geotiffs.out" -e "$logdir/geotiffs.out" -J "geotiffs_$frame" \

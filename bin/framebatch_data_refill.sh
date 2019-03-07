@@ -30,10 +30,12 @@ make_simple_polygon.sh ${frame}-poly.txt
  zips2cemszips.sh ${frame}_zipfile_names.list ${frame}_scihub.list >/dev/null
  sort -o ${frame}_scihub.list ${frame}_scihub.list
 ## make list from nla
+if [ ! -f ${frame}_db_query.list ]; then
  echo "getting expected filelist from NLA (takes quite long - coffee break)"
  echo "*******"
  LiCSAR_0_getFiles.py -f $frame -s $startdate -e `date +'%Y-%m-%d'` -z ${frame}_db_query.list
  echo "*******"
+fi
  sort -o ${frame}_db_query.list ${frame}_db_query.list
  diff  ${frame}_scihub.list ${frame}_db_query.list | grep '^<' | cut -c 3- > ${frame}_todown
  echo "There are "`cat ${frame}_todown | wc -l`" extra images, not currently existing on CEMS disk"
@@ -96,15 +98,15 @@ echo "This means you have now "`cat ${frame}_todown | wc -l`" frame dates to use
  for file in `cat ${frame}_todown`; do 
    filename=`echo $file | rev | cut -d '/' -f1 | rev`
    if [ -f $file ]; then
-     echo "A file that should be downloaded is actually existing in /neodc. It will be indexed to licsinfo instead."
+     echo "A file "$filename" is actually existing in /neodc. It will be indexed to licsinfo instead of downloading."
      arch2DB.py -f $file >/dev/null 2>/dev/null
      pom=1;
      sed -i '/'$filename'/d' ${frame}_todown
-   fi
-   if [ -f $SLCdir/$filename ]; then
-     echo "This file has already been downloaded"
+   else
+    if [ -f $SLCdir/$filename ]; then
+     echo "The file "$filename" has already been downloaded"
      zipcheck=`7za l $SLCdir/$filename | grep ERROR -A1 | tail -n1`
-     if [ `echo $zipcheck | wc -m` -gt 0 ]; then
+     if [ `echo $zipcheck | wc -m` -gt 1 ]; then
        echo "..however it is broken:"
        ls -alh $SLCdir/$filename
        echo "zip error: "$zipcheck
@@ -114,8 +116,10 @@ echo "This means you have now "`cat ${frame}_todown | wc -l`" frame dates to use
        sed -i '/'$filename'/d' ${frame}_todown
        echo "..ingesting to database"
        arch2DB.py -f $SLCdir/$filename >/dev/null 2>/dev/null
+       sed -i '/'$filename'/d' ${frame}_todown
        pom=1
      fi
+    fi
    fi
  done
  filestodown=`cat ${frame}_todown | wc -l`

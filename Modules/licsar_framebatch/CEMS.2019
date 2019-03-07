@@ -12,8 +12,12 @@ if { [module-info mode load] || [module-info mode switch2] } {
     if { ![is-loaded licsar_proc] } {
         module load licsar_proc/CEMS.2019
         }
+    if { ![is-loaded gmt] } {
+        module load gmt
+        }
     }
 prereq licsar_proc
+prereq gmt
                 
 set grouppath "/gws/nopw/j04/nceo_geohazards_vol1"
 set gwsSoftwarePath "$grouppath/software"
