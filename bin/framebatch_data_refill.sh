@@ -2,6 +2,13 @@
 #procdir=$BATCH_CACHE_DIR
 curdir=$LiCSAR_procdir
 SLCdir=$LiCSAR_SLC
+USE_SSH_DOWN=0 #if the wget error is related to SSL blocking, set this to 1
+
+if [ -z $2 ]; then
+ echo "Parameters are: FRAME STARTDATE"
+ echo "e.g. 007D_05286_131310 2014-10-10"
+ exit
+fi
 
 frame=$1
 startdate=$2 #should be as 2014-10-10
@@ -131,31 +138,36 @@ echo "This means you have now "`cat ${frame}_todown | wc -l`" frame dates to use
 ## (we assume users did the nla request before and want to fill all the unavailable data
 ## update 21-02-2019: CEMS disallows secure connection
 ## doing workaround through xfer server (or login server if you do not have approved xfer service)
-xferserver=jasmin-xfer1.ceda.ac.uk
-#testing connection
-ssh -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver exit
-test_conn=$?
-if [ $test_conn -eq 0 ]; then
- echo "will use XFER server to download data"
- sshout=$SLCdir
- sshserver=$xferserver
- wgetcmd=`which wget_alaska`
-else
- echo "will use login server to download"
- echo "please apply for XFER service in JASMIN website"
- echo "(as a workaround, will use your home folder to download..will clean afterwards)"
- sshdown="ssh cems-login1.cems.rl.ac.uk"
- sshout=~/temp_licsar_down
- mkdir -p $sshout
- cp `which wget_alaska` $sshout/.
- wgetcmd=`$sshout/wget_alaska`
- sshserver=cems-login1.cems.rl.ac.uk
- echo "please delete this files as temporary - they were created as workaround to data download. Normally they should be cleaned" > $sshout/README
-fi
-
-#bash workaround to aliases
+## update 08-03-2019: it seems it was something temporary in CEMS. It works again
+## returning back to the direct download......this is real headache
+ #bash workaround to aliases
 shopt -s expand_aliases
-alias sshdown=`echo ssh -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $sshserver "'cd " $sshout "; export LiCSAR_configpath=$LiCSAR_configpath; $wgetcmd '"`
+if [ $USE_SSH_DOWN -eq 1 ]; then
+ xferserver=jasmin-xfer1.ceda.ac.uk
+ #testing connection
+ ssh -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver exit
+ test_conn=$?
+ if [ $test_conn -eq 0 ]; then
+  echo "will use XFER server to download data"
+  sshout=$SLCdir
+  sshserver=$xferserver
+  wgetcmd=`which wget_alaska`
+ else
+  echo "will use login server to download"
+  echo "please apply for XFER service in JASMIN website"
+  echo "(as a workaround, will use your home folder to download..will clean afterwards)"
+  sshdown="ssh cems-login1.cems.rl.ac.uk"
+  sshout=~/temp_licsar_down
+  mkdir -p $sshout
+  cp `which wget_alaska` $sshout/.
+  wgetcmd=`$sshout/wget_alaska`
+  sshserver=cems-login1.cems.rl.ac.uk
+  echo "please delete this files as temporary - they were created as workaround to data download. Normally they should be cleaned" > $sshout/README
+ fi
+ alias sshdown=`echo ssh -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $sshserver "'cd " $sshout "; export LiCSAR_configpath=$LiCSAR_configpath; $wgetcmd '"`
+else
+ alias sshdown=wget_alaska
+fi
 
 if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
  cd $SLCdir
