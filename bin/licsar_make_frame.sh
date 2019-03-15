@@ -299,8 +299,11 @@ echo "All bsub jobs are sent for processing."
 
 ###################################################### Gap Filling
 echo "Preparing script for gap filling"
+NBATCH=5
 cat << EOF > framebatch_05_gap_filling.sh
-echo "This script is not ready yet, contact Milan or Jonathan.."
+#echo "This script is not ready yet, contact Milan or Jonathan.."
+echo "this is a preliminary version of gapfilling (but should work)"
+framebatch_gapfill.sh $NBATCH
 #LiCSAR_03_mk_ifgs_jw.py -f $frame -d `pwd` > trash
 #sed 's/-//g' trash | awk '{print $1"_"$3}' | grep -v This > trash1
 #for ifg in `cat trash1`; do ls -lh IFG/$ifg/$ifg.diff | grep cannot; done &>> trash2
@@ -349,7 +352,7 @@ ls RSLC/*/*.rslc.mli > base_calc.list.rslc
 ls RSLC/*/*.rslc.mli.par > base_calc.list.rslc.par
 paste base_calc.list.rslc base_calc.list.rslc.par > base_calc.list
 rm base_calc.list.rslc base_calc.list.rslc.par
-base_calc base_calc.list ./RSLC/${master}/${master}.rslc.mli.par bperp_aqs.list itab.list 0 0
+base_calc base_calc.list ./RSLC/\$master/\$master.rslc.mli.par bperp_aqs.list itab.list 0 0
 rm base_calc.log base.out
 bperp_framebatch.py -i bperp_aqs.list -f $frame -c 0
 EOF

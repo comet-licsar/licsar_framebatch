@@ -379,6 +379,14 @@ def get_unbuilt_rslcs(jobID):
 
     return pd.read_sql_query(rslcSel,engine,parse_dates=['acq_date'])
 
+def get_all_slcs(polyid):
+
+    slcSel = select([slc.c.slc_id,acq_img.c.acq_date]).select_from(
+            slc.join(acq_img,onclause=acq_img.c.img_id==slc.c.img_id)\
+            ).where(slc.c.polyid==polyid)
+
+    return pd.read_sql_query(slcSel,engine,parse_dates=['acq_date'])
+
 def get_all_rslcs(polyid):
 
     rslcSel = select([rslc.c.rslc_id,acq_img.c.acq_date]).select_from(

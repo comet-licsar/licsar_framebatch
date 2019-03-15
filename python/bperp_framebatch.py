@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/bin/python
+
 import glob
 import os
 import sys
@@ -96,15 +97,10 @@ if __name__ == '__main__':
 
     # currently using unfiltered coherence, can change to .filt.cc
     for idx,ifg in enumerate(ifg_list):
-        filecc='IFG/'+ifg+'/'+ifg+cc_type
-        try:
-            cc = np.fromfile(filecc, dtype='>f4')
-            cc[np.where(np.logical_or(cc==0,cc<=float(inps.coh)))] = np.nan
-            unw_pix_perc[idx] = (np.nansum(cc)/np.nansum(mstr_rslc))*100
-            print('Unwrapped pixel percentage for '+ifg+': '+str(unw_pix_perc[idx]))
-        except:
-            print('Coherence file read error. Setting to 0.')
-            unw_pix_perc[idx] = 0
+        cc = np.fromfile('IFG/'+ifg+'/'+ifg+cc_type, dtype='>f4')
+        cc[np.where(np.logical_or(cc==0,cc<=float(inps.coh)))] = np.nan
+        unw_pix_perc[idx] = (np.nansum(cc)/np.nansum(mstr_rslc))*100
+        print('Unwrapped pixel percentage for '+ifg+': '+str(unw_pix_perc[idx]))
 
     # plotting routines
     print('Plotting Bperp/Bt+Coherence.')
@@ -146,27 +142,28 @@ if __name__ == '__main__':
     print("Number of scihub acquisitions: ",len(scihub_dates))
 
     # ASF list
-    #asf_list = []
-    #with open(inps.frame+'_todown', 'r') as f:
-    #    for line in f:
-    #        if line[1:6] == 'neodc':
-    #            bn = os.path.basename(line)[17:25]
-    #            if bn not in asf_list:
-    #                asf_list.append(bn)
-    #        elif line[1:4] == 'gws':
-    #            bn = os.path.basename(line)[17:25]
-    #            if bn not in asf_list:
-    #                asf_list.append(bn)
-    #        else:
-    #            print('WARNING: file path in ASF list in an unrecognised path.')
-    #        
-    #asf_dates = date2dec(np.asarray(asf_list))
-    #print("Number of dates that needed files downloaded via ASF: ",len(asf_dates))
+    asf_list = []
+    with open(inps.frame+'_todown', 'r') as f:
+        for line in f:
+            if line[1:6] == 'neodc':
+                bn = os.path.basename(line)[17:25]
+                if bn not in asf_list:
+                    asf_list.append(bn)
+            elif line[1:4] == 'gws':
+                bn = os.path.basename(line)[17:25]
+                if bn not in asf_list:
+                    asf_list.append(bn)
+            else:
+                print('WARNING: file path in ASF list in an unrecognised path.')
+            
+    asf_dates = date2dec(np.asarray(asf_list))
+    print("Number of dates that needed files downloaded via ASF: ",len(asf_dates))
     
     ax.scatter(scihub_dates, (np.ones(len(scihub_dates))*(np.amin(bp_pb)-50)) ,facecolor='darkgrey',label='Available on Scihub')
-    #ax.scatter(asf_dates, (np.ones(len(asf_dates))*(np.amin(bp_pb)-40)) ,facecolor='lightcoral',label='Required ASF download')
+    ax.scatter(asf_dates, (np.ones(len(asf_dates))*(np.amin(bp_pb)-40)) ,facecolor='lightcoral',label='Required ASF download')
     ax.scatter(bp_aq, (np.ones(len(bp_aq))*(np.amin(bp_pb)-30)) ,facecolor='deepskyblue',label='Processed to UNW')
     ax.legend(loc='upper right',fontsize=16)
     
     plt.savefig(inps.frame+'_bperp_unw.pdf', format='pdf')
-    plt.show()
+    plt.savefig(inps.frame+'_bperp_unw.png', format='png')
+    #plt.show()
