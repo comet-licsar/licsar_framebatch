@@ -2,19 +2,21 @@
 # This function should fully update given frame by data from the last 3 months
 
 if [ -z $1 ] || [ `echo $1 | grep -c '_'` -lt 1 ]; then
- echo "Usage: licsar_make_frame.sh FRAME_ID [full_scale] [fillgaps] [startdate]" #[geocode_to_public_website]"
- echo "e.g. licsar_make_frame.sh 124D_05278_081106 0 1 2017-06-30" #1"
+ echo "Usage: licsar_make_frame.sh FRAME_ID [full_scale] [autodownload] [startdate] [enddate]" #[geocode_to_public_website]"
+ echo "e.g. licsar_make_frame.sh 124D_05278_081106 0 1 2017-06-30 2019-01-01" #1"
  echo "------"
 # echo "Use geocode_to_public_website=1 if you want to update the public website geotiffs."
  echo "By default, only last 3 months of data are processed (full_scale=0) as they should exist in CEMS database."
- echo "If full_scale processing is 1, then all data are processed (unless startdate is specified). Please ensure that you run following command before:"
+ echo "If full_scale processing is 1, then all data are processed (unless startdate and/or enddate is specified)."
+ echo "Please ensure that you run following command before:"
  echo "LiCSAR_0_getFiles.py -f \$FRAME -s \$startdate -e $(date +%Y-%m-%d) -r -b Y -n -z $BATCH_CACHE_DIR/\$FRAME/db_query.list"
  echo "Also, you should have BATCH_CACHE_DIR defined prior to use the function - all data will be processed and save to this directory"
- echo "The fillgaps would attempt to download all related SLC files from internet. Note that this is long and not recommended temporary solution"
+ echo "The autodownload would attempt to download all related SLC files from internet if they are physically not available."
+ echo "Note that this is slow and not recommended for full_scale without NLA."
  echo "------"
  echo "By default:"
  echo "full_scale=0"
- echo "fillgaps=1 if full_scale, otherwise 0"
+ echo "autodownload=1 if full_scale, otherwise 0"
  #echo "geocode_to_public_website=0"
  exit;
 fi
@@ -36,21 +38,24 @@ frame=$1
 if [ ! -z $2 ]; then full_scale=$2; else full_scale=0; fi
 if [ ! -z $3 ]; then fillgaps=$3; else fillgaps=$full_scale; fi #ye, if only last 3 months then we should not need fillgaps
 if [ ! -z $4 ]; then startdate=$4; full_scale=1; else startdate="2014-10-10"; fi
-if [ ! -z $5 ]; then extra_steps=$5; else extra_steps=0; fi
+if [ ! -z $5 ]; then enddate=$5; fi
+if [ ! -z $6 ]; then extra_steps=$6; else extra_steps=0; fi
 
 if [ `echo $startdate | cut -c8` != '-' ]; then echo "You provided wrong startdate: "$startdate; exit; fi
-if [ $fillgaps -eq 1 ]; then
- ssh -q cems-login1.cems.rl.ac.uk exit
- test_conn=$?
- if [ $test_conn -gt 0 ]; then
-  echo "ERROR: No connection to your login server."
-  echo "The automatic SLC download will not work"
-  echo "(try log-out and log-in back to sci server, maybe you are in tmux since yesterday and ssh session expired?)"
-  echo "I will continue without it in 5 seconds (cancel me)"
-  sleep 5
-  fillgaps=0
- fi
-fi
+if [ `echo $enddate | cut -c8` != '-' ]; then echo "You provided wrong enddate: "$enddate; exit; fi
+#this was needed for the download workaround but it is not necessary anymore
+#if [ $fillgaps -eq 1 ]; then
+# ssh -q cems-login1.cems.rl.ac.uk exit
+# test_conn=$?
+# if [ $test_conn -gt 0 ]; then
+#  echo "ERROR: No connection to your login server."
+#  echo "The automatic SLC download will not work"
+#  echo "(try log-out and log-in back to sci server, maybe you are in tmux since yesterday and ssh session expired?)"
+#  echo "I will continue without it in 5 seconds (cancel me)"
+#  sleep 5
+#  fillgaps=0
+# fi
+#fi
 
 if [ $full_scale -eq 1 ]; then
  echo "WARNING:"
@@ -220,11 +225,11 @@ else
 #if we want to fill gaps throughout the whole time period
  if [ $fillgaps -eq 1 ]; then
   echo "Refilling the data gaps"
-  framebatch_data_refill.sh $frame $startdate
+  framebatch_data_refill.sh $frame $startdate $enddate
  fi
  echo "Preparing the frame cache (full scale processing)"
  echo "..may take some 15 minutes or more"
- createFrameCache.py $frame $no_of_jobs $startdate > tmp_jobid.txt
+ createFrameCache.py $frame $no_of_jobs $startdate $enddate > tmp_jobid.txt
 fi
  grep first_job_id tmp_jobid.txt | gawk {'print $3'} > $logdir/job_start.txt
  if [ -z `cat $logdir/job_start.txt` ]; then echo "The frame "$frame "is erroneous and cannot be processed"; exit; fi

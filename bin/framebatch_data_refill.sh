@@ -5,13 +5,14 @@ SLCdir=$LiCSAR_SLC
 USE_SSH_DOWN=0 #if the wget error is related to SSL blocking, set this to 1
 
 if [ -z $2 ]; then
- echo "Parameters are: FRAME STARTDATE"
+ echo "Parameters are: FRAME STARTDATE [ENDDATE]"
  echo "e.g. 007D_05286_131310 2014-10-10"
  exit
 fi
 
 frame=$1
 startdate=$2 #should be as 2014-10-10
+if [ ! -z $3 ]; then enddate=$3; fi
 
 if [[ ! `echo $frame | cut -d '_' -f3 | cut -c 6` == ?([0-9]) ]]; then echo 'frame wrongly set: '$frame; exit; fi
 if [ ! -d $BATCH_CACHE_DIR/$frame ]; then echo 'this frame was not started by framebatch'; exit; fi
@@ -31,7 +32,11 @@ make_simple_polygon.sh ${frame}-poly.txt
 # to get list of files that are missing:
 ## make list from scihub
  echo "getting scihub data"
- query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date +'%Y%m%d'` >/dev/null 2>/dev/null
+ if [ ! -z $enddate ]; then
+   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date +'%Y%m%d'` `echo $enddate | sed 's/-//g'` `date +'%Y%m%d'` >/dev/null 2>/dev/null
+  else
+   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date +'%Y%m%d'` >/dev/null 2>/dev/null
+ fi
  echo "identified "`cat ${frame}_zipfile_names.list | wc -l`" images"
  echo "getting their expected CEMS path"
  zips2cemszips.sh ${frame}_zipfile_names.list ${frame}_scihub.list >/dev/null
@@ -40,7 +45,11 @@ make_simple_polygon.sh ${frame}-poly.txt
 if [ ! -f ${frame}_db_query.list ]; then
  echo "getting expected filelist from NLA (takes quite long - coffee break)"
  echo "*******"
- LiCSAR_0_getFiles.py -f $frame -s $startdate -e `date +'%Y-%m-%d'` -z ${frame}_db_query.list
+ if [ ! -z $enddate ]; then
+   LiCSAR_0_getFiles.py -f $frame -s $startdate -e $enddate -z ${frame}_db_query.list
+  else
+   LiCSAR_0_getFiles.py -f $frame -s $startdate -e `date +'%Y-%m-%d'` -z ${frame}_db_query.list
+ fi
  echo "*******"
 fi
  sort -o ${frame}_db_query.list ${frame}_db_query.list

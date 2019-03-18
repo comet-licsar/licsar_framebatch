@@ -11,13 +11,16 @@ from batchDBLib import get_polyid,set_master,add_acq_images,\
                     batch_link_ifgs_to_new_jobs,\
                     batch_link_unws_to_new_jobs,\
                     get_all_rslcs,set_rslc_status,\
-                    get_all_slcs,set_slc_status
-from batchEnvLib import create_lics_cache_dir, get_rslcs_from_lics
+                    get_all_slcs,set_slc_status,\
+                    get_all_ifgs,set_ifg_status,\
+                    get_all_unws,set_unw_status
+from batchEnvLib import create_lics_cache_dir, get_rslcs_from_lics, get_ifgs_from_lics
 import sys
 import datetime as dt
 import os
 import glob
 import fnmatch
+import pandas as pd
 
 ################################################################################
 #get parameters
@@ -26,9 +29,15 @@ frame = sys.argv[1]
 batchN = int(sys.argv[2])
 
 #something extra - assuming that 3rd argument would be starting date:
+startdate = ''
+enddate = ''
 if len(sys.argv) > 3:
     startdate = str(sys.argv[3])
     startdate = dt.datetime.strptime(startdate,'%Y-%m-%d')
+#if 4th argument is given, it will be the enddate
+if len(sys.argv) > 4:
+    enddate = str(sys.argv[4])
+    enddate = dt.datetime.strptime(enddate,'%Y-%m-%d')
 
 srcDir = config.get('Env','SourceDir')
 try:
@@ -58,41 +67,68 @@ mstrDate = dt.datetime.strptime(dateStr,'%Y%m%d')
 ################################################################################
 polyid = get_polyid(frame)
 acq_imgs = add_acq_images(polyid)
-set_master(polyid,mstrDate)
+masterset = set_master(polyid,mstrDate)
 acq_imgs = acq_imgs[acq_imgs['acq_date']!=mstrDate]
 #start from startingdate
 if startdate:
     acq_imgs = acq_imgs[acq_imgs['acq_date']>startdate]
+if enddate:
+    acq_imgs = acq_imgs[acq_imgs['acq_date']<enddate]
 
 #remove existing rslc dates from the list 
 #(only for make_img list since rslcs should be used further for ifgs)
-existing_acq = get_rslcs_from_lics(frame,srcDir,cacheDir,dateStr)
-acq_imgs2 = acq_imgs
-for r in existing_acq:
-    acq_imgs2 = acq_imgs2[acq_imgs2.acq_date != dt.datetime.strptime(r,'%Y%m%d')]
+date_strings = [dt.strftime("%Y%m%d") for dt in pd.to_datetime(acq_imgs['acq_date']).dt.date.tolist()]
 
-slcs = create_slcs(polyid,acq_imgs2)
+#get acquisitions exising in lics db
+#(this will make links and decompress the lics db files to cacheDir)
+print('Getting existing RSLCs from LiCS database')
+existing_acq_lics = get_rslcs_from_lics(frame,srcDir,cacheDir,date_strings)
+
+#get final acquisitions list for those existing in the RSLC processing directory
+existing_acq = fnmatch.filter(os.listdir(cacheDir+'/'+frame+'/RSLC'), '20??????')
+
+#acq_imgs2 = acq_imgs
+#for r in existing_acq:
+#    acq_imgs2 = acq_imgs2[acq_imgs2.acq_date != dt.datetime.strptime(r,'%Y%m%d')]
+
+#slcs = create_slcs(polyid,acq_imgs2)
+slcs = create_slcs(polyid,acq_imgs)
 rslcs = create_rslcs(polyid,acq_imgs)
 #
 #for all rslcs and slcs that already exist in current, make them set 'done'
-rslcids=get_all_rslcs(polyid)
-slcids=get_all_slcs(polyid)
+rslcids = get_all_rslcs(polyid)
+slcids = get_all_slcs(polyid)
 
-#exclude also RSLCs existing in the RSLC processing directory
-existing_acq.append(fnmatch.filter(os.listdir(cacheDir+'/'+frame+'/RSLC'), '20??????'))
 if rslcids.rslc_id.count():
     for acq in existing_acq:
         if dt.datetime.strptime(acq,'%Y%m%d').date() in rslcids.acq_date.dt.date.tolist():
             rslcID=int(rslcids[rslcids.acq_date == dt.datetime.strptime(acq,'%Y%m%d')].rslc_id)
             set_rslc_status(rslcID,0)
-            try:
-                slcID=int(slcids[slcids.acq_date == dt.datetime.strptime(acq,'%Y%m%d')].slc_id)
-            try:
-                set_slc_status(slcID,0)
+            slcID=int(slcids[slcids.acq_date == dt.datetime.strptime(acq,'%Y%m%d')].slc_id)
+            set_slc_status(slcID,0)
+
 
 ifgs = create_ifgs(polyid,acq_imgs)
 unws = create_unws(polyid,acq_imgs)
 
+print('Getting existing interferograms from LiCS database')
+existing_ifgs_lics = get_ifgs_from_lics(frame,srcDir,cacheDir)
+existing_ifgs = fnmatch.filter(os.listdir(cacheDir+'/'+frame+'/IFG'), '20??????_20??????')
+ifgids = get_all_ifgs(polyid)
+unwids = get_all_unws(polyid)
+for ifg in existing_ifgs:
+    rslcA = ifg.split('_')[0]
+    rslcB = ifg.split('_')[1]
+    i = ifgids.loc[(ifgids['acq_date_1'].dt.date == dt.datetime.strptime(rslcA,'%Y%m%d').date())\
+            & (ifgids['acq_date_2'].dt.date == dt.datetime.strptime(rslcB,'%Y%m%d').date()) ]
+    if not i.empty:
+        ifgID = int(i.ifg_id)
+        set_ifg_status(ifgID,0)
+        if os.path.exists(os.path.join(cacheDir,frame,'IFG',ifg,ifg+'.unw')):
+            u = unwids.loc[(unwids['acq_date_1'].dt.date == dt.datetime.strptime(rslcA,'%Y%m%d').date())\
+                & (unwids['acq_date_2'].dt.date == dt.datetime.strptime(rslcB,'%Y%m%d').date()) ]
+            unwID = int(u.unw_id)
+            set_unw_status(unwID,0)
 
 batch_link_slcs_to_new_jobs(polyid,user,slcs,batchN)
 #the rslcs job linking should be improved, but it is ok this way..

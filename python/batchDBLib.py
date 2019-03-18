@@ -395,6 +395,38 @@ def get_all_rslcs(polyid):
 
     return pd.read_sql_query(rslcSel,engine,parse_dates=['acq_date'])
 
+def get_all_ifgs(polyid):
+    imgA = acq_img.alias()
+    imgB = acq_img.alias()
+    rslcA = rslc.alias()
+    rslcB = rslc.alias()
+    ifgSel = select([ifg.c.ifg_id,imgA.c.acq_date.label('acq_date_1'),
+            imgB.c.acq_date.label('acq_date_2')]).select_from(
+            ifg.join(imgA,onclause=imgA.c.img_id==ifg.c.img_id_1)\
+            .join(imgB,onclause=imgB.c.img_id==ifg.c.img_id_2)\
+            .join(rslcA,onclause=rslcA.c.img_id==ifg.c.img_id_1)\
+            .join(rslcB,onclause=rslcB.c.img_id==ifg.c.img_id_2)
+            ).where(rslcA.c.polyid==polyid)
+            #and_(ifg.c.job_id==jobID,ifg.c.ifg_status!=0,
+            #     rslcA.c.rslc_status==0,rslcB.c.rslc_status==0))
+    return pd.read_sql_query(ifgSel,engine,parse_dates=['acq_date_1','acq_date_2'])
+
+def get_all_unws(polyid):
+    imgA = acq_img.alias()
+    imgB = acq_img.alias()
+    rslcA = rslc.alias()
+    rslcB = rslc.alias()
+    unwSel = select([unw.c.unw_id,imgA.c.acq_date.label('acq_date_1'),
+            imgB.c.acq_date.label('acq_date_2')]).select_from(
+            unw.join(imgA,onclause=imgA.c.img_id==unw.c.img_id_1)\
+            .join(imgB,onclause=imgB.c.img_id==unw.c.img_id_2)\
+            .join(rslcA,onclause=rslcA.c.img_id==unw.c.img_id_1)\
+            .join(rslcB,onclause=rslcB.c.img_id==unw.c.img_id_2)
+            ).where(rslcA.c.polyid==polyid)
+            #and_(ifg.c.job_id==jobID,ifg.c.ifg_status!=0,
+            #     rslcA.c.rslc_status==0,rslcB.c.rslc_status==0))
+    return pd.read_sql_query(unwSel,engine,parse_dates=['acq_date_1','acq_date_2'])
+
 ################################################################################
 def get_built_rslcs(polyid):
 
@@ -584,6 +616,20 @@ def set_rslc_status(rslcID,rslcStat):
     
     rslcUpd = rslc.update().where(rslc.c.rslc_id==rslcID).values(rslc_status=rslcStat)
     conn.execute(rslcUpd)
+
+def get_rslc_status(rslcID):
+    conn = engine.connect()
+    rslcSel = select([rslc.c.rslc_status]).select_from(rslc).where(rslc.c.rslc_id==rslcID)
+    sqlRes = conn.execute(rslcSel)
+    a = sqlRes.fetchall()
+    return int(str(a[0]).replace('(','').split(',')[0])
+
+def get_slc_status(slcID):
+    conn = engine.connect()
+    slcSel = select([slc.c.slc_status]).select_from(slc).where(slc.c.slc_id==slcID)
+    sqlRes = conn.execute(slcSel)
+    a = sqlRes.fetchall()
+    return int(str(a[0]).replace('(','').split(',')[0])
 
 ################################################################################
 def set_ifg_status(ifgID,ifgStat):
