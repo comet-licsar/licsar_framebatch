@@ -37,12 +37,17 @@ frame=$1
 #these extra_steps are now just 'export to comet website'
 if [ ! -z $2 ]; then full_scale=$2; else full_scale=0; fi
 if [ ! -z $3 ]; then fillgaps=$3; else fillgaps=$full_scale; fi #ye, if only last 3 months then we should not need fillgaps
-if [ ! -z $4 ]; then startdate=$4; full_scale=1; else startdate="2014-10-10"; fi
-if [ ! -z $5 ]; then enddate=$5; fi
+if [ ! -z $4 ]; then 
+ startdate=$4; full_scale=1;
+ if [ `echo $startdate | cut -c8` != '-' ]; then echo "You provided wrong startdate: "$startdate; exit; fi
+ else startdate="2014-10-10";
+fi
+if [ ! -z $5 ]; then
+ enddate=$5;
+ if [ `echo $enddate | cut -c8` != '-' ]; then echo "You provided wrong enddate: "$enddate; exit; fi
+fi
 if [ ! -z $6 ]; then extra_steps=$6; else extra_steps=0; fi
 
-if [ `echo $startdate | cut -c8` != '-' ]; then echo "You provided wrong startdate: "$startdate; exit; fi
-if [ `echo $enddate | cut -c8` != '-' ]; then echo "You provided wrong enddate: "$enddate; exit; fi
 #this was needed for the download workaround but it is not necessary anymore
 #if [ $fillgaps -eq 1 ]; then
 # ssh -q cems-login1.cems.rl.ac.uk exit
