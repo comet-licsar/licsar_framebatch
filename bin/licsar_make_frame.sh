@@ -70,7 +70,7 @@ if [ $full_scale -eq 1 ]; then
  echo "If you didn't, please cancel it now (CTRL-C)"
  sleep 5
  echo "..waited 5 sec. Continuing"
- no_of_jobs=20
+ no_of_jobs=40
 else
  no_of_jobs=5 #enough for last 3 months data
 fi
@@ -81,7 +81,8 @@ fi
 if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
   bsubquery='cpom-comet'
  else
-  bsubquery='par-single'
+  #bsubquery='par-single' #this one is for multinode.. let's keep it in one only
+  bsubquery='short-serial'
 fi
 
 #testing.. but perhaps helps in getting proper num threads in CEMS environment
@@ -199,9 +200,9 @@ fi
 #  let jline=$jline+1
 #  B=`sed -n $jline'p' $stepprev.list | gawk {'print $1'}`
   echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
-     -q $bsubquery -n 1 -W 36:00 $waitcmd $stepcmd $jobid >> $step.sh
+     -q $bsubquery -n 1 -W 23:59 $waitcmd $stepcmd $jobid >> $step.sh
   echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
-     -q $bsubquery -n 1 -W 36:00 $stepcmd $jobid >> $step'_nowait.sh'
+     -q $bsubquery -n 1 -W 23:59 $stepcmd $jobid >> $step'_nowait.sh'
  done
  
  rm tmpText 2>/dev/null
@@ -309,17 +310,16 @@ echo "All bsub jobs are sent for processing."
 
 ###################################################### Gap Filling
 echo "Preparing script for gap filling"
-NBATCH=5
+NBATCH=2
 cat << EOF > framebatch_05_gap_filling.sh
-#echo "This script is not ready yet, contact Milan or Jonathan.."
 echo "this is a preliminary version of gapfilling (but should work)"
 framebatch_gapfill.sh $NBATCH
+EOF
 #LiCSAR_03_mk_ifgs_jw.py -f $frame -d `pwd` > trash
 #sed 's/-//g' trash | awk '{print $1"_"$3}' | grep -v This > trash1
 #for ifg in `cat trash1`; do ls -lh IFG/$ifg/$ifg.diff | grep cannot; done &>> trash2
 #awk '{print $4}' trash2 | cut -c 5-21 | sed 's/_/ /g' > ifgs_missing.list
 #rm trash*
-EOF
 chmod 770 framebatch_05_gap_filling.sh
 
 ###################################################### Geocoding to tiffs

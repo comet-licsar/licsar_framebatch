@@ -10,7 +10,8 @@ if [ `echo $frame | cut -c 11` != '_' ]; then echo "ERROR, you are not in FRAME 
 if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
   bsubquery='cpom-comet'
  else
-  bsubquery='par-single'
+  #bsubquery='par-single'
+  bsubquery='short-serial'
 fi
 mkdir gapfill_job 2>/dev/null
 
@@ -21,7 +22,7 @@ if [ `cat gapfill_job/unw_correct.txt 2>/dev/null | wc -l` -gt 0 ]; then
  echo "In total, "`cat gapfill_job/unw_correct.txt | wc -l`" missing unw files are to be regenerated (within 1 job)"
  echo "LiCSAR_04_unwrap.py -d . -f $frame -T gapfill_job/unw_correct.log -l gapfill_job/unw_correct.txt" > gapfill_job/unw_correct.sh
  chmod 770 gapfill_job/unw_correct.sh
- bsub -q $bsubquery  -n 1 -W 36:00 gapfill_job/unw_correct.sh
+ bsub -q $bsubquery  -n 1 -W 23:59 gapfill_job/unw_correct.sh
 fi
 
 ls RSLC/20?????? -d | cut -d '/' -f2 > gapfill_job/tmp_rslcs
@@ -57,7 +58,7 @@ for job in `seq 1 $nojobs`; do
  chmod 770 gapfill_job/ifgjob_$job.sh
  chmod 770 gapfill_job/unwjob_$job.sh
  if [ $job -gt 2 ]; then 
-  bsub -q $bsubquery -n 1 -W 36:00 -J $frame'_ifgjob_'$job gapfill_job/ifgjob_$job.sh
-  bsub -q $bsubquery -n 1 -W 36:00 -J $frame'_unwjob_'$job -w "ended("$frame"_ifgjob_"$job")" gapfill_job/unwjob_$job.sh
+  bsub -q $bsubquery -n 1 -W 23:59 -J $frame'_ifgjob_'$job gapfill_job/ifgjob_$job.sh
+  bsub -q $bsubquery -n 1 -W 23:59 -J $frame'_unwjob_'$job -w "ended("$frame"_ifgjob_"$job")" gapfill_job/unwjob_$job.sh
  fi
 done
