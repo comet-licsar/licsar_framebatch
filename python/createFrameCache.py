@@ -68,6 +68,7 @@ mstrDate = dt.datetime.strptime(dateStr,'%Y%m%d')
 polyid = get_polyid(frame)
 acq_imgs = add_acq_images(polyid)
 masterset = set_master(polyid,mstrDate)
+mstrline = acq_imgs[acq_imgs['acq_date']==mstrDate]
 acq_imgs = acq_imgs[acq_imgs['acq_date']!=mstrDate]
 #start from startingdate
 if startdate:
@@ -107,9 +108,17 @@ if rslcids.rslc_id.count():
             slcID=int(slcids[slcids.acq_date == dt.datetime.strptime(acq,'%Y%m%d')].slc_id)
             set_slc_status(slcID,0)
 
+#avoid regenerating existing SLC files
+existing_slcs = fnmatch.filter(os.listdir(cacheDir+'/'+frame+'/SLC'), '20??????')
+if slcids.slc_id.count():
+    for acq in existing_slcs:
+        if dt.datetime.strptime(acq,'%Y%m%d').date() in slcids.acq_date.dt.date.tolist():
+            slcID=int(slcids[slcids.acq_date == dt.datetime.strptime(acq,'%Y%m%d')].slc_id)
+            set_slc_status(slcID,0)
 
-ifgs = create_ifgs(polyid,acq_imgs)
-unws = create_unws(polyid,acq_imgs)
+#reingesting the master here
+ifgs = create_ifgs(polyid,acq_imgs.append(mstrline))
+unws = create_unws(polyid,acq_imgs.append(mstrline))
 
 print('Getting existing interferograms from LiCS database')
 existing_ifgs_lics = get_ifgs_from_lics(frame,srcDir,cacheDir)

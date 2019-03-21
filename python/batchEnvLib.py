@@ -104,7 +104,7 @@ def get_ifgs_from_lics(frame,srcDir,cacheDir):
     frameDir = srcDir + '/' + frame.split('_')[0].lstrip("0")[:-1] + '/' + frame
     outifgs=[]
     if not os.path.isdir(os.path.join(cacheDir,frame,'IFG')): os.mkdir(os.path.join(cacheDir,frame,'IFG'))
-    if os.path.isdir(frameDir):
+    if os.path.isdir(frameDir+'/IFG'):
         ifgs = fnmatch.filter(os.listdir(frameDir+'/IFG'), '20??????_20??????')
         for ifg in ifgs:
             if not os.path.exists(os.path.join(cacheDir,frame,'IFG',ifg)):

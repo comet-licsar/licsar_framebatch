@@ -183,31 +183,40 @@ if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
  count=0
  for x in `cat $BATCH_CACHE_DIR/$frame/${frame}_todown | rev | cut -d '/' -f1 | rev`; do
   let count=$count+1
-  echo "downloading file "$x" from alaska server"
-  echo "( it is file no. "$count" from "$filestodown" )"
-  time sshdown $x >/dev/null 2>/dev/null
-  if [ ! -f $sshout/$x ]; then
-   echo "Some download error appeared, trying again (verbosed)"
-   sshdown $x
+  echo "checking last time if the file does not exist in neodc"
+  y=`echo $x | cut -c 18-21`
+  m=`echo $x | cut -c 22-23`
+  d=`echo $x | cut -c 24-25`
+  if [ -f /neodc/sentinel1a/data/IW/L1_SLC/*/$y/$m/$d/$x ]; then
+   echo "it is so - the file appeared on neodc, will update the licsinfo_db"
+   arch2DB.py -f /neodc/sentinel1a/data/IW/L1_SLC/*/$y/$m/$d/$x
   else
-   zipcheck=`7za l $sshout/$x | grep ERROR -A1 | tail -n1`
-   if [ `echo $zipcheck | wc -c` -gt 1 ]; then 
-    echo "download error, trying once more (verbosed)"; sshdown $x;
-   fi
-   zipcheck=`7za l $sshout/$x | grep ERROR -A1 | tail -n1`
-   if [ `echo $zipcheck | wc -c` -gt 1 ]; then
-    echo "The downloaded file is corrupted:"
-    ls -alh $sshout/$x
-    echo $zipcheck
-    echo "...removing it (sorry)"
-    rm -rf $sshout/$x
-    echo $x >> $BATCH_CACHE_DIR/$frame/${frame}_download_errors
+   echo "downloading file "$x" from alaska server"
+   echo "( it is file no. "$count" from "$filestodown" )"
+   time sshdown $x >/dev/null 2>/dev/null
+   if [ ! -f $sshout/$x ]; then
+    echo "Some download error appeared, trying again (verbosed)"
+    sshdown $x
    else
-    echo "..downloaded correctly, ingesting to database"
-    if [ $sshout != $SLCdir ]; then echo "(first moving downloaded file from "$sshout" to "$SLCdir" )"; mv $sshout/$x $SLCdir/.; fi
-    arch2DB.py -f $SLCdir/$x >/dev/null 2>/dev/null
+    zipcheck=`7za l $sshout/$x | grep ERROR -A1 | tail -n1`
+    if [ `echo $zipcheck | wc -c` -gt 1 ]; then 
+     echo "download error, trying once more (verbosed)"; sshdown $x;
+    fi
+    zipcheck=`7za l $sshout/$x | grep ERROR -A1 | tail -n1`
+    if [ `echo $zipcheck | wc -c` -gt 1 ]; then
+     echo "The downloaded file is corrupted:"
+     ls -alh $sshout/$x
+     echo $zipcheck
+     echo "...removing it (sorry)"
+     rm -rf $sshout/$x
+     echo $x >> $BATCH_CACHE_DIR/$frame/${frame}_download_errors
+    else
+     echo "..downloaded correctly, ingesting to database"
+     if [ $sshout != $SLCdir ]; then echo "(first moving downloaded file from "$sshout" to "$SLCdir" )"; mv $sshout/$x $SLCdir/.; fi
+     arch2DB.py -f $SLCdir/$x >/dev/null 2>/dev/null
+    fi
+    chmod 777 $SLCdir/$x 2>/dev/null
    fi
-   chmod 777 $SLCdir/$x 2>/dev/null
   fi
  done
 fi

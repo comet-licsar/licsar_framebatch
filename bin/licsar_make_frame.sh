@@ -26,6 +26,10 @@ if [ -z $BATCH_CACHE_DIR ] || [ ! -d $BATCH_CACHE_DIR ]; then
  echo "There is no BATCH_CACHE_DIR existing. Did you define it properly?"
  exit
 fi
+# 03/2019 - we started to use scratch-nompiio disk as a possible solution for constant stuck job problems
+# after JASMIN update to Phase 4
+if [ ! -d /work/scratch-nompiio/licsar/$USER ]; then mkdir /work/scratch-nompiio/licsar/$USER; fi
+
 basefolder=$BATCH_CACHE_DIR
 #e.g. basefolder=/gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc
 #informing user.. just to be sure
@@ -172,7 +176,7 @@ EOF
  python getit.py
  rm getit.py
  #too quick to write to disk J
- sleep 2
+ sleep 5
  cat $step.list | grep $USER | grep $frame | sort -n > $step.list 
 fi
  #if [ $realjobno != `cat $step.list | wc -l` ]; then

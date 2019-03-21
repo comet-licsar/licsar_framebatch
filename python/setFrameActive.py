@@ -14,7 +14,9 @@ except KeyError as error:
     raise error
 
 #check if framename is initialized, i.e. exists in curdir
-frameDir = curDir + '/' + framename.split('_')[0].lstrip("0")[:-1] + '/' + framename
+track = framename.split('_')[0][:-1]
+track = str(int(track))
+frameDir = os.path.join(curDir,track,framename)
 try:
     master = fnmatch.filter(os.listdir(frameDir+'/geo'), '????????.hgt')[0].split('.')[0]
 except KeyError as error:

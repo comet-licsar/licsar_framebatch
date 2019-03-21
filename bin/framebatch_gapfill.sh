@@ -57,8 +57,6 @@ for job in `seq 1 $nojobs`; do
  echo "LiCSAR_04_unwrap.py -d . -f $frame -T gapfill_job/unwjob_$job.log -l gapfill_job/unwjob_$job" > gapfill_job/unwjob_$job.sh
  chmod 770 gapfill_job/ifgjob_$job.sh
  chmod 770 gapfill_job/unwjob_$job.sh
- if [ $job -gt 2 ]; then 
-  bsub -q $bsubquery -n 1 -W 23:59 -J $frame'_ifgjob_'$job gapfill_job/ifgjob_$job.sh
-  bsub -q $bsubquery -n 1 -W 23:59 -J $frame'_unwjob_'$job -w "ended("$frame"_ifgjob_"$job")" gapfill_job/unwjob_$job.sh
- fi
+ bsub -q $bsubquery -n 1 -W 23:59 -J $frame'_ifgjob_'$job gapfill_job/ifgjob_$job.sh
+ bsub -q $bsubquery -n 1 -W 23:59 -J $frame'_unwjob_'$job -w "ended("$frame"_ifgjob_"$job")" gapfill_job/unwjob_$job.sh
 done
