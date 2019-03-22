@@ -398,7 +398,9 @@ exit
 if [ $extra_steps -eq 1 ]; then
 ###################################################### Publishing tiffs
 track=`echo $frame | cut -d '_' -f1 | rev | cut -c 2- | rev`
+public=$LiCSAR_public
 for geoifg in `ls $BATCH_CACHE_DIR/$frame/GEOC/2*_2* -d | rev | cut -d '/' -f1 | rev`; do
+ if [ ! -d $public/$track/$frame/products/$geoifg ]; then
  echo "copying geocoded "$geoifg
  for toexp in cc.bmp cc.tif diff.bmp diff_mag.tif diff_pha.tif unw.bmp unw.tif disp.png; do
   if [ -f $BATCH_CACHE_DIR/$frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
@@ -408,6 +410,9 @@ for geoifg in `ls $BATCH_CACHE_DIR/$frame/GEOC/2*_2* -d | rev | cut -d '/' -f1 |
    fi
   fi
  done
+ else
+  echo "geoifg "$geoifg" exists in public site. Skipping"
+ fi
 done
 
 fi

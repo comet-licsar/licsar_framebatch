@@ -33,7 +33,7 @@ make_simple_polygon.sh ${frame}-poly.txt
 ## make list from scihub
  echo "getting scihub data"
  if [ ! -z $enddate ]; then
-   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date +'%Y%m%d'` `echo $enddate | sed 's/-//g'` `date +'%Y%m%d'` >/dev/null 2>/dev/null
+   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `echo $enddate | sed 's/-//g'` >/dev/null 2>/dev/null
   else
    query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date +'%Y%m%d'` >/dev/null 2>/dev/null
  fi
@@ -54,7 +54,7 @@ if [ ! -f ${frame}_db_query.list ]; then
 fi
  sort -o ${frame}_db_query.list ${frame}_db_query.list
  diff  ${frame}_scihub.list ${frame}_db_query.list | grep '^<' | cut -c 3- > ${frame}_todown
- echo "There are "`cat ${frame}_todown | wc -l`" extra images, not currently existing on CEMS disk"
+ echo "There are "`cat ${frame}_todown | wc -l`" extra images, not currently existing on CEMS (neodc) disk"
 # checking if the files from scihub exist in RSLC or SLC folders..
 rm tmp_processed.txt 2>/dev/null
 rm tmp_existing.txt 2>/dev/null
@@ -74,16 +74,20 @@ done
 if [ $pom -eq 1 ]; then
  cp tmp_processed.txt tmp_tmp; sort -u tmp_tmp > tmp_processed.txt; rm tmp_tmp
  cp tmp_existing.txt tmp_tmp; sort -u tmp_tmp > tmp_existing.txt; rm tmp_tmp
+ master=`ls geo/20??????.hgt | cut -d '/' -f2 | cut -d '.' -f1`
+ sed -i '/'$master'/d' tmp_existing.txt
+ sed -i '/'$master'/d' tmp_processed.txt
  echo "You have "`cat tmp_existing.txt | wc -l`" already processed images,"
  if [ `cat tmp_existing.txt | wc -l` -gt `cat tmp_processed.txt | wc -l` ]; then
   echo "the RSLCs are physically existing for "`cat tmp_processed.txt | wc -l`" of them"
-  echo "(those non-existing will be redownloaded and reprocessed)"
+  echo "(data will be downloaded only for those non-existing ones)"
   #do you like the existing X processed paradox?
   #check this then, you will like it too: https://www.youtube.com/watch?v=2uHNSuGeTpM
  fi
 fi
  if [ $pom -eq 1 ]; then
   cp ${frame}_db_query.list tmp_dbquery.list
+  # i know i should do it opposite, but it works anyway..
   for file in `cat tmp_dbquery.list`; do 
    filedate=`echo $file | rev | cut -d '/' -f1 | rev | cut -c 18-25`
    #if the filedate is in 'already processed and existing' files, then ignore it
@@ -95,7 +99,7 @@ fi
   done
   rm tmp_processed.txt tmp_dbquery.list tmp_existing.txt 2>/dev/null
  fi
-echo "This means you have now "`cat ${frame}_todown | wc -l`" frame dates to use for download."
+ echo "This means you have now "`cat ${frame}_todown | wc -l`" images to download."
  echo "Checking if the NLA-registered files exist on the disk. If not, include them for redownload"
  pom=0
  for file in `cat ${frame}_db_query.list`; do 
@@ -106,7 +110,7 @@ echo "This means you have now "`cat ${frame}_todown | wc -l`" frame dates to use
    fi
  done
  if [ $pom -gt 0 ]; then
-  echo "There are "$pom" images that are in NLA but not restored to /neodc"
+  echo "There are "$pom" images that are indexed in licsinfo database but not existing on disk"
   echo "Did you run NLA request already?? If not, cancel me and do it first"; sleep 5; 
  fi
 ## check what really is existing on disk (maybe we missed something?)
@@ -121,17 +125,23 @@ echo "This means you have now "`cat ${frame}_todown | wc -l`" frame dates to use
    else
     if [ -f $SLCdir/$filename ]; then
      echo "The file "$filename" has already been downloaded"
-     zipcheck=`7za l $SLCdir/$filename | grep ERROR -A1 | tail -n1`
+     zipcheck=`7za l $SLCdir/$filename 2> tmp_zipcheck | grep Error | tail -n1`
      if [ `echo $zipcheck | wc -m` -gt 1 ]; then
        echo "..however it is broken:"
        ls -alh $SLCdir/$filename
-       echo "zip error: "$zipcheck
-       echo "so will be redownloaded"
+       echo "zip error: "
+       echo "----------"
+       cat tmp_zipcheck
+       echo "----------"
+       rm tmp_zipcheck
+       echo "so it will be redownloaded"
        rm -rf $SLCdir/$filename
      else
        sed -i '/'$filename'/d' ${frame}_todown
-       echo "..ingesting to database"
-       arch2DB.py -f $SLCdir/$filename >/dev/null 2>/dev/null
+       if [ `grep -c $SLCdir/$filename ${frame}_db_query.list` -eq 0 ]; then
+        echo "..ingesting to database"
+        arch2DB.py -f $SLCdir/$filename >/dev/null 2>/dev/null
+       fi
        sed -i '/'$filename'/d' ${frame}_todown
        pom=1
      fi
@@ -139,10 +149,11 @@ echo "This means you have now "`cat ${frame}_todown | wc -l`" frame dates to use
    fi
  done
  filestodown=`cat ${frame}_todown | wc -l`
+ if [ $filestodown -eq 0 ]; then echo "Congratulations, seems there is nothing more to download. Exiting";exit; fi
  downspeed=5 #MB/s
  timetodown=`echo "$filestodown*4500/$downspeed/60/60" | bc`
  echo "After the checks, there will be "$filestodown" files downloaded";
- echo "please note that this can take approx. " $timetodown " hours to finish, hope you run it in tmux or screen????"
+ echo "please note that this can take approx. " $timetodown " hours to finish, you may want to run this in tmux or screen??"
 ## update what is not physically existing on disk 
 ## (we assume users did the nla request before and want to fill all the unavailable data
 ## update 21-02-2019: CEMS disallows secure connection
@@ -187,9 +198,11 @@ if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
   y=`echo $x | cut -c 18-21`
   m=`echo $x | cut -c 22-23`
   d=`echo $x | cut -c 24-25`
-  if [ -f /neodc/sentinel1a/data/IW/L1_SLC/*/$y/$m/$d/$x ]; then
+  pom_to=''
+  pom_to=`ls /neodc/sentinel1?/data/IW/L1_SLC/*/$y/$m/$d/$x 2>/dev/null`
+  if [ ! -z $pom_to ]; then
    echo "it is so - the file appeared on neodc, will update the licsinfo_db"
-   arch2DB.py -f /neodc/sentinel1a/data/IW/L1_SLC/*/$y/$m/$d/$x
+   arch2DB.py -f $pom_to
   else
    echo "downloading file "$x" from alaska server"
    echo "( it is file no. "$count" from "$filestodown" )"
