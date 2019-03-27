@@ -138,7 +138,7 @@ if __name__ == '__main__':
     print('Comparing SCIHUB/NLA/unwrapped ifg output lists.')
 
     # Scihub list
-    scihub_dates = date2dec(np.loadtxt(inps.frame+'_scihub.list',comments="#",unpack=True,dtype='i'))
+    scihub_dates = date2dec(np.loadtxt(inps.frame+'_scihub.dates',comments="#",unpack=True,dtype='i'))
     print("Number of scihub acquisitions: ",len(scihub_dates))
 
     # ASF list

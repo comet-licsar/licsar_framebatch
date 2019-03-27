@@ -28,7 +28,8 @@ if [ -z $BATCH_CACHE_DIR ] || [ ! -d $BATCH_CACHE_DIR ]; then
 fi
 # 03/2019 - we started to use scratch-nompiio disk as a possible solution for constant stuck job problems
 # after JASMIN update to Phase 4
-if [ ! -d /work/scratch-nompiio/licsar/$USER ]; then mkdir /work/scratch-nompiio/licsar/$USER; fi
+#if [ ! -d /work/scratch-nompiio/licsar/$USER ]; then mkdir /work/scratch-nompiio/licsar/$USER; fi
+if [ ! -d /work/scratch/licsar/$USER ]; then mkdir /work/scratch/licsar/$USER; fi
 
 basefolder=$BATCH_CACHE_DIR
 #e.g. basefolder=/gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc
@@ -203,10 +204,15 @@ fi
   fi
 #  let jline=$jline+1
 #  B=`sed -n $jline'p' $stepprev.list | gawk {'print $1'}`
+  extrabsub=''
+  if [ $step == "framebatch_02_coreg" ] || [ $step == "framebatch_04_unwrap" ]; then
+   maxmem=25000
+   extrabsub='-R "rusage[mem='$maxmem']" -M '$maxmem
+  fi
   echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
-     -q $bsubquery -n 1 -W 23:59 $waitcmd $stepcmd $jobid >> $step.sh
+     -q $bsubquery -n 1 -W 23:59 $extrabsub $waitcmd $stepcmd $jobid >> $step.sh
   echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
-     -q $bsubquery -n 1 -W 23:59 $stepcmd $jobid >> $step'_nowait.sh'
+     -q $bsubquery -n 1 -W 23:59 $extrabsub $stepcmd $jobid >> $step'_nowait.sh'
  done
  
  rm tmpText 2>/dev/null
@@ -285,6 +291,7 @@ fi
  stepprev=framebatch_01_mk_image
 
  prepare_job_script $step $stepcmd $stepsql $stepprev
+ 
  ./$step.sh
 ###################################################### Make ifgs
  echo "..setting make_ifg job (IFG)"
@@ -329,13 +336,20 @@ chmod 770 framebatch_05_gap_filling.sh
 ###################################################### Geocoding to tiffs
 echo "Preparing script for geocoding results"
 cat << EOF > framebatch_06_geotiffs.sh
-echo "This routine will be updated to allow parallel processing. Stay tuned"
+echo "You should better run this as: "
+echo "bsub -q short-serial -n 1 ./framebatch_06_geotiffs.sh"
+NOPAR=\`cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l\`
+rm tmp_to_pub 2>/dev/null
+rm tmp_to_pub.sh 2>/dev/null
+
 for ifg in \`ls $BATCH_CACHE_DIR/$frame/IFG/*_* -d | rev | cut -d '/' -f1 | rev\`; do
  if [ -f $BATCH_CACHE_DIR/$frame/IFG/\$ifg/\$ifg.unw ]; then
- echo "geocoding "\$ifg
- create_geoctiffs_to_pub.sh $BATCH_CACHE_DIR/$frame \$ifg > $logdir/geocode_\$ifg.log 2>$logdir/geocode_\$ifg.err
+  echo \$ifg >> $BATCH_CACHE_DIR/$frame/tmp_to_pub
  fi
 done
+echo "Generating geotiffs (parallelized)"
+cat tmp_to_pub | parallel -j \$NOPAR create_geoctiffs_to_pub.sh $BATCH_CACHE_DIR/$frame
+rm tmp_to_pub
 EOF
 chmod 770 framebatch_06_geotiffs.sh
 
@@ -357,10 +371,7 @@ echo "Preparing script for generating baseline plot"
 
 cat << EOF > framebatch_07_baseline_plot.sh
 make_bperp_4_matlab.sh
-if [ -f ${frame}_scihub.list ]; then
- cp ${frame}_scihub.list tmp_scihub.list
- parse_list.sh tmp_scihub.list > ${frame}_scihub.list
-fi
+parse_list.sh ${frame}_scihub.list > ${frame}_scihub.dates
 master=\`ls geo/*.lt | xargs -I XX basename XX .lt\`
 ls RSLC/*/*.rslc.mli > base_calc.list.rslc
 ls RSLC/*/*.rslc.mli.par > base_calc.list.rslc.par

@@ -12,6 +12,8 @@ fi
 
 frame=$1
 startdate=$2 #should be as 2014-10-10
+
+#if [ `grep -c '-' $2 |..... ]; then .....; fi
 if [ ! -z $3 ]; then enddate=$3; fi
 
 if [[ ! `echo $frame | cut -d '_' -f3 | cut -c 6` == ?([0-9]) ]]; then echo 'frame wrongly set: '$frame; exit; fi
