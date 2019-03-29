@@ -82,8 +82,6 @@ done
  echo "..copying master slc"
  cp -r SLC/$master $SCRATCHDIR/$frame/SLC/.
  echo "..copying geo and other files"
- #weird error.. quick fix here:
- for x in `ls tab/20??????_tab`; do cp `echo $x | sed 's/_tab/R_tab/'` $x; done
  cp -r tab geo log gapfill_job $SCRATCHDIR/$frame/.
  #sed 's/ /_/' gapfill_job/tmp_ifg_todo > gapfill_job/tmp_ifg_copy
  cat gapfill_job/tmp_unw_todo >> gapfill_job/tmp_ifg_copy
@@ -94,6 +92,8 @@ done
 ##########################################################
  echo "running jobs"
  cd $SCRATCHDIR/$frame
+ #weird error.. quick fix here:
+ for x in `ls tab/20??????_tab`; do cp `echo $x | sed 's/_tab/R_tab/'` $x; done
 for job in `seq 1 $nojobs`; do
  wait=''
  if [ -f gapfill_job/ifgjob_$job.sh ]; then

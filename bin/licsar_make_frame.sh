@@ -177,7 +177,10 @@ EOF
  python getit.py
  rm getit.py
  #too quick to write to disk J
- sleep 5
+ #wow, 5 seconds waiting was not enough!!!!! 
+ echo "waiting 15 seconds. Should be enough to synchronize data write from python"
+ echo "(what a problem in the age of supercomputers..)"
+ sleep 15
  cat $step.list | grep $USER | grep $frame | sort -n > $step.list 
 fi
  #if [ $realjobno != `cat $step.list | wc -l` ]; then
@@ -204,10 +207,12 @@ fi
   fi
 #  let jline=$jline+1
 #  B=`sed -n $jline'p' $stepprev.list | gawk {'print $1'}`
+  if [ $bsubquery == "short-serial" ]; then
   extrabsub=''
   if [ $step == "framebatch_02_coreg" ] || [ $step == "framebatch_04_unwrap" ]; then
    maxmem=25000
    extrabsub='-R "rusage[mem='$maxmem']" -M '$maxmem
+  fi
   fi
   echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
      -q $bsubquery -n 1 -W 23:59 $extrabsub $waitcmd $stepcmd $jobid >> $step.sh

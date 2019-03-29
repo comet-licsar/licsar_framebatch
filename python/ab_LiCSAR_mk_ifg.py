@@ -16,6 +16,11 @@ from LiCSAR_lib.ifg_lib import *
 from LiCSAR_lib.coreg_lib import rebuild_rslc
 from batchLSFLib import set_lotus_job_status
 
+
+#to ensure GAMMA will have proper value for CPU count
+from multiprocessing import cpu_count
+os.environ['OMP_NUM_THREADS'] = str(cpu_count())
+
 ################################################################################
 #Status Codes
 ################################################################################

@@ -164,6 +164,7 @@ fi
 ## returning back to the direct download......this is real headache
  #bash workaround to aliases
 shopt -s expand_aliases
+sshout=$SLCdir
 if [ $USE_SSH_DOWN -eq 1 ]; then
  xferserver=jasmin-xfer1.ceda.ac.uk
  #testing connection
