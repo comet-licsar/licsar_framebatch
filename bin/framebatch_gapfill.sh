@@ -2,11 +2,14 @@
 if [ -z $1 ]; then echo "please provide NBATCH parameter (how many images you want per job)"; exit; fi
 #NBATCH=5
 NBATCH=$1
+rlks=20; azlks=4
+master=`basename geo/20??????.hgt .hgt`
 SCRATCHDIR=/work/scratch/licsar
-echo "Executing gap filling routine"
+WORKFRAMEDIR=`pwd`
 frame=`pwd | rev | cut -d '/' -f1 | rev`
+echo "Executing gap filling routine (results will be saved in this folder: "$WORKFRAMEDIR" )."
 if [ `echo $frame | cut -c 11` != '_' ]; then echo "ERROR, you are not in FRAME folder. Exiting"; exit; fi
-if [ -z $BATCH_CACHE_DIR ]; then echo "BATCH_CACHE_DIR not set. Cancelling"; exit; fi
+#if [ -z $BATCH_CACHE_DIR ]; then echo "BATCH_CACHE_DIR not set. Cancelling"; exit; fi
 
 #decide for query based on user rights
 if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
@@ -41,11 +44,19 @@ done
 cat gapfill_job/tmp_ifg_all2 | head -n-5 | sort -u > gapfill_job/tmp_ifg_all
 for ifg in `cat gapfill_job/tmp_ifg_existing`; do  sed -i '/'$ifg'/d' gapfill_job/tmp_ifg_all; done
 sed 's/_/ /' gapfill_job/tmp_ifg_all > gapfill_job/tmp_ifg_todo
-rm gapfill_job/tmp_rslcs2copy 2>/dev/null
+#rm gapfill_job/tmp_rslcs2copy 2>/dev/null
 for x in `cat gapfill_job/tmp_ifg_todo`; do echo $x >> gapfill_job/tmp_rslcs2copy; done
 sort -u gapfill_job/tmp_rslcs2copy -o gapfill_job/tmp_rslcs2copy 2>/dev/null
 mv gapfill_job/tmp_ifg_all gapfill_job/tmp_unw_todo
 for x in `ls IFG/*/*.cc | cut -d '/' -f2`; do if [ ! -f IFG/$x/$x.unw ]; then echo $x >> gapfill_job/tmp_unw_todo; fi; done
+
+#check rslc mosaics
+#rm gapfill_job/tmp_rslcs2mosaic 2>/dev/null
+for x in `cat gapfill_job/tmp_rslcs2copy`; do
+ if [ ! -f RSLC/$x/$x.rslc ] || [ `ls -l RSLC/$x/$x.rslc | gawk {'print $5'}` -eq 0 ]; then
+  echo $x >> gapfill_job/tmp_rslcs2mosaic
+ fi
+done
 
 NOIFG=`cat gapfill_job/tmp_unw_todo | wc -l`
 nojobs=`echo $NOIFG/$NBATCH | bc`
@@ -60,7 +71,15 @@ for job in `seq 1 $nojobs`; do
  sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_unw_todo > gapfill_job/unwjob_$job
  sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_ifg_todo > gapfill_job/ifgjob_$job
  if [ `wc -l gapfill_job/ifgjob_$job | gawk {'print $1'}` -eq 0 ]; then rm gapfill_job/ifgjob_$job; else
-  echo "LiCSAR_03_mk_ifgs.py -d . -f $frame -c 0 -T gapfill_job/ifgjob_$job.log  -i gapfill_job/ifgjob_$job" > gapfill_job/ifgjob_$job.sh
+  #rm gapfill_job/ifgjob_$job.sh 2>/dev/null #just to clean..
+  #deal with mosaics here..
+  for image in `cat gapfill_job/ifgjob_$job`; do 
+   if [ `grep -c $image gapfill_job/tmp_rslcs2mosaic` -gt 0 ]; then
+    sed -i '/'$image'/d' gapfill_job/tmp_rslcs2mosaic
+    echo "SLC_mosaic_S1_TOPS tab/$image'R_tab' RSLC/$image/$image.rslc RSLC/$image/$image.rslc.par $rlks $azlks 0 tab/$master'R_tab'" >> gapfill_job/ifgjob_$job.sh
+   fi
+  done
+  echo "LiCSAR_03_mk_ifgs.py -d . -f $frame -c 0 -T gapfill_job/ifgjob_$job.log  -i gapfill_job/ifgjob_$job" >> gapfill_job/ifgjob_$job.sh
   chmod 770 gapfill_job/ifgjob_$job.sh
  fi
  echo "LiCSAR_04_unwrap.py -d . -f $frame -T gapfill_job/unwjob_$job.log -l gapfill_job/unwjob_$job" > gapfill_job/unwjob_$job.sh
@@ -73,14 +92,16 @@ done
  #if [ -d $SCRATCHDIR/$frame ]; then echo "..cleaning scratchdir"; rm -rf $SCRATCHDIR/$frame; fi
  mkdir -p $SCRATCHDIR/$frame/RSLC
  mkdir $SCRATCHDIR/$frame/IFG
- mkdir $SCRATCHDIR/$frame/SLC $SCRATCHDIR/$frame/log $SCRATCHDIR/$frame/LOGS
+ mkdir $SCRATCHDIR/$frame/SLC $SCRATCHDIR/$frame/LOGS
  if [ -f gapfill_job/tmp_rslcs2copy ]; then
   echo "..copying "`wc -l gapfill_job/tmp_rslcs2copy | gawk {'print $1'}`" needed rslcs"
   for rslc in `cat gapfill_job/tmp_rslcs2copy`; do if [ ! -d $SCRATCHDIR/$frame/RSLC/$rslc ]; then cp -r RSLC/$rslc $SCRATCHDIR/$frame/RSLC/.; fi; done
  fi
- master=`basename geo/20??????.hgt .hgt`
  echo "..copying master slc"
  cp -r SLC/$master $SCRATCHDIR/$frame/SLC/.
+ rm -r $SCRATCHDIR/$frame/RSLC/$master 2>/dev/null
+ mkdir $SCRATCHDIR/$frame/RSLC/$master
+ for x in `ls $SCRATCHDIR/$frame/SLC/$master/*`; do ln -s $x $SCRATCHDIR/$frame/RSLC/$master/`basename $x | sed 's/slc/rslc/'`; done
  echo "..copying geo and other files"
  cp -r tab geo log gapfill_job $SCRATCHDIR/$frame/.
  #sed 's/ /_/' gapfill_job/tmp_ifg_todo > gapfill_job/tmp_ifg_copy
@@ -92,12 +113,12 @@ done
 ##########################################################
  echo "running jobs"
  cd $SCRATCHDIR/$frame
- #weird error.. quick fix here:
- for x in `ls tab/20??????_tab`; do cp `echo $x | sed 's/_tab/R_tab/'` $x; done
+ #weird error - mk_ifg is reading SLC tabs instead of rslc?? (need debug).. quick fix here:
+ #for x in `ls tab/20??????_tab`; do cp `echo $x | sed 's/_tab/R_tab/'` $x; done
 for job in `seq 1 $nojobs`; do
  wait=''
  if [ -f gapfill_job/ifgjob_$job.sh ]; then
-  bsub -q $bsubquery -n 1 -W 03:00 -J $frame'_ifg_'$job gapfill_job/ifgjob_$job.sh
+  bsub -q $bsubquery -n 1 -W 03:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out gapfill_job/ifgjob_$job.sh
   wait="-w \"ended('"$frame"_ifg_"$job"')\""
  fi
  #weird error in 'job not found'.. workaround:
@@ -111,12 +132,12 @@ done
   waitcmd='-w "'$waitText'"'
  fi
  echo "chmod -R 770 $SCRATCHDIR/$frame" > gapfill_job/copyjob.sh
- echo "rsync -r $SCRATCHDIR/$frame/IFG $BATCH_CACHE_DIR/$frame" >> gapfill_job/copyjob.sh
- echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $BATCH_CACHE_DIR/$frame" >> gapfill_job/copyjob.sh
+ echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> gapfill_job/copyjob.sh
+ echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> gapfill_job/copyjob.sh
  echo "rm -r $SCRATCHDIR/$frame" >> gapfill_job/copyjob.sh
  chmod 770 gapfill_job/copyjob.sh
  #workaround for 'Empty job. Job not submitted'
- echo bsub -q short-serial -n 1 $waitcmd -J $frame'_gapfill_out' gapfill_job/copyjob.sh > tmptmp
+ echo bsub -q short-serial -n 1 $waitcmd -W 02:00 -J $frame'_gapfill_out' gapfill_job/copyjob.sh > tmptmp
  chmod 770 tmptmp; ./tmptmp
  rm tmptmp
  cd -

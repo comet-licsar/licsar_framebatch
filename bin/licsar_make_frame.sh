@@ -38,6 +38,7 @@ echo 'Processing in your BATCH_CACHE_DIR that is '$BATCH_CACHE_DIR
 
 #startup variables
 frame=$1
+enddate=''
 #settings of full_scale and extra_steps - by default 0
 #these extra_steps are now just 'export to comet website'
 if [ ! -z $2 ]; then full_scale=$2; else full_scale=0; fi
@@ -342,7 +343,7 @@ chmod 770 framebatch_05_gap_filling.sh
 echo "Preparing script for geocoding results"
 cat << EOF > framebatch_06_geotiffs.sh
 echo "You should better run this as: "
-echo "bsub -q short-serial -n 1 ./framebatch_06_geotiffs.sh"
+echo "bsub -q short-serial -n 1 -W 04:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
 NOPAR=\`cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l\`
 rm tmp_to_pub 2>/dev/null
 rm tmp_to_pub.sh 2>/dev/null
@@ -418,7 +419,7 @@ public=$LiCSAR_public
 for geoifg in `ls $BATCH_CACHE_DIR/$frame/GEOC/2*_2* -d | rev | cut -d '/' -f1 | rev`; do
  if [ ! -d $public/$track/$frame/products/$geoifg ]; then
  echo "copying geocoded "$geoifg
- for toexp in cc.bmp cc.tif diff.bmp diff_mag.tif diff_pha.tif unw.bmp unw.tif disp.png; do
+ for toexp in cc.bmp cc.tif diff.bmp diff_mag.tif diff_pha.tif unw.bmp unw.tif; do #disp.png; do
   if [ -f $BATCH_CACHE_DIR/$frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
    mkdir -p $public/$track/$frame/products/$geoifg 2>/dev/null
    if [ ! -f $public/$track/$frame/products/$geoifg/$geoifg.geo.$toexp ]; then

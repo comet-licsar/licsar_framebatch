@@ -2,7 +2,7 @@
 #procdir=$BATCH_CACHE_DIR
 curdir=$LiCSAR_procdir
 SLCdir=$LiCSAR_SLC
-USE_SSH_DOWN=0 #if the wget error is related to SSL blocking, set this to 1
+USE_SSH_DOWN=1 #if the wget error is related to SSL blocking, set this to 1
 
 if [ -z $2 ]; then
  echo "Parameters are: FRAME STARTDATE [ENDDATE]"
@@ -168,11 +168,16 @@ sshout=$SLCdir
 if [ $USE_SSH_DOWN -eq 1 ]; then
  xferserver=jasmin-xfer1.ceda.ac.uk
  #testing connection
- ssh -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver exit
+ #if [ `grep -c licsar@gmail.com ~/.ssh/authorized_keys` -eq 0 ]; then
+ # cat $LiCSAR_configpath/.id_rsa_licsar.pub >> ~/.ssh/authorized_keys
+ #fi
+ alias sshinst="if [ \`grep -c licsar@gmail.com ~/.ssh/authorized_keys\` -eq 0 ]; then cat \$LiCSAR_configpath/.id_rsa_licsar.pub >> ~/.ssh/authorized_keys; fi"
+ sshinst; ssh -q -i $LiCSAR_configpath/.id_rsa_licsar -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver exit
  test_conn=$?
  if [ $test_conn -eq 0 ]; then
   echo "will use XFER server to download data"
   sshout=$SLCdir
+  sshparams="-q -i $LiCSAR_configpath/.id_rsa_licsar -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
   sshserver=$xferserver
   wgetcmd=`which wget_alaska`
  else
@@ -184,11 +189,13 @@ if [ $USE_SSH_DOWN -eq 1 ]; then
   mkdir -p $sshout
   cp `which wget_alaska` $sshout/.
   wgetcmd=`$sshout/wget_alaska`
+  sshparams="-q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
   sshserver=cems-login1.cems.rl.ac.uk
   echo "please delete this files as temporary - they were created as workaround to data download. Normally they should be cleaned" > $sshout/README
  fi
- alias sshdown=`echo ssh -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $sshserver "'cd " $sshout "; export LiCSAR_configpath=$LiCSAR_configpath; $wgetcmd '"`
+ alias sshdown=`echo ssh $sshparams $sshserver "'cd " $sshout "; export LiCSAR_configpath=$LiCSAR_configpath; $wgetcmd '"`
 else
+ alias sshinst=''
  alias sshdown=wget_alaska
 fi
 
@@ -209,14 +216,16 @@ if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
   else
    echo "downloading file "$x" from alaska server"
    echo "( it is file no. "$count" from "$filestodown" )"
-   time sshdown $x >/dev/null 2>/dev/null
+   sshinst; time sshdown $x >/dev/null 2>/dev/null
+   #just to check it by wget itself..
+   sshinst; sshdown $x >/dev/null 2>/dev/null
    if [ ! -f $sshout/$x ]; then
     echo "Some download error appeared, trying again (verbosed)"
-    sshdown $x
+    sshinst; sshdown $x
    else
     zipcheck=`7za l $sshout/$x | grep ERROR -A1 | tail -n1`
     if [ `echo $zipcheck | wc -c` -gt 1 ]; then 
-     echo "download error, trying once more (verbosed)"; sshdown $x;
+     echo "download error, trying once more (verbosed)"; sshinst; sshdown $x;
     fi
     zipcheck=`7za l $sshout/$x | grep ERROR -A1 | tail -n1`
     if [ `echo $zipcheck | wc -c` -gt 1 ]; then
