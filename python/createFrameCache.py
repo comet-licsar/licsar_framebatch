@@ -80,7 +80,7 @@ if enddate:
 #(only for make_img list since rslcs should be used further for ifgs)
 date_strings = [dt.strftime("%Y%m%d") for dt in pd.to_datetime(acq_imgs['acq_date']).dt.date.tolist()]
 
-#get acquisitions exising in lics db
+#get acquisitions existing in lics db
 #(this will make links and decompress the lics db files to cacheDir)
 print('Getting existing RSLCs from LiCS database')
 existing_acq_lics = get_rslcs_from_lics(frame,srcDir,cacheDir,date_strings)

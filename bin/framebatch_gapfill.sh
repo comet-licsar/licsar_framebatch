@@ -2,6 +2,7 @@
 if [ -z $1 ]; then echo "please provide NBATCH parameter (how many images you want per job)"; exit; fi
 #NBATCH=5
 NBATCH=$1
+MAXBTEMP=60
 rlks=20; azlks=4
 master=`basename geo/20??????.hgt .hgt`
 SCRATCHDIR=/work/scratch/licsar
@@ -37,9 +38,11 @@ for FIRST in `cat gapfill_job/tmp_rslcs`; do
  SECOND=`grep -A1 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
  THIRD=`grep -A2 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
  FOURTH=`grep -A3 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
- echo $FIRST'_'$SECOND >> gapfill_job/tmp_ifg_all2;
- echo $FIRST'_'$THIRD >> gapfill_job/tmp_ifg_all2; 
- echo $FIRST'_'$FOURTH >> gapfill_job/tmp_ifg_all2; 
+ for LAST in $SECOND $THIRD $FOURTH; do
+  if [ `datediff $FIRST $LAST` -lt $MAXBTEMP ]; then
+   echo $FIRST'_'$SECOND >> gapfill_job/tmp_ifg_all2; 
+  fi
+ done 
 done
 cat gapfill_job/tmp_ifg_all2 | head -n-5 | sort -u > gapfill_job/tmp_ifg_all
 for ifg in `cat gapfill_job/tmp_ifg_existing`; do  sed -i '/'$ifg'/d' gapfill_job/tmp_ifg_all; done

@@ -106,6 +106,9 @@ def get_ifgs_from_lics(frame,srcDir,cacheDir):
     if not os.path.isdir(os.path.join(cacheDir,frame,'IFG')): os.mkdir(os.path.join(cacheDir,frame,'IFG'))
     if os.path.isdir(frameDir+'/IFG'):
         ifgs = fnmatch.filter(os.listdir(frameDir+'/IFG'), '20??????_20??????')
+        #sometimes the saved ifgs are not unwrapped!
+        #hmm.. but perhaps it would be only good if to keep it...
+        #ifgs = [ifg for ifg in ifgs if os.path.exists(os.path.join(frameDir,'IFG',ifg,ifg+'.unw')]
         for ifg in ifgs:
             if not os.path.exists(os.path.join(cacheDir,frame,'IFG',ifg)):
                 os.mkdir(os.path.join(cacheDir,frame,'IFG',ifg))

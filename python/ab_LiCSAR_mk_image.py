@@ -98,7 +98,7 @@ def main(argv):
         else:
             set_lotus_job_status('Setting up {:%y-%m-%d}'.format(date))
             with SlcEnv(jobID,frameName,date,cacheDir,tempDir) as env:
-                print("created new processing enviroement {}".format(env.actEnv))
+                print("created new processing environment {}".format(env.actEnv))
                 print("processing slc {0} on acquisition date {1:%Y%m%d}".format(
                         row['slc_id'],row['acq_date']))
 
@@ -108,8 +108,8 @@ def main(argv):
                 #Check that we have no missing bursts
                 imburstlist = lq.get_frame_bursts_on_date(frameName,date)
                 missingbursts = [b for b in burstlist if not b in imburstlist]
-                if not missingbursts or check_missing_bursts(burstlist,missingbursts):
-                    print("All bursts for frame {0} seem to be have been acquired "\
+                if not missingbursts: # or not check_missing_bursts(burstlist,missingbursts):
+                    print("All necessary bursts for frame {0} seem to be have been acquired "\
                             "on {1}...".format(frameName,date))
                     lq.set_slc_status(row['slc_id'],BUILDING) #building....
                     rc = make_frame_image(date,frameName,imburstlist,env.actEnv, lq, -1) 
