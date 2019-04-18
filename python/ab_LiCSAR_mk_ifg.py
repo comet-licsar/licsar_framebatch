@@ -42,7 +42,8 @@ class MkIfgEnv(LicsEnv):
 
         self.outPats = ['IFG.*', # Patterns to output
                         'log.*',
-                        'tab.*']
+                        'tab.*',
+                        'log/.*qualit.*']
 
         self.srcRSLCAPath = 'RSLC/{:%Y%m%d}'.format(dateA)
         self.srcRSLCBPath = 'RSLC/{:%Y%m%d}'.format(dateB)
