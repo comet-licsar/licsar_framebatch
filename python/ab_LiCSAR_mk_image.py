@@ -109,6 +109,8 @@ def main(argv):
                 imburstlist = lq.get_frame_bursts_on_date(frameName,date)
                 missingbursts = [b for b in burstlist if not b in imburstlist]
                 if not missingbursts: # or not check_missing_bursts(burstlist,missingbursts):
+                    #we will relax the condition here and checking for only critical missing bursts
+                    #if not check_missing_bursts(burstlist,missingbursts):
                     print("All necessary bursts for frame {0} seem to be have been acquired "\
                             "on {1}...".format(frameName,date))
                     lq.set_slc_status(row['slc_id'],BUILDING) #building....
@@ -117,6 +119,7 @@ def main(argv):
                     if rc!=0:
                         shutil.rmtree('./SLC')
                 else:
+                    print("Missing bursts for date {:%Y%m%d}".format(date))
                     lq.set_slc_status(row['slc_id'],MISSING_BURSTS)
                 set_lotus_job_status('Cleaning {:%y-%m-%d}'.format(date))
 
