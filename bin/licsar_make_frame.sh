@@ -179,9 +179,9 @@ EOF
  rm getit.py
  #too quick to write to disk J
  #wow, 5 seconds waiting was not enough!!!!! 
- echo "waiting 15 seconds. Should be enough to synchronize data write from python"
+ echo "waiting 30 seconds. Should be enough to synchronize data write from python"
  echo "(what a problem in the age of supercomputers..)"
- sleep 15
+ sleep 30
  cat $step.list | grep $USER | grep $frame | sort -n > $step.list 
 fi
  #if [ $realjobno != `cat $step.list | wc -l` ]; then
