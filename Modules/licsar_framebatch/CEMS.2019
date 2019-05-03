@@ -19,13 +19,11 @@ if { [module-info mode load] || [module-info mode switch2] } {
 prereq licsar_proc
 prereq gmt
                 
-set grouppath "/gws/nopw/j04/nceo_geohazards_vol1"
-set gwsSoftwarePath "$grouppath/software"
+set gwsSoftwarePath "/home/users/earmla/software"
 
 set LiCSFBpath "$gwsSoftwarePath/licsar_framebatch"
 set configpath "$LiCSFBpath/config/"
  
-# this again does not work...
 setenv FRAME_BATCH_CONFIG "$configpath/batch.cnf"
 setenv framebatch_config "$configpath/batch.cnf"
                 
