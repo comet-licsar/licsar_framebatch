@@ -1,8 +1,10 @@
 #!/bin/bash
-if [ -z $1 ]; then echo "please provide NBATCH parameter (how many images you want per job)"; exit; fi
+if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP]";
+                   echo "NBATCH.... number of interferograms to generate per job (licsar defaults to 5)";
+                   echo "MAXBTEMP.. max temporal baseline in days. Default is 60 [days]"; exit; fi
+if [ -z $2 ]; then MAXBTEMP=60; echo "using default value of MAXBtemp="$MAXBTEMP; else MAXBTEMP=$2; fi
 #NBATCH=5
 NBATCH=$1
-MAXBTEMP=60
 rlks=20; azlks=4
 master=`basename geo/20??????.hgt .hgt`
 SCRATCHDIR=/work/scratch/licsar
