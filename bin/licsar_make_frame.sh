@@ -1,7 +1,7 @@
 #!/bin/bash
 # This function should fully update given frame by data from the last 3 months
 
-if [ -z $1 ] || [ `echo $1 | grep -c '_'` -lt 1 ]; then
+if [ -z $1 ]; then
  echo "Usage: licsar_make_frame.sh FRAME_ID [full_scale] [autodownload] [startdate] [enddate]" #[geocode_to_public_website]"
  echo "e.g. licsar_make_frame.sh 124D_05278_081106 0 1 2017-06-30 2019-01-01" #1"
  echo "------"
@@ -17,9 +17,27 @@ if [ -z $1 ] || [ `echo $1 | grep -c '_'` -lt 1 ]; then
  echo "By default:"
  echo "full_scale=0"
  echo "autodownload=1 if full_scale, otherwise 0"
+ echo "------"
+ echo "Additional parameters (must be put DIRECTLY AFTER the command, before other/main parameters):"
+ echo "-n ........ norun (processing scripts are generated but they will not start automatically)"
+ echo "-c ........ perform check if files are in neodc and ingested to licsar database (no download performed)"
  #echo "geocode_to_public_website=0"
  exit;
 fi
+
+NORUN=0
+neodc_check=0
+
+while getopts ":c:n" option; do
+ case "${option}" in
+  c ) neodc_check=1; echo "performing check if files exist in neodc and are ingested to licsar db";
+      shift
+      ;;
+  n ) NORUN=1; echo "No run option. Scripts will be generated but not start automatically";
+      shift
+      ;;
+esac
+done
 
 #getting to proper work directory
 if [ -z $BATCH_CACHE_DIR ] || [ ! -d $BATCH_CACHE_DIR ]; then
@@ -238,6 +256,9 @@ if [ $full_scale -eq 0 ]; then
  if [ $fillgaps -eq 1 ]; then
   echo "Refilling the data gaps (should be ok for last 3 months data)"
   framebatch_data_refill.sh $frame `date -d "90 days ago" +'%Y-%m-%d'`
+ elif [ $neodc_check -eq 1 ]; then
+  echo "Checking if the files are ingested to licsar database"
+  framebatch_data_refill.sh -c $frame `date -d "90 days ago" +'%Y-%m-%d'` `date +'%Y-%m-%d'`
  fi
  echo "Preparing the frame cache (last 3 months)"
  echo "..may take some 5 minutes"
@@ -248,6 +269,9 @@ else
  if [ $fillgaps -eq 1 ]; then
   echo "Refilling the data gaps"
   framebatch_data_refill.sh $frame $startdate $enddate
+ elif [ $neodc_check -eq 1 ]; then
+  echo "Checking if the files are ingested to licsar database"
+  framebatch_data_refill.sh -c $frame $startdate $enddate
  fi
  echo "Preparing the frame cache (full scale processing)"
  echo "..may take some 15 minutes or more"
@@ -277,7 +301,11 @@ fi
  stepprev=''
  #rm $step.sh 2>/dev/null
  prepare_job_script $step $stepcmd $stepsql $stepprev
- ./$step.sh
+ if [ $NORUN -eq 0 ]; then
+  ./$step.sh
+ else
+  echo "To run this step, use ./"$step".sh"
+ fi
  #mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/slcQry.sql | grep $USER | grep $frame | sort -n > $step.list
  realjobno=`cat framebatch_01_mk_image.list | wc -l`
 
@@ -297,8 +325,16 @@ fi
  stepprev=framebatch_01_mk_image
 
  prepare_job_script $step $stepcmd $stepsql $stepprev
- 
- ./$step.sh
+ if [ $NORUN -eq 0 ]; then
+  ./$step.sh
+ else
+  echo "To run this step, use ./"$step".sh"
+ fi
+
+ #if [ $NORUN -eq 0 ]; then
+ # ./$step.sh
+ #fi
+ #./$step.sh
 ###################################################### Make ifgs
  echo "..setting make_ifg job (IFG)"
  
@@ -308,7 +344,11 @@ fi
  stepprev=framebatch_02_coreg
  
  prepare_job_script $step $stepcmd $stepsql $stepprev
- ./$step.sh
+ if [ $NORUN -eq 0 ]; then
+  ./$step.sh
+ else
+  echo "To run this step, use ./"$step".sh"
+ fi
 
 ###################################################### Unwrapping
  #date
@@ -321,15 +361,20 @@ fi
  stepprev=framebatch_03_mk_ifg
  
  prepare_job_script $step $stepcmd $stepsql $stepprev
- ./$step.sh
+ if [ $NORUN -eq 0 ]; then
+  ./$step.sh
+ echo "All bsub jobs are sent for processing."
+ else
+  echo "To run this step, use ./"$step".sh"
+ fi
 
-echo "All bsub jobs are sent for processing."
+
 
 ###################################################### Gap Filling
 echo "Preparing script for gap filling"
 NBATCH=2
 cat << EOF > framebatch_05_gap_filling.sh
-echo "this is a preliminary version of gapfilling (but should work)"
+echo "The gapfilling will use RSLCs in your work folder and update ifg or unw that were not generated (in background - check bjobs)"
 framebatch_gapfill.sh $NBATCH
 EOF
 #LiCSAR_03_mk_ifgs_jw.py -f $frame -d `pwd` > trash

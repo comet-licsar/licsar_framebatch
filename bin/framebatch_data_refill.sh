@@ -3,12 +3,24 @@
 curdir=$LiCSAR_procdir
 SLCdir=$LiCSAR_SLC
 USE_SSH_DOWN=1 #if the wget error is related to SSL blocking, set this to 1
+CHECKONLY=0
 
 if [ -z $2 ]; then
  echo "Parameters are: FRAME STARTDATE [ENDDATE]"
  echo "e.g. 007D_05286_131310 2014-10-10"
+ echo "optional parameter -c: will do only check if data are ingested in licsar db"
  exit
 fi
+
+while getopts ":c" option; do
+ case "${option}" in
+  c ) CHECKONLY=1;
+      echo "Checking if files are properly ingested to licsar database";
+      shift
+      ;;
+esac
+done
+
 
 frame=$1
 startdate=$2 #should be as 2014-10-10
@@ -17,7 +29,7 @@ startdate=$2 #should be as 2014-10-10
 if [ ! -z $3 ]; then enddate=$3; fi
 
 if [[ ! `echo $frame | cut -d '_' -f3 | cut -c 6` == ?([0-9]) ]]; then echo 'frame wrongly set: '$frame; exit; fi
-if [ ! -d $BATCH_CACHE_DIR/$frame ]; then echo 'this frame was not started by framebatch'; exit; fi
+if [ ! -d $BATCH_CACHE_DIR/$frame ]; then echo 'this frame was not started by framebatch. I suppose you know what you are doing'; mkdir $BATCH_CACHE_DIR/$frame; fi
 tr=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
 dir=`echo $frame | cut -c 4`
 if [ $dir == 'D' ]; then dir='dsc'; else dir='asc'; fi
@@ -76,9 +88,11 @@ done
 if [ $pom -eq 1 ]; then
  cp tmp_processed.txt tmp_tmp; sort -u tmp_tmp > tmp_processed.txt; rm tmp_tmp
  cp tmp_existing.txt tmp_tmp; sort -u tmp_tmp > tmp_existing.txt; rm tmp_tmp
- master=`ls geo/20??????.hgt | cut -d '/' -f2 | cut -d '.' -f1`
- sed -i '/'$master'/d' tmp_existing.txt
- sed -i '/'$master'/d' tmp_processed.txt
+ if [ -d geo ]; then
+  master=`ls geo/20??????.hgt | cut -d '/' -f2 | cut -d '.' -f1`
+  sed -i '/'$master'/d' tmp_existing.txt
+  sed -i '/'$master'/d' tmp_processed.txt
+ fi
  echo "You have "`cat tmp_existing.txt | wc -l`" already processed images,"
  if [ `cat tmp_existing.txt | wc -l` -gt `cat tmp_processed.txt | wc -l` ]; then
   echo "the RSLCs are physically existing for "`cat tmp_processed.txt | wc -l`" of them"
@@ -152,6 +166,9 @@ fi
  done
  filestodown=`cat ${frame}_todown | wc -l`
  if [ $filestodown -eq 0 ]; then echo "Congratulations, seems there is nothing more to download. Exiting";exit; fi
+
+if [ $CHECKONLY -eq 1 ]; then echo "files checked, exiting without downloading"; exit; fi
+
  downspeed=5 #MB/s
  timetodown=`echo "$filestodown*4500/$downspeed/60/60" | bc`
  echo "After the checks, there will be "$filestodown" files downloaded";
@@ -172,7 +189,7 @@ if [ $USE_SSH_DOWN -eq 1 ]; then
  # cat $LiCSAR_configpath/.id_rsa_licsar.pub >> ~/.ssh/authorized_keys
  #fi
  alias sshinst="if [ \`grep -c licsar@gmail.com ~/.ssh/authorized_keys\` -eq 0 ]; then cat \$LiCSAR_configpath/.id_rsa_licsar.pub >> ~/.ssh/authorized_keys; fi"
- sshinst; ssh -q -i $LiCSAR_configpath/.id_rsa_licsar -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver exit
+ sshinst 2>/dev/null; ssh -q -i $LiCSAR_configpath/.id_rsa_licsar -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver exit
  test_conn=$?
  if [ $test_conn -eq 0 ]; then
   echo "will use XFER server to download data"

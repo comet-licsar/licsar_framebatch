@@ -20,6 +20,9 @@ from batchLSFLib import set_lotus_job_status
 from multiprocessing import cpu_count
 os.environ['OMP_NUM_THREADS'] = str(cpu_count())
 
+#to override missingBursts checks:
+check_missing_bursts_bool = False
+
 ################################################################################
 #Statuses
 ################################################################################
@@ -108,7 +111,9 @@ def main(argv):
                 #Check that we have no missing bursts
                 imburstlist = lq.get_frame_bursts_on_date(frameName,date)
                 missingbursts = [b for b in burstlist if not b in imburstlist]
-                if not missingbursts: # or not check_missing_bursts(burstlist,missingbursts):
+                if not missingbursts or not check_missing_bursts(burstlist,missingbursts) or not check_missing_bursts_bool:
+                    print('List of missing bursts:')
+                    print(missingbursts)
                     #we will relax the condition here and checking for only critical missing bursts
                     #if not check_missing_bursts(burstlist,missingbursts):
                     print("All necessary bursts for frame {0} seem to be have been acquired "\

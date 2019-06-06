@@ -19,7 +19,7 @@ if { [module-info mode load] || [module-info mode switch2] } {
 prereq licsar_proc
 prereq gmt
                 
-set gwsSoftwarePath "/home/users/earmla/software"
+set gwsSoftwarePath "/gws/smf/j04/nceo_geohazards/software"
 
 set LiCSFBpath "$gwsSoftwarePath/licsar_framebatch"
 set configpath "$LiCSFBpath/config/"

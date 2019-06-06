@@ -1,11 +1,18 @@
 #!/bin/bash
-if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP]";
+MAXBTEMP=60
+rlks=20
+azlks=4
+
+if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_looks] [azimuth_looks]";
                    echo "NBATCH.... number of interferograms to generate per job (licsar defaults to 5)";
-                   echo "MAXBTEMP.. max temporal baseline in days. Default is 60 [days]"; exit; fi
-if [ -z $2 ]; then MAXBTEMP=60; echo "using default value of MAXBtemp="$MAXBTEMP; else MAXBTEMP=$2; fi
+                   echo "MAXBTEMP.. max temporal baseline in days. Default is "$MAXBTEMP" [days]";
+                   echo "range_looks and azimuth_looks - defaults are range_looks="$rlks" and azimuth_looks="$azlks;
+                   exit; fi
+if [ -z $2 ]; then echo "using default value of MAXBtemp="$MAXBTEMP; else MAXBTEMP=$2; fi
+if [ -z $3 ]; then echo "using default value of range_looks="$rlks; else rlks=$3; fi
+if [ -z $4 ]; then echo "using default value of azimuth_looks="$azlks; else azlks=$4; fi
 #NBATCH=5
 NBATCH=$1
-rlks=20; azlks=4
 master=`basename geo/20??????.hgt .hgt`
 SCRATCHDIR=/work/scratch/licsar
 WORKFRAMEDIR=`pwd`
@@ -33,27 +40,29 @@ mkdir gapfill_job
 # bsub -q $bsubquery  -n 1 -W 23:59 gapfill_job/unw_correct.sh
 #fi
 echo "getting list of ifg to fill"
+if [ ! -d IFG ]; then mkdir IFG; fi
 ls RSLC/20??????/*rslc.mli | cut -d '/' -f2 > gapfill_job/tmp_rslcs
-ls IFG/20*_20??????/*.cc | cut -d '/' -f2 > gapfill_job/tmp_ifg_existing
+ls IFG/20*_20??????/*.cc 2>/dev/null | cut -d '/' -f2 > gapfill_job/tmp_ifg_existing
 #rm gapfill_job/tmp_ifg_all2 2>/dev/null
 for FIRST in `cat gapfill_job/tmp_rslcs`; do  
  SECOND=`grep -A1 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
  THIRD=`grep -A2 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
  FOURTH=`grep -A3 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
  for LAST in $SECOND $THIRD $FOURTH; do
-  if [ `datediff $FIRST $LAST` -lt $MAXBTEMP ]; then
+  if [ `datediff $FIRST $LAST` -lt $MAXBTEMP ] && [ ! $FIRST == $LAST ]; then
    echo $FIRST'_'$SECOND >> gapfill_job/tmp_ifg_all2; 
   fi
  done 
 done
-cat gapfill_job/tmp_ifg_all2 | head -n-5 | sort -u > gapfill_job/tmp_ifg_all
+#cat gapfill_job/tmp_ifg_all2 | head -n-5 | sort -u > gapfill_job/tmp_ifg_all
+cat gapfill_job/tmp_ifg_all2 | sort -u > gapfill_job/tmp_ifg_all
 for ifg in `cat gapfill_job/tmp_ifg_existing`; do  sed -i '/'$ifg'/d' gapfill_job/tmp_ifg_all; done
 sed 's/_/ /' gapfill_job/tmp_ifg_all > gapfill_job/tmp_ifg_todo
 #rm gapfill_job/tmp_rslcs2copy 2>/dev/null
 for x in `cat gapfill_job/tmp_ifg_todo`; do echo $x >> gapfill_job/tmp_rslcs2copy; done
 sort -u gapfill_job/tmp_rslcs2copy -o gapfill_job/tmp_rslcs2copy 2>/dev/null
 mv gapfill_job/tmp_ifg_all gapfill_job/tmp_unw_todo
-for x in `ls IFG/*/*.cc | cut -d '/' -f2`; do if [ ! -f IFG/$x/$x.unw ]; then echo $x >> gapfill_job/tmp_unw_todo; fi; done
+for x in `ls IFG/*/*.cc 2>/dev/null | cut -d '/' -f2`; do if [ ! -f IFG/$x/$x.unw ]; then echo $x >> gapfill_job/tmp_unw_todo; fi; done
 
 #check rslc mosaics
 #rm gapfill_job/tmp_rslcs2mosaic 2>/dev/null
@@ -78,6 +87,7 @@ for job in `seq 1 $nojobs`; do
  if [ `wc -l gapfill_job/ifgjob_$job | gawk {'print $1'}` -eq 0 ]; then rm gapfill_job/ifgjob_$job; else
   #rm gapfill_job/ifgjob_$job.sh 2>/dev/null #just to clean..
   #deal with mosaics here..
+  if [ ! -f tab/$master'R_tab' ]; then cp tab/$master'_tab' tab/$master'R_tab'; fi
   for image in `cat gapfill_job/ifgjob_$job`; do 
    if [ `grep -c $image gapfill_job/tmp_rslcs2mosaic` -gt 0 ]; then
     sed -i '/'$image'/d' gapfill_job/tmp_rslcs2mosaic
@@ -96,8 +106,8 @@ done
  echo "Preparation phase: copying data to SCRATCH disk (may take long)"
  #if [ -d $SCRATCHDIR/$frame ]; then echo "..cleaning scratchdir"; rm -rf $SCRATCHDIR/$frame; fi
  mkdir -p $SCRATCHDIR/$frame/RSLC
- mkdir $SCRATCHDIR/$frame/IFG
- mkdir $SCRATCHDIR/$frame/SLC $SCRATCHDIR/$frame/LOGS
+ mkdir $SCRATCHDIR/$frame/IFG 2>/dev/null
+ mkdir $SCRATCHDIR/$frame/SLC $SCRATCHDIR/$frame/LOGS  2>/dev/null
  if [ -f gapfill_job/tmp_rslcs2copy ]; then
   echo "..copying "`wc -l gapfill_job/tmp_rslcs2copy | gawk {'print $1'}`" needed rslcs"
   for rslc in `cat gapfill_job/tmp_rslcs2copy`; do if [ ! -d $SCRATCHDIR/$frame/RSLC/$rslc ]; then cp -r RSLC/$rslc $SCRATCHDIR/$frame/RSLC/.; fi; done
