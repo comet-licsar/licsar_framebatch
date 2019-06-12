@@ -30,6 +30,7 @@ licsMeta = MetaData()
 
 jobs = Table('jobs',licsMeta)
 polygs = Table('polygs',licsMeta)
+polygs2master = Table('polygs2master',licsMeta)
 files = Table('files',licsMeta)
 files2bursts = Table('files2bursts',licsMeta)
 polygs2bursts = Table('polygs2bursts',licsMeta)
@@ -46,6 +47,7 @@ insp.reflecttable(polygs,None)
 insp.reflecttable(files,None)
 insp.reflecttable(files2bursts,None)
 insp.reflecttable(polygs2bursts,None)
+insp.reflecttable(polygs2master,None)
 insp.reflecttable(slc,None)
 insp.reflecttable(rslc,None)
 insp.reflecttable(ifg,None)
@@ -102,9 +104,13 @@ def set_master(polyid,mstrDate):
     #get masterID
     mstrIDQry = select([acq_img.c.img_id]).where(and_(func.date(acq_img.c.acq_date)==mstrDate,acq_img.c.polyid==polyid))
     mstrID = conn.execute(mstrIDQry).fetchone()[0]
-    #Update polygon
-    polyUpd = polygs.update().where(polygs.c.polyid==polyid).values(master_img_id=mstrID)
-    return conn.execute(polyUpd)
+    if get_master(polyid):
+        #Update polygon if there is already a master
+        polyUpd = polygs2master.update().where(polygs2master.c.polyid==polyid).values(master_img_id=mstrID)
+    else:
+        #Insert info about master and polygon
+        polyIns = polygs2master.insert().values(polyid=polyid,master_img_id=mstrID)
+    return conn.execute(polyIns)
 
 ################################################################################
 def set_active(polyid):
@@ -154,12 +160,16 @@ def get_master(frameName):
     conn = engine.connect()
     #Master date query
     mstrIDQry = select([acq_img.c.acq_date]).select_from(
-            acq_img.join(polygs,
-                onclause=polygs.c.master_img_id==acq_img.c.img_id)
+            polygs.join(polygs2master,onclause=polygs.c.polyid==polygs2master.c.polyid)\
+            .join(acq_img,onclause=polygs2master.c.master_img_id==acq_img.c.img_id)\
             ).where(polygs.c.polyid_name==frameName)
     #Update polygon
     mstrDate = conn.execute(mstrIDQry).fetchone()
-    return mstrDate[0]
+    if mstrDate:
+        output = mstrDate[0]
+    else:
+        output = None
+    return output
 
 ################################################################################
 def add_acq_images(polyid):

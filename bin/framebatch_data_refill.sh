@@ -2,7 +2,7 @@
 #procdir=$BATCH_CACHE_DIR
 curdir=$LiCSAR_procdir
 SLCdir=$LiCSAR_SLC
-USE_SSH_DOWN=1 #if the wget error is related to SSL blocking, set this to 1
+USE_SSH_DOWN=0 #if the wget error is related to SSL blocking, set this to 1
 CHECKONLY=0
 
 if [ -z $2 ]; then
@@ -233,7 +233,7 @@ if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
   else
    echo "downloading file "$x" from alaska server"
    echo "( it is file no. "$count" from "$filestodown" )"
-   sshinst; time sshdown $x >/dev/null 2>/dev/null
+   sshinst 2>/dev/null; time sshdown $x >/dev/null 2>/dev/null
    #just to check it by wget itself..
    sshinst; sshdown $x >/dev/null 2>/dev/null
    if [ ! -f $sshout/$x ]; then

@@ -21,19 +21,25 @@ if [ -z $1 ]; then
  echo "Additional parameters (must be put DIRECTLY AFTER the command, before other/main parameters):"
  echo "-n ........ norun (processing scripts are generated but they will not start automatically)"
  echo "-c ........ perform check if files are in neodc and ingested to licsar database (no download performed)"
+ echo "-S ........ store to lics database - ONLY FOR EARMLA"
  #echo "geocode_to_public_website=0"
  exit;
 fi
 
 NORUN=0
 neodc_check=0
+STORE=0
 
-while getopts ":c:n" option; do
+while getopts ":c:n:S" option; do
  case "${option}" in
   c ) neodc_check=1; echo "performing check if files exist in neodc and are ingested to licsar db";
       shift
       ;;
   n ) NORUN=1; echo "No run option. Scripts will be generated but not start automatically";
+      shift
+      ;;
+  S ) STORE=1; echo "After the processing, data will be stored to db and public dir";
+      NORUN=0;
       shift
       ;;
 esac
@@ -50,8 +56,6 @@ fi
 if [ ! -d /work/scratch/licsar/$USER ]; then mkdir /work/scratch/licsar/$USER; fi
 
 basefolder=$BATCH_CACHE_DIR
-#e.g. basefolder=/gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc
-#informing user.. just to be sure
 echo 'Processing in your BATCH_CACHE_DIR that is '$BATCH_CACHE_DIR
 
 #startup variables
@@ -72,20 +76,6 @@ if [ ! -z $5 ]; then
 fi
 if [ ! -z $6 ]; then extra_steps=$6; else extra_steps=0; fi
 
-#this was needed for the download workaround but it is not necessary anymore
-#if [ $fillgaps -eq 1 ]; then
-# ssh -q cems-login1.cems.rl.ac.uk exit
-# test_conn=$?
-# if [ $test_conn -gt 0 ]; then
-#  echo "ERROR: No connection to your login server."
-#  echo "The automatic SLC download will not work"
-#  echo "(try log-out and log-in back to sci server, maybe you are in tmux since yesterday and ssh session expired?)"
-#  echo "I will continue without it in 5 seconds (cancel me)"
-#  sleep 5
-#  fillgaps=0
-# fi
-#fi
-
 if [ $full_scale -eq 1 ]; then
  echo "WARNING:"
  echo "You have chosen to process in full scale"
@@ -99,8 +89,6 @@ else
  no_of_jobs=5 #enough for last 3 months data
 fi
 
-#I may use $BATCH_CACHE_DIR/$frame/LOGS instead for logdir??
-#logdir=~/logs
 #decide for query based on user rights
 if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
   bsubquery='cpom-comet'
@@ -144,27 +132,7 @@ else
  echo 'Some error occurred. Do you have write rights to your BATCH_CACHE_DIR?'
  exit
 fi
-#mkdir -p $logdir 2>/dev/null
-#this is only to easy up the manual process..
-#jobno_start=`cat $logdir/job_start.txt 2>/dev/null`
-#let jobno_end=$jobno_start+$no_of_jobs'-1'
 
-
-###functions
-#function wait {
- #this function has its flaws and it will not be used..
- #old waiting way
- #while [ `bjobs | grep -c $USER` -gt 0 ]; do sleep 10; done
-# pom=0; jobno_start=$1; jobno_end=$2;
-# echo "Waiting for the jobs to finish"
-# while [ $pom -eq 0 ] ; do
-#  bjobs -w -p -r -noheader | grep $USER | gawk {'print $7'} | rev | cut -d '_' -f1 | rev > tmp_running.txt
-#  pom=1 #it means that if there is no unfinished process, we would continue
-#  for A in `seq $jobno_start $jobno_end`; do if [ `grep -c $A tmp_running.txt` -gt 0 ]; then pom=0; fi; done
-#  rm tmp_running.txt
-#  sleep 60
-# done
-#}
 
 function prepare_job_script {
  step=$1
@@ -202,11 +170,7 @@ EOF
  sleep 30
  cat $step.list | grep $USER | grep $frame | sort -n > $step.list 
 fi
- #if [ $realjobno != `cat $step.list | wc -l` ]; then
- # echo "WARNING, THE NO OF JOBS DIFFER BETWEEN mk_img AND $step. This should NOT happen and will NOT work properly."
- #fi
- 
-# jline=0
+
  for jobid in `cat $step.list | gawk {'print $1'} | sort -un`; do
   #get connected images from previous step
   waitText=""
@@ -218,14 +182,12 @@ fi
     grep $image $stepprev.list | gawk {'print $1'} >> tmpText
    done
    for jobid_prev in `cat tmpText | sort -nu`; do
-#   grep $image $stepprev.list | gawk {'print $1'}`; do
     waitText=$waitText" && ended("$stepprev"_"$jobid_prev")"
    done
    waitText=`echo $waitText | cut -c 4-`
    waitcmd='-w "'$waitText'"'
   fi
-#  let jline=$jline+1
-#  B=`sed -n $jline'p' $stepprev.list | gawk {'print $1'}`
+
   if [ $bsubquery == "short-serial" ]; then
   extrabsub=''
   if [ $step == "framebatch_02_coreg" ] || [ $step == "framebatch_04_unwrap" ]; then
@@ -241,7 +203,6 @@ fi
  
  rm tmpText 2>/dev/null
  chmod 770 $step.sh $step'_nowait.sh'
- #./$step.sh
 }
 
 ## MAIN CODE
@@ -289,32 +250,19 @@ fi
  
  echo "..preparing the input images using existing data (SLC)"
  
- 
- #logically good approach, but doesn't work always:
-# jobno_start=`cat $logdir/job_start.txt`
-# let jobno_end=$jobno_start+$no_of_jobs'-1' # oh... but sometimes there is less tasks... carramba
-# 
  #getting jobIDs for mk_image:
  step=framebatch_01_mk_image
  stepcmd=ab_LiCSAR_mk_image.py
  stepsql=slcQry
  stepprev=''
- #rm $step.sh 2>/dev/null
  prepare_job_script $step $stepcmd $stepsql $stepprev
  if [ $NORUN -eq 0 ]; then
   ./$step.sh
  else
   echo "To run this step, use ./"$step".sh"
  fi
- #mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/slcQry.sql | grep $USER | grep $frame | sort -n > $step.list
+ 
  realjobno=`cat framebatch_01_mk_image.list | wc -l`
-
-# for A in `seq $jobno_start $jobno_end`; do
-#  echo bsub -o "$logdir/mk_image_$A.out" -e "$logdir/mk_image_$A.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $A\" -J "mk_image_$A" \
-#    -q $bsubquery -n 1 -W 12:00 ab_LiCSAR_mk_image.py $A >> framebatch_01_mk_image.sh
-# done
- #chmod 770 $step.sh; ./$step.sh
- #wait $jobno_start $jobno_end
 
 ###################################################### Coregistering
  echo "..setting coregistration stage (RSLC)"
@@ -331,10 +279,6 @@ fi
   echo "To run this step, use ./"$step".sh"
  fi
 
- #if [ $NORUN -eq 0 ]; then
- # ./$step.sh
- #fi
- #./$step.sh
 ###################################################### Make ifgs
  echo "..setting make_ifg job (IFG)"
  
@@ -351,9 +295,7 @@ fi
  fi
 
 ###################################################### Unwrapping
- #date
  echo "..setting unwrapping (UNW)"
- #echo "updating jobno_start to unwrap"
 
  step=framebatch_04_unwrap
  stepcmd=ab_LiCSAR_unwrap.py
@@ -375,15 +317,26 @@ echo "Preparing script for gap filling"
 NBATCH=2
 cat << EOF > framebatch_05_gap_filling.sh
 echo "The gapfilling will use RSLCs in your work folder and update ifg or unw that were not generated (in background - check bjobs)"
-framebatch_gapfill.sh $NBATCH
+if [ ! -z \$1 ]; then
+ waiting_str=''
+ for jobid in \`cat framebatch_04_unwrap.sh | rev | gawk {'print \$1'} | rev\`; do
+  stringg="framebatch_04_unwrap_"\$jobid
+  waiting_str=\$waiting_str" && ended("\$stringg")"
+ done
+ waiting_string=\`echo \$waiting_str | cut -c 4-\`
+ echo "bsub -w '"\$waiting_string"' -q $bsubquery -n 1 -J framebatch_05_gap_filling_$frame ./framebatch_05_gap_filling.sh" > framebatch_05_gap_filling_wait.sh
+ chmod 770 framebatch_05_gap_filling_wait.sh
+ ./framebatch_05_gap_filling_wait.sh
+else
+ framebatch_gapfill.sh $NBATCH
+fi
 EOF
-#LiCSAR_03_mk_ifgs_jw.py -f $frame -d `pwd` > trash
-#sed 's/-//g' trash | awk '{print $1"_"$3}' | grep -v This > trash1
-#for ifg in `cat trash1`; do ls -lh IFG/$ifg/$ifg.diff | grep cannot; done &>> trash2
-#awk '{print $4}' trash2 | cut -c 5-21 | sed 's/_/ /g' > ifgs_missing.list
-#rm trash*
 chmod 770 framebatch_05_gap_filling.sh
-
+if [ $NORUN -eq 0 ]; then
+ ./framebatch_05_gap_filling.sh -w
+else
+ echo "To run gapfilling afterwards, use ./framebatch_gapfill.sh"
+fi
 ###################################################### Geocoding to tiffs
 echo "Preparing script for geocoding results"
 cat << EOF > framebatch_06_geotiffs.sh
@@ -403,6 +356,13 @@ cat tmp_to_pub | parallel -j \$NOPAR create_geoctiffs_to_pub.sh $BATCH_CACHE_DIR
 rm tmp_to_pub
 EOF
 chmod 770 framebatch_06_geotiffs.sh
+
+if [ $NORUN -eq 0 ]; then
+ bsub -w framebatch_05_gap_filling_$frame -J framebatch_06_geotiffs_$frame -q short-serial -n 1 -W 04:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh
+else
+ echo "To run geotiff generation, use "
+ echo "bsub -q short-serial -n 1 -W 04:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
+fi
 
 ###################################################### Baseline plot
 echo "Preparing script for generating baseline plot"
@@ -434,6 +394,13 @@ bperp_framebatch.py -i bperp_aqs.list -f $frame -c 0
 EOF
 chmod 770 framebatch_07_baseline_plot.sh
 
+if [ $STORE -eq 1 ]; then
+ echo "Making the system automatically store the generated data (for auto update of frames)"
+ #cd ..
+ bsub -w framebatch_06_geotiffs_$frame -q short-serial -n 1 -W 04:00 -o LOGS/framebatch_XX_store.out -e LOGS/framebatch_XX_store.err store_to_curdir_earmla.sh `pwd` #$frame
+fi
+
+
 # I disabled it since it wasn't really starting.. too complicated -w , I guess J
 # bsub -o "$logdir/geotiffs.out" -e "$logdir/geotiffs.out" -J "geotiffs_$frame" \
 # -q $bsubquery -n 1 -W 12:00 -w "$step5_wait" ./framebatch_05_geotiffs.sh
@@ -451,9 +418,8 @@ pwd
 ls framebatch*.sh
 echo ""
 echo ""
-#echo "Deactivating frame (will disappear from the spreadsheet)"
-#echo "In order to activate it again, just do setFrameActive.py $frame"
-#setFrameInactive.py $frame
+
+
 
 exit
 

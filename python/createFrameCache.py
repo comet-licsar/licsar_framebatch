@@ -4,7 +4,7 @@
 #imports
 ################################################################################
 from configLib import config
-from batchDBLib import get_polyid,set_master,add_acq_images,\
+from batchDBLib import get_polyid,add_acq_images,set_master,\
                     create_slcs,create_rslcs,create_ifgs,create_unws,\
                     batch_link_slcs_to_new_jobs,\
                     batch_link_rslcs_to_new_jobs,\
@@ -31,6 +31,7 @@ batchN = int(sys.argv[2])
 #something extra - assuming that 3rd argument would be starting date:
 startdate = ''
 enddate = ''
+
 if len(sys.argv) > 3:
     startdate = str(sys.argv[3])
     startdate = dt.datetime.strptime(startdate,'%Y-%m-%d')
@@ -51,6 +52,7 @@ user = os.environ['USER']
 ################################################################################
 #Create cache copy
 ################################################################################
+print('copying frame data from licsar database')
 create_lics_cache_dir(frame,srcDir,cacheDir)
 
 ################################################################################
@@ -121,7 +123,7 @@ ifgs = create_ifgs(polyid,acq_imgs.append(mstrline))
 unws = create_unws(polyid,acq_imgs.append(mstrline))
 
 print('Getting existing interferograms from LiCS database')
-existing_ifgs_lics = get_ifgs_from_lics(frame,srcDir,cacheDir)
+existing_ifgs_lics = get_ifgs_from_lics(frame,srcDir,cacheDir,startdate,enddate)
 existing_ifgs = fnmatch.filter(os.listdir(cacheDir+'/'+frame+'/IFG'), '20??????_20??????')
 ifgids = get_all_ifgs(polyid)
 unwids = get_all_unws(polyid)

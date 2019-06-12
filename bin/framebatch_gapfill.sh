@@ -2,12 +2,23 @@
 MAXBTEMP=60
 rlks=20
 azlks=4
+#waiting=0
 
 if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_looks] [azimuth_looks]";
                    echo "NBATCH.... number of interferograms to generate per job (licsar defaults to 5)";
                    echo "MAXBTEMP.. max temporal baseline in days. Default is "$MAXBTEMP" [days]";
                    echo "range_looks and azimuth_looks - defaults are range_looks="$rlks" and azimuth_looks="$azlks;
+#                  echo "parameter -w ... will wait for the unwrapping jobs to end (useful only if unwrap is running, see licsar_make_frame)";
                    exit; fi
+
+#while getopts ":w" option; do
+# case "${option}" in
+#  w ) waiting=1; echo "parameter -w set: will wait for standard unwrapping before ifg gap filling"
+#      shift
+#      ;;
+#esac
+#done
+
 if [ -z $2 ]; then echo "using default value of MAXBtemp="$MAXBTEMP; else MAXBTEMP=$2; fi
 if [ -z $3 ]; then echo "using default value of range_looks="$rlks; else rlks=$3; fi
 if [ -z $4 ]; then echo "using default value of azimuth_looks="$azlks; else azlks=$4; fi
@@ -30,6 +41,15 @@ if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; th
 fi
 rm -r gapfill_job 2>/dev/null
 mkdir gapfill_job
+
+#waiting_str=''
+#if [ $waiting -gt 0 ]; then
+# for jobid in `cat framebatch_04_unwrap.sh | rev | gawk {'print $1'} | rev`; do
+#  stringg="framebatch_04_unwrap_"$jobid
+#  waiting_str=$waiting_str" && ended("$stringg")"
+# done
+# waiting_string=`echo $waiting_str | cut -c 5-`
+#fi
 
 #correct case where unw ifgs were not generated
 #for x in `ls IFG`; do if [ ! -f IFG/$x/$x.unw ]; then echo $x >> gapfill_job/unw_correct.txt; fi; done

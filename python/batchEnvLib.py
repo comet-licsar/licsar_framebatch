@@ -79,9 +79,12 @@ def get_rslcs_from_lics(frame,srcDir,cacheDir,date_strings):
     if not os.path.isdir(os.path.join(cacheDir,frame,'RSLC')): os.mkdir(os.path.join(cacheDir,frame,'RSLC'))
     if os.path.isdir(frameDir):
         rslcs = fnmatch.filter(os.listdir(frameDir+'/RSLC'), '20??????')
+        #for r in rslcs:
+        #    if r not in date_strings: rslcs.remove(r)
+        rslcs_ok = []
         for r in rslcs:
-            if r not in date_strings: rslcs.remove(r)
-        for r in rslcs:
+            if os.path.splitext(r)[0] in date_strings: rslcs_ok.append(r)
+        for r in rslcs_ok:
             if fnmatch.filter(os.listdir(frameDir+'/RSLC/'+r), '20??????.IW?.rslc'):
                 if not os.path.exists(os.path.join(cacheDir,frame,'RSLC',r)):
                     os.symlink(os.path.join(frameDir,'RSLC',r),os.path.join(cacheDir,frame,'RSLC',r))
@@ -89,9 +92,12 @@ def get_rslcs_from_lics(frame,srcDir,cacheDir,date_strings):
         #also un7zip existing RSLCs
         rslcs7z = fnmatch.filter(os.listdir(frameDir+'/RSLC'), '20??????.7z')
         #remove files that are not specified to work on (start/end date)
+        rslcs7z_ok = []
         for r in rslcs7z:
-            if os.path.splitext(r)[0] not in date_strings: rslcs7z.remove(r)
-        for r in rslcs7z:
+            if os.path.splitext(r)[0] in date_strings: rslcs7z_ok.append(r)
+        #for r in rslcs7z:
+        #    if os.path.splitext(r)[0] not in date_strings: rslcs7z.remove(r)
+        for r in rslcs7z_ok:
             if not os.path.exists(os.path.join(cacheDir,frame,'RSLC',r.split('.')[0])):
                 print('Extracting '+r)
                 cmd="7za x -o"+os.path.join(cacheDir,frame,'RSLC')+" "+os.path.join(frameDir,'RSLC',r)+" >/dev/null"
@@ -100,12 +106,20 @@ def get_rslcs_from_lics(frame,srcDir,cacheDir,date_strings):
         #update_existing_rslcs(frame,rslcs)
     return outrslcs
 
-def get_ifgs_from_lics(frame,srcDir,cacheDir):
+def get_ifgs_from_lics(frame,srcDir,cacheDir,startDate = False,endDate = False):
     frameDir = srcDir + '/' + frame.split('_')[0].lstrip("0")[:-1] + '/' + frame
     outifgs=[]
     if not os.path.isdir(os.path.join(cacheDir,frame,'IFG')): os.mkdir(os.path.join(cacheDir,frame,'IFG'))
     if os.path.isdir(frameDir+'/IFG'):
         ifgs = fnmatch.filter(os.listdir(frameDir+'/IFG'), '20??????_20??????')
+        if startDate:
+            ifgs_ok = []
+            for ifg in ifgs:
+                first_date = dt.datetime.strptime(ifg.split('_')[0],'%Y%m%d')
+                second_date = dt.datetime.strptime(ifg.split('_')[1],'%Y%m%d')
+                if first_date > startDate and second_date < endDate:
+                    ifgs_ok.append(ifg)
+            ifgs = ifgs_ok
         #sometimes the saved ifgs are not unwrapped!
         #hmm.. but perhaps it would be only good if to keep it...
         #ifgs = [ifg for ifg in ifgs if os.path.exists(os.path.join(frameDir,'IFG',ifg,ifg+'.unw')]
