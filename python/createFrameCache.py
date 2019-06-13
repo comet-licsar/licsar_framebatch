@@ -29,8 +29,8 @@ frame = sys.argv[1]
 batchN = int(sys.argv[2])
 
 #something extra - assuming that 3rd argument would be starting date:
-startdate = ''
-enddate = ''
+startdate = dt.datetime.strptime('2014-10-01','%Y-%m-%d')
+enddate = dt.datetime.now()
 
 if len(sys.argv) > 3:
     startdate = str(sys.argv[3])

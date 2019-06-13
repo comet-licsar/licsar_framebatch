@@ -73,7 +73,7 @@ if [ $DOIFG -eq 1 ]; then
  fi
 fi
 
-# echo $frame >> $thisDir/stored_to_curdir.txt
+ echo "Stored "$frame" on "`date +'%Y-%m-%d'`>> $thisDir/stored_to_curdir.txt
  #move tabs and logs
  if [ -d $frame/tab ]; then
   echo "copying new tabs and logs"

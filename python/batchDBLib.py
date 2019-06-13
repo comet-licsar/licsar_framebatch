@@ -104,13 +104,16 @@ def set_master(polyid,mstrDate):
     #get masterID
     mstrIDQry = select([acq_img.c.img_id]).where(and_(func.date(acq_img.c.acq_date)==mstrDate,acq_img.c.polyid==polyid))
     mstrID = conn.execute(mstrIDQry).fetchone()[0]
-    if get_master(polyid):
+    #check previous existing records over the polyid
+    polycheckQry = select([polygs2master.c.polyid]).where(polygs2master.c.polyid==polyid)
+    polycheck = conn.execute(polycheckQry).fetchone()
+    if polycheck:
         #Update polygon if there is already a master
-        polyUpd = polygs2master.update().where(polygs2master.c.polyid==polyid).values(master_img_id=mstrID)
+        polyDo = polygs2master.update().where(polygs2master.c.polyid==polyid).values(master_img_id=mstrID)
     else:
         #Insert info about master and polygon
-        polyIns = polygs2master.insert().values(polyid=polyid,master_img_id=mstrID)
-    return conn.execute(polyIns)
+        polyDo = polygs2master.insert().values(polyid=polyid,master_img_id=mstrID)
+    return conn.execute(polyDo)
 
 ################################################################################
 def set_active(polyid):

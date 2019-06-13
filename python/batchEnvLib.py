@@ -112,9 +112,13 @@ def get_ifgs_from_lics(frame,srcDir,cacheDir,startDate = False,endDate = False):
     if not os.path.isdir(os.path.join(cacheDir,frame,'IFG')): os.mkdir(os.path.join(cacheDir,frame,'IFG'))
     if os.path.isdir(frameDir+'/IFG'):
         ifgs = fnmatch.filter(os.listdir(frameDir+'/IFG'), '20??????_20??????')
-        if startDate:
+        if startDate and ifgs:
             ifgs_ok = []
             for ifg in ifgs:
+                #print('debug..'+str(ifg))
+                #print(dt.datetime.strptime(ifg.split('_')[0],'%Y%m%d'))
+                #print(startDate)
+                #print(endDate)
                 first_date = dt.datetime.strptime(ifg.split('_')[0],'%Y%m%d')
                 second_date = dt.datetime.strptime(ifg.split('_')[1],'%Y%m%d')
                 if first_date > startDate and second_date < endDate:
