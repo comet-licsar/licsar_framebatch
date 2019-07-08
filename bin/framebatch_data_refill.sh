@@ -169,10 +169,8 @@ fi
 
 if [ $CHECKONLY -eq 1 ]; then echo "files checked, exiting without downloading"; exit; fi
 
- downspeed=5 #MB/s
- timetodown=`echo "$filestodown*4500/$downspeed/60/60" | bc`
  echo "After the checks, there will be "$filestodown" files downloaded";
- echo "please note that this can take approx. " $timetodown " hours to finish, you may want to run this in tmux or screen??"
+
 ## update what is not physically existing on disk 
 ## (we assume users did the nla request before and want to fill all the unavailable data
 ## update 21-02-2019: CEMS disallows secure connection
@@ -194,33 +192,39 @@ if [ $USE_SSH_DOWN -eq 1 ]; then
  #alias sshinst="if [ \`grep -c licsar@gmail.com ~/.ssh/authorized_keys\` -eq 0 ]; then cat \$LiCSAR_configpath/.id_rsa_licsar.pub >> ~/.ssh/authorized_keys; fi"
  #sshinst 2>/dev/null
  #ssh -q -i $LiCSAR_configpath/.id_rsa_licsar -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver exit
- ssh -q -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver exit
- test_conn=$?
- if [ $test_conn -eq 0 ]; then
+ test_conn=`ssh -q -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver "echo 1"`
+ if [ ! -z $test_conn ] && [ $test_conn -eq 1 ]; then
   echo "will use XFER3 server to download data"
 #  sshout=$SLCdir
 #  sshparams="-q -i $LiCSAR_configpath/.id_rsa_licsar -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
   sshparams="-q -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
   sshserver=$xferserver
-  wgetcmd=`which wget_alaska`
+  #xfer3 is without access to /gws/smf/... - doing workaround
+  cp `which wget_alaska` ~/.wget_alaska
+  wgetcmd="~/.wget_alaska"
+  downspeed=14 #MB/s
  else
   echo "You do not have access to (fast) XFER3 server, please request hpxfer service via CEDA web portal"
+  if [ `hostname` == 'host293.jc.rl.ac.uk' ]; then
+    echo "(users noticed that XFER3 connection does not work from cems-sci2.. you may try another server)"
+  fi
   echo "now we will use a slower solution"
   xferserver=jasmin-xfer1.ceda.ac.uk
-  ssh -q -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver exit
-  test_conn=$?
-  if [ $test_conn -eq 0 ]; then
+  test_conn=`ssh -q -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver "echo 1"`
+  if [ ! -z $test_conn ] && [ $test_conn -eq 1 ]; then
    echo "will use XFER1 server to download data"
    sshparams="-q -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
    sshserver=$xferserver
    wgetcmd=`which wget_alaska`
+   downspeed=2 #MB/s
   else
    echo "will use login server to download"
-   echo "please apply for XFER service in JASMIN website"
+   echo "please apply for hpxfer service in JASMIN website"
    echo "(as a workaround, will use your home folder to download..will clean afterwards)"
    sshdown="ssh cems-login1.cems.rl.ac.uk"
    sshout=~/temp_licsar_down
    mkdir -p $sshout
+   downspeed=2 #MB/s
    cp `which wget_alaska` $sshout/.
    wgetcmd=`$sshout/wget_alaska`
    sshparams="-q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
@@ -228,11 +232,17 @@ if [ $USE_SSH_DOWN -eq 1 ]; then
    echo "please delete this files as temporary - they were created as workaround to data download. Normally they should be cleaned" > $sshout/README
   fi
  fi
- alias sshdown=`echo ssh $sshparams $sshserver "'cd " $sshout "; export LiCSAR_configpath=$LiCSAR_configpath; $wgetcmd '"`
+ alias sshdown=`echo ssh $sshparams $sshserver "'cd "$sshout"; export LiCSAR_configpath=$LiCSAR_configpath; $wgetcmd '"`
 else
  #alias sshinst=''
  alias sshdown=wget_alaska
 fi
+
+ timetodown=`echo "$filestodown*4500/$downspeed/60/60" | bc`
+ echo "please note that the download can take approx. " $timetodown " hours to finish, you may want to run this in tmux or screen??"
+ echo "(press CTRL-C if you want to cancel.. waiting 5 sec)"
+ sleep 5
+
 
 if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
  cd $SLCdir

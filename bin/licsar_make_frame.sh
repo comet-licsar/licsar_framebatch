@@ -25,6 +25,7 @@ if [ -z $1 ]; then
  #echo "geocode_to_public_website=0"
  exit;
 fi
+#export BATCH_CACHE_DIR=/work/scratch-nompiio/licsar/earmla
 
 NORUN=0
 neodc_check=0
@@ -104,6 +105,7 @@ if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; th
   #this one is for multinode.. let's keep it in one only
   #bsubquery='short-serial'
 fi
+#echo "debu 0"
 
 #testing.. but perhaps helps in getting proper num threads in CEMS environment
 export OMP_NUM_THREADS=16
@@ -116,7 +118,7 @@ mysqldbname=`grep ^DBName $framebatch_config | cut -d ':' -f2 | sed 's/^\ //'`
 SQLPath=`grep ^SQLPath $framebatch_config | cut -d '=' -f2 | sed 's/^\ //'`
 #i should test it here..
 
-
+#echo "debu 1"
 #startup check
 if [ -z $LiCSAR_procdir ]; then
  echo "The procdir is not set. Did you 'module load licsar_proc'?"
@@ -129,6 +131,7 @@ if [ ! -d $basefolder ]; then
  echo "The directory "$basefolder" does not exist. Create it first";
  exit;
 fi
+#echo "debu 2"
 
 #initializing the frame dir and LOGS dir
 mkdir -p $BATCH_CACHE_DIR/$frame/LOGS
@@ -141,6 +144,7 @@ else
  exit
 fi
 
+#echo "debu 3"
 
 function prepare_job_script {
  step=$1
