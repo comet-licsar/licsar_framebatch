@@ -2,6 +2,7 @@
 MAXBTEMP=60
 rlks=20
 azlks=4
+bsubncores=16
 #waiting=0
 
 if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_looks] [azimuth_looks]";
@@ -36,8 +37,8 @@ if [ `echo $frame | cut -c 11` != '_' ]; then echo "ERROR, you are not in FRAME 
 if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
   bsubquery='cpom-comet'
  else
-  #bsubquery='par-single'
-  bsubquery='short-serial'
+  bsubquery='par-single'
+  #bsubquery='short-serial'
 fi
 rm -r gapfill_job 2>/dev/null
 mkdir gapfill_job
@@ -70,7 +71,7 @@ for FIRST in `cat gapfill_job/tmp_rslcs`; do
  FOURTH=`grep -A3 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
  for LAST in $SECOND $THIRD $FOURTH; do
   if [ `datediff $FIRST $LAST` -lt $MAXBTEMP ] && [ ! $FIRST == $LAST ]; then
-   echo $FIRST'_'$SECOND >> gapfill_job/tmp_ifg_all2; 
+   echo $FIRST'_'$LAST >> gapfill_job/tmp_ifg_all2;
   fi
  done 
 done
@@ -153,11 +154,11 @@ done
 for job in `seq 1 $nojobs`; do
  wait=''
  if [ -f gapfill_job/ifgjob_$job.sh ]; then
-  bsub -q $bsubquery -n 1 -W 03:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out gapfill_job/ifgjob_$job.sh
+  bsub -q $bsubquery -n $bsubncores -W 04:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out gapfill_job/ifgjob_$job.sh
   wait="-w \"ended('"$frame"_ifg_"$job"')\""
  fi
  #weird error in 'job not found'.. workaround:
- echo bsub -q $bsubquery -n 1 -W 12:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
+ echo bsub -q $bsubquery -n $bsubncores -W 12:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
  chmod 770 tmptmp; ./tmptmp
 done
 # copying and cleaning job
@@ -166,13 +167,13 @@ done
   waitText=`echo $waitText | cut -c 4-`
   waitcmd='-w "'$waitText'"'
  fi
- echo "chmod -R 770 $SCRATCHDIR/$frame" > gapfill_job/copyjob.sh
- echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> gapfill_job/copyjob.sh
- echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> gapfill_job/copyjob.sh
- echo "rm -r $SCRATCHDIR/$frame" >> gapfill_job/copyjob.sh
- chmod 770 gapfill_job/copyjob.sh
+ echo "chmod -R 770 $SCRATCHDIR/$frame" > $WORKFRAMEDIR/gapfill_job/copyjob.sh
+ echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+ echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+ echo "rm -r $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+ chmod 770 $WORKFRAMEDIR/gapfill_job/copyjob.sh
  #workaround for 'Empty job. Job not submitted'
- echo bsub -q short-serial -n 1 $waitcmd -W 02:00 -J $frame'_gapfill_out' gapfill_job/copyjob.sh > tmptmp
- chmod 770 tmptmp; ./tmptmp
- rm tmptmp
+ echo bsub -q short-serial -n 1 $waitcmd -W 03:00 -J $frame'_gapfill_out' $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
+ chmod 770 $WORKFRAMEDIR/gapfill_job/tmptmp; $WORKFRAMEDIR/gapfill_job/tmptmp
+ rm $WORKFRAMEDIR/gapfill_job/tmptmp
  cd -

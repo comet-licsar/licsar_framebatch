@@ -29,21 +29,28 @@ fi
 NORUN=0
 neodc_check=0
 STORE=0
+#according to CEDA, it should be ncores=16, i.e. one process per core. I do not believe it though. So keeping ncores=1.
+bsubncores=16
+bsubncores=1
 
-while getopts ":c:n:S" option; do
+#while [ "$1" != "" ]; do
+#options to be c,n,S
+#option=`echo $1 | rev | cut -d '-' -f1 | rev`
+#case $option in
+while getopts ":cnS" option; do
  case "${option}" in
-  c ) neodc_check=1; echo "performing check if files exist in neodc and are ingested to licsar db";
-      shift
-      ;;
-  n ) NORUN=1; echo "No run option. Scripts will be generated but not start automatically";
-      shift
-      ;;
-  S ) STORE=1; echo "After the processing, data will be stored to db and public dir";
-      NORUN=0;
-      shift
-      ;;
-esac
+  c) neodc_check=1; echo "performing check if files exist in neodc and are ingested to licsar db";
+     ;;
+  n) NORUN=1; echo "No run option. Scripts will be generated but not start automatically";
+     ;;
+  S) STORE=1; echo "After the processing, data will be stored to db and public dir";
+     deleteafterstore=1;
+     NORUN=0;
+     ;;
+ esac
 done
+#shift
+shift $((OPTIND -1))
 
 #getting to proper work directory
 if [ -z $BATCH_CACHE_DIR ] || [ ! -d $BATCH_CACHE_DIR ]; then
@@ -93,8 +100,9 @@ fi
 if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
   bsubquery='cpom-comet'
  else
-  #bsubquery='par-single' #this one is for multinode.. let's keep it in one only
-  bsubquery='short-serial'
+  bsubquery='par-single'
+  #this one is for multinode.. let's keep it in one only
+  #bsubquery='short-serial'
 fi
 
 #testing.. but perhaps helps in getting proper num threads in CEMS environment
@@ -188,17 +196,19 @@ fi
    waitcmd='-w "'$waitText'"'
   fi
 
-  if [ $bsubquery == "short-serial" ]; then
-  extrabsub=''
-  if [ $step == "framebatch_02_coreg" ] || [ $step == "framebatch_04_unwrap" ]; then
-   maxmem=25000
-   extrabsub='-R "rusage[mem='$maxmem']" -M '$maxmem
-  fi
+  #if [ $bsubquery == "short-serial" ]; then
+  if [ $bsubquery != "cpom-comet" ]; then
+  extrabsub='-x'
+  else
+   if [ $step == "framebatch_02_coreg" ] || [ $step == "framebatch_04_unwrap" ]; then
+    maxmem=25000
+    extrabsub='-R "rusage[mem='$maxmem']" -M '$maxmem
+   fi
   fi
   echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
-     -q $bsubquery -n 1 -W 23:59 $extrabsub $waitcmd $stepcmd $jobid >> $step.sh
+     -q $bsubquery -n $bsubncores -W 23:59 $extrabsub $waitcmd $stepcmd $jobid >> $step.sh
   echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
-     -q $bsubquery -n 1 -W 23:59 $extrabsub $stepcmd $jobid >> $step'_nowait.sh'
+     -q $bsubquery -n $bsubncores -W 23:59 $extrabsub $stepcmd $jobid >> $step'_nowait.sh'
  done
  
  rm tmpText 2>/dev/null
@@ -224,7 +234,7 @@ if [ $full_scale -eq 0 ]; then
  echo "Preparing the frame cache (last 3 months)"
  echo "..may take some 5 minutes"
  #createFrameCache_last3months.py $frame $no_of_jobs > tmp_jobid.txt
- createFrameCache.py $frame $no_of_jobs `date -d "90 days ago" +'%Y-%m-%d'` > tmp_jobid.txt
+ createFrameCache.py $frame $no_of_jobs `date -d "90 days ago" +'%Y-%m-%d'` `date +'%Y-%m-%d'` > tmp_jobid.txt
 else
 #if we want to fill gaps throughout the whole time period
  if [ $fillgaps -eq 1 ]; then
@@ -324,7 +334,7 @@ if [ ! -z \$1 ]; then
   waiting_str=\$waiting_str" && ended("\$stringg")"
  done
  waiting_string=\`echo \$waiting_str | cut -c 4-\`
- echo "bsub -w '"\$waiting_string"' -q $bsubquery -n 1 -J framebatch_05_gap_filling_$frame ./framebatch_05_gap_filling.sh" > framebatch_05_gap_filling_wait.sh
+ echo "bsub -w '"\$waiting_string"' -q short-serial -n 1 -J framebatch_05_gap_filling_$frame ./framebatch_05_gap_filling.sh" > framebatch_05_gap_filling_wait.sh
  chmod 770 framebatch_05_gap_filling_wait.sh
  ./framebatch_05_gap_filling_wait.sh
 else
@@ -341,7 +351,7 @@ fi
 echo "Preparing script for geocoding results"
 cat << EOF > framebatch_06_geotiffs.sh
 echo "You should better run this as: "
-echo "bsub -q short-serial -n 1 -W 04:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
+echo "bsub -q $bsubquery -x -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
 NOPAR=\`cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l\`
 rm tmp_to_pub 2>/dev/null
 rm tmp_to_pub.sh 2>/dev/null
@@ -358,10 +368,11 @@ EOF
 chmod 770 framebatch_06_geotiffs.sh
 
 if [ $NORUN -eq 0 ]; then
- bsub -w framebatch_05_gap_filling_$frame -J framebatch_06_geotiffs_$frame -q short-serial -n 1 -W 04:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh
+# bsub -w framebatch_05_gap_filling_$frame -J framebatch_06_geotiffs_$frame -q $bsubquery -n $bsubncores -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh
+ bsub -w framebatch_05_gap_filling_$frame -J framebatch_06_geotiffs_$frame -q $bsubquery -n 16 -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh
 else
  echo "To run geotiff generation, use "
- echo "bsub -q short-serial -n 1 -W 04:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
+ echo "bsub -q "$bsubquery" -x -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
 fi
 
 ###################################################### Baseline plot
@@ -396,8 +407,8 @@ chmod 770 framebatch_07_baseline_plot.sh
 
 if [ $STORE -eq 1 ]; then
  echo "Making the system automatically store the generated data (for auto update of frames)"
- #cd ..
- bsub -w framebatch_06_geotiffs_$frame -q short-serial -n 1 -W 04:00 -o LOGS/framebatch_XX_store.out -e LOGS/framebatch_XX_store.err store_to_curdir_earmla.sh `pwd` #$frame
+ cd $BATCH_CACHE_DIR
+ bsub -w framebatch_06_geotiffs_$frame -q cpom-comet -x -W 12:00 -o LOGS/framebatch_XX_store.out -e LOGS/framebatch_XX_store.err -J store_$frame store_to_curdir_earmla.sh $frame $deleteafterstore #$frame
 fi
 
 

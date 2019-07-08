@@ -2,7 +2,7 @@
 #procdir=$BATCH_CACHE_DIR
 curdir=$LiCSAR_procdir
 SLCdir=$LiCSAR_SLC
-USE_SSH_DOWN=0 #if the wget error is related to SSL blocking, set this to 1
+USE_SSH_DOWN=1 #if the wget error is related to SSL blocking, set this to 1 -- however JASMIN prefers to have it always =1 (to use xfer servers for download)
 CHECKONLY=0
 
 if [ -z $2 ]; then
@@ -179,40 +179,58 @@ if [ $CHECKONLY -eq 1 ]; then echo "files checked, exiting without downloading";
 ## doing workaround through xfer server (or login server if you do not have approved xfer service)
 ## update 08-03-2019: it seems it was something temporary in CEMS. It works again
 ## returning back to the direct download......this is real headache
+## update 03-07-2019: we SHOULD use xfer servers... and actually xfer3 (if the user has xfer services approved)
+## reoptimizing the code and using ssh -A way to connect to the xfer3 - hope all users use this way of connection...
  #bash workaround to aliases
 shopt -s expand_aliases
 sshout=$SLCdir
 if [ $USE_SSH_DOWN -eq 1 ]; then
- xferserver=jasmin-xfer1.ceda.ac.uk
+ #xferserver=jasmin-xfer1.ceda.ac.uk
+ xferserver=jasmin-xfer3.ceda.ac.uk
  #testing connection
  #if [ `grep -c licsar@gmail.com ~/.ssh/authorized_keys` -eq 0 ]; then
  # cat $LiCSAR_configpath/.id_rsa_licsar.pub >> ~/.ssh/authorized_keys
  #fi
- alias sshinst="if [ \`grep -c licsar@gmail.com ~/.ssh/authorized_keys\` -eq 0 ]; then cat \$LiCSAR_configpath/.id_rsa_licsar.pub >> ~/.ssh/authorized_keys; fi"
- sshinst 2>/dev/null; ssh -q -i $LiCSAR_configpath/.id_rsa_licsar -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver exit
+ #alias sshinst="if [ \`grep -c licsar@gmail.com ~/.ssh/authorized_keys\` -eq 0 ]; then cat \$LiCSAR_configpath/.id_rsa_licsar.pub >> ~/.ssh/authorized_keys; fi"
+ #sshinst 2>/dev/null
+ #ssh -q -i $LiCSAR_configpath/.id_rsa_licsar -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver exit
+ ssh -q -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver exit
  test_conn=$?
  if [ $test_conn -eq 0 ]; then
-  echo "will use XFER server to download data"
-  sshout=$SLCdir
-  sshparams="-q -i $LiCSAR_configpath/.id_rsa_licsar -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+  echo "will use XFER3 server to download data"
+#  sshout=$SLCdir
+#  sshparams="-q -i $LiCSAR_configpath/.id_rsa_licsar -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+  sshparams="-q -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
   sshserver=$xferserver
   wgetcmd=`which wget_alaska`
  else
-  echo "will use login server to download"
-  echo "please apply for XFER service in JASMIN website"
-  echo "(as a workaround, will use your home folder to download..will clean afterwards)"
-  sshdown="ssh cems-login1.cems.rl.ac.uk"
-  sshout=~/temp_licsar_down
-  mkdir -p $sshout
-  cp `which wget_alaska` $sshout/.
-  wgetcmd=`$sshout/wget_alaska`
-  sshparams="-q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
-  sshserver=cems-login1.cems.rl.ac.uk
-  echo "please delete this files as temporary - they were created as workaround to data download. Normally they should be cleaned" > $sshout/README
+  echo "You do not have access to (fast) XFER3 server, please request hpxfer service via CEDA web portal"
+  echo "now we will use a slower solution"
+  xferserver=jasmin-xfer1.ceda.ac.uk
+  ssh -q -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver exit
+  test_conn=$?
+  if [ $test_conn -eq 0 ]; then
+   echo "will use XFER1 server to download data"
+   sshparams="-q -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+   sshserver=$xferserver
+   wgetcmd=`which wget_alaska`
+  else
+   echo "will use login server to download"
+   echo "please apply for XFER service in JASMIN website"
+   echo "(as a workaround, will use your home folder to download..will clean afterwards)"
+   sshdown="ssh cems-login1.cems.rl.ac.uk"
+   sshout=~/temp_licsar_down
+   mkdir -p $sshout
+   cp `which wget_alaska` $sshout/.
+   wgetcmd=`$sshout/wget_alaska`
+   sshparams="-q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+   sshserver=cems-login1.cems.rl.ac.uk
+   echo "please delete this files as temporary - they were created as workaround to data download. Normally they should be cleaned" > $sshout/README
+  fi
  fi
  alias sshdown=`echo ssh $sshparams $sshserver "'cd " $sshout "; export LiCSAR_configpath=$LiCSAR_configpath; $wgetcmd '"`
 else
- alias sshinst=''
+ #alias sshinst=''
  alias sshdown=wget_alaska
 fi
 
@@ -233,16 +251,21 @@ if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
   else
    echo "downloading file "$x" from alaska server"
    echo "( it is file no. "$count" from "$filestodown" )"
-   sshinst 2>/dev/null; time sshdown $x >/dev/null 2>/dev/null
+   #sshinst 2>/dev/null;
+   time sshdown $x >/dev/null 2>/dev/null
    #just to check it by wget itself..
-   sshinst; sshdown $x >/dev/null 2>/dev/null
+   #sshinst;
+   sshdown $x >/dev/null 2>/dev/null
    if [ ! -f $sshout/$x ]; then
     echo "Some download error appeared, trying again (verbosed)"
-    sshinst; sshdown $x
+    #sshinst; 
+    sshdown $x
    else
     zipcheck=`7za l $sshout/$x | grep ERROR -A1 | tail -n1`
     if [ `echo $zipcheck | wc -c` -gt 1 ]; then 
-     echo "download error, trying once more (verbosed)"; sshinst; sshdown $x;
+     echo "download error, trying once more (verbosed)"
+     #sshinst;
+     sshdown $x;
     fi
     zipcheck=`7za l $sshout/$x | grep ERROR -A1 | tail -n1`
     if [ `echo $zipcheck | wc -c` -gt 1 ]; then

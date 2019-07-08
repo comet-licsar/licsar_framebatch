@@ -2,9 +2,10 @@
 #curdir=/gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current
 curdir=$LiCSAR_procdir
 public=$LiCSAR_public
-if [ -z $1 ]; then echo "Parameter: *_*_* frame folder.."; exit;
+if [ -z $1 ]; then echo "Parameter: *_*_* frame folder.. MUST BE IN THIS FOLDER"; exit;
  else frame=`basename $1`; fi
 
+if [ ! -d $frame ]; then echo "wrong framedir - you should be in the \$BATCH_CACHE_DIR, sorry"; exit; fi
 if [ $USER != 'earmla' ]; then echo "you are not admin. Not storing anything."; exit; fi
 
 MOVE=0
@@ -12,6 +13,7 @@ DORSLC=1
 DOGEOC=1
 DOIFG=1
 DELETEAFTER=0
+if [ ! -z $2 ]; then if [ $2 -eq 1 ]; then DELETEAFTER=1; echo "setting to delete"; fi; fi
 
 #for thisDir in /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc/frames; do
 #cd $thisDir
