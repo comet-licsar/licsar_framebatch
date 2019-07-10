@@ -3,6 +3,7 @@
 curdir=$LiCSAR_procdir
 SLCdir=$LiCSAR_SLC
 USE_SSH_DOWN=1 #if the wget error is related to SSL blocking, set this to 1 -- however JASMIN prefers to have it always =1 (to use xfer servers for download)
+use_scihub=0 #being used only for the latest data... like.. the current or previous day
 CHECKONLY=0
 
 if [ -z $2 ]; then
@@ -26,7 +27,13 @@ frame=$1
 startdate=$2 #should be as 2014-10-10
 
 #if [ `grep -c '-' $2 |..... ]; then .....; fi
-if [ ! -z $3 ]; then enddate=$3; fi
+#this is to use scihub to download only the today's and yesterday's data
+if [ ! -z $3 ]; then
+ enddate=$3;
+ if [ $enddate == `date +'%Y-%m-%d'` ] || [ $enddate == `date -d 'yesterday' +'%Y-%m-%d'` ]; then
+  if [ -f ~/.scihub_credentials ]; then use_scihub=1; fi
+ fi
+fi
 
 if [[ ! `echo $frame | cut -d '_' -f3 | cut -c 6` == ?([0-9]) ]]; then echo 'frame wrongly set: '$frame; exit; fi
 if [ ! -d $BATCH_CACHE_DIR/$frame ]; then echo 'this frame was not started by framebatch. I suppose you know what you are doing'; mkdir $BATCH_CACHE_DIR/$frame; fi
@@ -182,6 +189,7 @@ if [ $CHECKONLY -eq 1 ]; then echo "files checked, exiting without downloading";
  #bash workaround to aliases
 shopt -s expand_aliases
 sshout=$SLCdir
+wgetcmd_scihub=''
 if [ $USE_SSH_DOWN -eq 1 ]; then
  #xferserver=jasmin-xfer1.ceda.ac.uk
  xferserver=jasmin-xfer3.ceda.ac.uk
@@ -203,6 +211,14 @@ if [ $USE_SSH_DOWN -eq 1 ]; then
   cp `which wget_alaska` ~/.wget_alaska
   wgetcmd="~/.wget_alaska"
   downspeed=14 #MB/s
+  #making it ready also through scihub:
+  if [ $use_scihub -eq 1 ]; then
+   #seems only xfer3 cannot access smf disk..
+   #cp `which wget_scihub` ~/.wget_scihub
+   #wgetcmd_scihub="~/.wget_scihub"
+   sshserver_scihub=jasmin-xfer2.ceda.ac.uk
+   wgetcmd_scihub=`which wget_scihub`
+  fi
  else
   echo "You do not have access to (fast) XFER3 server, please request hpxfer service via CEDA web portal"
   if [ `hostname` == 'host293.jc.rl.ac.uk' ]; then
@@ -217,6 +233,11 @@ if [ $USE_SSH_DOWN -eq 1 ]; then
    sshserver=$xferserver
    wgetcmd=`which wget_alaska`
    downspeed=2 #MB/s
+   if [ $use_scihub -eq 1 ]; then
+    #cp `which wget_scihub` ~/.wget_scihub
+    sshserver_scihub=$sshserver
+    wgetcmd_scihub=`which wget_scihub`
+   fi
   else
    echo "will use login server to download"
    echo "please apply for hpxfer service in JASMIN website"
@@ -229,13 +250,24 @@ if [ $USE_SSH_DOWN -eq 1 ]; then
    wgetcmd=`$sshout/wget_alaska`
    sshparams="-q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
    sshserver=cems-login1.cems.rl.ac.uk
+   if [ $use_scihub -eq 1 ]; then
+    cp `which wget_scihub` $sshout/.
+    sshserver_scihub=$sshserver
+    wgetcmd_scihub=`$sshout/wget_scihub`
+   fi
    echo "please delete this files as temporary - they were created as workaround to data download. Normally they should be cleaned" > $sshout/README
   fi
  fi
  alias sshdown=`echo ssh $sshparams $sshserver "'cd "$sshout"; export LiCSAR_configpath=$LiCSAR_configpath; $wgetcmd '"`
+ if [ $use_scihub -eq 1 ]; then
+  alias sshdown_scihub=`echo ssh $sshparams $sshserver_scihub "'cd "$sshout"; export LiCSAR_configpath=$LiCSAR_configpath; $wgetcmd_scihub '"`
+ fi
 else
  #alias sshinst=''
  alias sshdown=wget_alaska
+ if [ $use_scihub -eq 1 ]; then
+  alias sshdown_scihub=wget_scihub
+ fi
 fi
 
  timetodown=`echo "$filestodown*4500/$downspeed/60/60" | bc`
@@ -261,15 +293,27 @@ if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
   else
    echo "downloading file "$x" from alaska server"
    echo "( it is file no. "$count" from "$filestodown" )"
-   #sshinst 2>/dev/null;
-   time sshdown $x >/dev/null 2>/dev/null
-   #just to check it by wget itself..
-   #sshinst;
-   sshdown $x >/dev/null 2>/dev/null
+   scihub_pom=0
+   if [ `echo $x | cut -c 18-25` -ge `date -d 'yesterday' +'%Y%m%d'` ] && [ $use_scihub -eq 1 ]; then
+    echo "(actually will use scihub for this one..)"
+    scihub_pom=1
+    time sshdown_scihub $x >/dev/null 2>/dev/null
+    sshdown_scihub $x >/dev/null 2>/dev/null
+   else
+    #sshinst 2>/dev/null;
+    time sshdown $x >/dev/null 2>/dev/null
+    #just to check it by wget itself..
+    #sshinst;
+    sshdown $x >/dev/null 2>/dev/null
+   fi
    if [ ! -f $sshout/$x ]; then
     echo "Some download error appeared, trying again (verbosed)"
-    #sshinst; 
-    sshdown $x
+    #sshinst;
+    if [ $scihub_pom -eq 1 ]; then
+     sshdown_scihub $x
+    else
+     sshdown $x
+    fi
    else
     zipcheck=`7za l $sshout/$x | grep ERROR -A1 | tail -n1`
     if [ `echo $zipcheck | wc -c` -gt 1 ]; then 
