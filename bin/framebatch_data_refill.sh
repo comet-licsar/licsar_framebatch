@@ -28,8 +28,9 @@ startdate=$2 #should be as 2014-10-10
 
 #if [ `grep -c '-' $2 |..... ]; then .....; fi
 #this is to use scihub to download only the today's and yesterday's data
-if [ ! -z $3 ]; then
+if [ ! -z $3 ]; then 
  enddate=$3;
+ if [ `date -d $enddate +'%Y%m%d'` -gt `date +'%Y%m%d'` ]; then enddate=`date +'%Y-%m-%d'`; fi
  if [ $enddate == `date +'%Y-%m-%d'` ] || [ $enddate == `date -d 'yesterday' +'%Y-%m-%d'` ]; then
   if [ -f ~/.scihub_credentials ]; then use_scihub=1; fi
  fi
@@ -54,9 +55,11 @@ make_simple_polygon.sh ${frame}-poly.txt
 ## make list from scihub
  echo "getting scihub data"
  if [ ! -z $enddate ]; then
-   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `echo $enddate | sed 's/-//g'` >/dev/null 2>/dev/null
+   #the way of query_sentinel.sh misses the latest data (so increasing enddate by 1 day to the future)
+   enddate_str=`echo $enddate | sed 's/-//g'`
+   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date -d $enddate_str'+1day' +'%Y%m%d'` >/dev/null 2>/dev/null
   else
-   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date +'%Y%m%d'` >/dev/null 2>/dev/null
+   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date -d 'tomorrow' +'%Y%m%d'` >/dev/null 2>/dev/null
  fi
  echo "identified "`cat ${frame}_zipfile_names.list | wc -l`" images"
  echo "getting their expected CEMS path"
