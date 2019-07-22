@@ -115,9 +115,10 @@ for job in `seq 1 $nojobs`; do
     echo "SLC_mosaic_S1_TOPS tab/$image'R_tab' RSLC/$image/$image.rslc RSLC/$image/$image.rslc.par $rlks $azlks 0 tab/$master'R_tab'" >> gapfill_job/ifgjob_$job.sh
    fi
   done
-  echo "LiCSAR_03_mk_ifgs.py -d . -f $frame -c 0 -T gapfill_job/ifgjob_$job.log  -i gapfill_job/ifgjob_$job" >> gapfill_job/ifgjob_$job.sh
+  echo "LiCSAR_03_mk_ifgs.py -d . -r $rlks -a $azlks -f $frame -c 0 -T gapfill_job/ifgjob_$job.log  -i gapfill_job/ifgjob_$job" >> gapfill_job/ifgjob_$job.sh
   chmod 770 gapfill_job/ifgjob_$job.sh
  fi
+ #need to edit the unwrap script below to also accept range/azi looks!
  echo "LiCSAR_04_unwrap.py -d . -f $frame -T gapfill_job/unwjob_$job.log -l gapfill_job/unwjob_$job" > gapfill_job/unwjob_$job.sh
  waitText=$waitText" && ended("$frame"_unw_"$job")"
  chmod 770 gapfill_job/unwjob_$job.sh

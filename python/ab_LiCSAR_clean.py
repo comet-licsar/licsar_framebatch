@@ -35,7 +35,7 @@ def main(argv):
     slcDir = os.path.join(cacheDir,frameName,'SLC')
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-    print('Ceaning {frame} slcs'.format(frame=frameName))
+    print('Cleaning {frame} slcs'.format(frame=frameName))
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
     for ind,row in slc.iterrows():

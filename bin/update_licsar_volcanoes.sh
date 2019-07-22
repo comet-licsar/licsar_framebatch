@@ -5,7 +5,14 @@ echo "preparing list of frames to update"
 for x in `ls /gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/volc-proc/list_database/*frame.txt`; do
  cat $x >> $BATCH_CACHE_DIR/volc/allframes.tmp
 done
+#additional requests
+echo 015A_03923_131313 >> $BATCH_CACHE_DIR/volc/allframes.tmp
+echo 088A_03925_131313 >> $BATCH_CACHE_DIR/volc/allframes.tmp
+echo 139D_04017_131313 >> $BATCH_CACHE_DIR/volc/allframes.tmp
+
 sort -u $BATCH_CACHE_DIR/volc/allframes.tmp >  $BATCH_CACHE_DIR/volc/allframes.txt
+sed -i 's/000D_/175D_/' $BATCH_CACHE_DIR/volc/allframes.txt
+sed -i 's/000A_/175A_/' $BATCH_CACHE_DIR/volc/allframes.txt
 rm $BATCH_CACHE_DIR/volc/allframes.tmp
 
 totalno=`wc -l $BATCH_CACHE_DIR/volc/allframes.txt | gawk {'print $1'}`
