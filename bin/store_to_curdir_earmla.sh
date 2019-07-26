@@ -130,6 +130,13 @@ fi
 #done
 #done
 
+echo "Updating bperp file in pubdir"
+cd $thisDir/$frame
+#mk_bperp_file.sh
+#if [ -f bperp_file ]; then
+update_bperp_file.sh
+#fi
+
 echo "Deactivating the frame after its storing to db"
 setFrameInactive.py $frame
 

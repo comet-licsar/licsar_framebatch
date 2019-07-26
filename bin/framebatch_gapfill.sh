@@ -1,14 +1,17 @@
 #!/bin/bash
 MAXBTEMP=60
-rlks=20
-azlks=4
+orig_rlks=20
+orig_azlks=4
 bsubncores=16
+#according to CEDA Support, we should keep 1 process per processor.
+#but -n1 was working usually fine... so keeping -n1
+bsubncores=1
 #waiting=0
 
 if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_looks] [azimuth_looks]";
                    echo "NBATCH.... number of interferograms to generate per job (licsar defaults to 5)";
                    echo "MAXBTEMP.. max temporal baseline in days. Default is "$MAXBTEMP" [days]";
-                   echo "range_looks and azimuth_looks - defaults are range_looks="$rlks" and azimuth_looks="$azlks;
+                   echo "range_looks and azimuth_looks - defaults are range_looks="$orig_rlks" and azimuth_looks="$orig_azlks;
 #                  echo "parameter -w ... will wait for the unwrapping jobs to end (useful only if unwrap is running, see licsar_make_frame)";
                    exit; fi
 
@@ -21,8 +24,14 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
 #done
 
 if [ -z $2 ]; then echo "using default value of MAXBtemp="$MAXBTEMP; else MAXBTEMP=$2; fi
-if [ -z $3 ]; then echo "using default value of range_looks="$rlks; else rlks=$3; fi
-if [ -z $4 ]; then echo "using default value of azimuth_looks="$azlks; else azlks=$4; fi
+if [ -z $3 ]; then echo "using default value of range_looks="$rlks; rlks=$orig_rlks; else rlks=$3; fi
+if [ -z $4 ]; then echo "using default value of azimuth_looks="$azlks; azlks=$orig_azlks; else azlks=$4; fi
+
+if [ $rlks != $orig_rlks ] || [ $azlks != $orig_azlks ]; then
+ echo "You have chosen for custom multilooking"
+ echo "please note that these will be generated from all rslcs here and only for ifgs that do not exist in IFG"
+ echo ""
+fi
 #NBATCH=5
 NBATCH=$1
 master=`basename geo/20??????.hgt .hgt`
@@ -99,7 +108,22 @@ nojobs10=`echo $NOIFG*10/$NBATCH | bc | rev | cut -c 1 | rev`
 if [ $nojobs10 -gt 0 ]; then let nojobs=$nojobs+1; fi
 
 #distribute ifgs for processing jobs and run them
-nifgmax=0; waitText="";
+nifgmax=0; waitText=""; waitTextmosaic="";
+if [ -f gapfill_job/tmp_rslcs2mosaic ]; then
+ rm gapfill_job/mosaic.sh 2>/dev/null
+ for image in `sort -u gapfill_job/tmp_rslcs2mosaic`; do
+  #fix nonexisting tabs:
+  if [ ! -f tab/$image'R_tab' ]; then
+   for f in `ls RSLC/$image/$image.IW?.rslc`; do
+    echo "./"$f" ./"$f".par ./"$f".TOPS_par" >> tab/$image'R_tab'
+   done
+  fi
+  echo "SLC_mosaic_S1_TOPS tab/$image'R_tab' RSLC/$image/$image.rslc RSLC/$image/$image.rslc.par $rlks $azlks 0 tab/$master'R_tab'" >> gapfill_job/mosaic.sh
+ done
+ chmod 770 gapfill_job/mosaic.sh
+ waitTextmosaic="'ended("$frame"_mosaic)'"
+fi
+if [ ! -f tab/$master'R_tab' ]; then cp tab/$master'_tab' tab/$master'R_tab'; fi
 for job in `seq 1 $nojobs`; do
  let nifg=$nifgmax+1
  let nifgmax=$nifgmax+$NBATCH
@@ -108,17 +132,18 @@ for job in `seq 1 $nojobs`; do
  if [ `wc -l gapfill_job/ifgjob_$job | gawk {'print $1'}` -eq 0 ]; then rm gapfill_job/ifgjob_$job; else
   #rm gapfill_job/ifgjob_$job.sh 2>/dev/null #just to clean..
   #deal with mosaics here..
-  if [ ! -f tab/$master'R_tab' ]; then cp tab/$master'_tab' tab/$master'R_tab'; fi
-  for image in `cat gapfill_job/ifgjob_$job`; do 
-   if [ `grep -c $image gapfill_job/tmp_rslcs2mosaic` -gt 0 ]; then
-    sed -i '/'$image'/d' gapfill_job/tmp_rslcs2mosaic
-    echo "SLC_mosaic_S1_TOPS tab/$image'R_tab' RSLC/$image/$image.rslc RSLC/$image/$image.rslc.par $rlks $azlks 0 tab/$master'R_tab'" >> gapfill_job/ifgjob_$job.sh
-   fi
-  done
-  echo "LiCSAR_03_mk_ifgs.py -d . -r $rlks -a $azlks -f $frame -c 0 -T gapfill_job/ifgjob_$job.log  -i gapfill_job/ifgjob_$job" >> gapfill_job/ifgjob_$job.sh
+  #if [ ! -f tab/$master'R_tab' ]; then cp tab/$master'_tab' tab/$master'R_tab'; fi
+  #for image in `cat gapfill_job/ifgjob_$job`; do 
+  # if [ `grep -c $image gapfill_job/tmp_rslcs2mosaic` -gt 0 ]; then
+  #  sed -i '/'$image'/d' gapfill_job/tmp_rslcs2mosaic
+  #  echo "SLC_mosaic_S1_TOPS tab/$image'R_tab' RSLC/$image/$image.rslc RSLC/$image/$image.rslc.par $rlks $azlks 0 tab/$master'R_tab'" >> gapfill_job/ifgjob_$job.sh
+  # fi
+  #done
+  echo "LiCSAR_03_mk_ifgs.py -d . -r $rlks -a $azlks -f $frame -c 0 -T gapfill_job/ifgjob_$job.log  -i gapfill_job/ifgjob_$job" > gapfill_job/ifgjob_$job.sh
   chmod 770 gapfill_job/ifgjob_$job.sh
  fi
  #need to edit the unwrap script below to also accept range/azi looks!
+ #hmm... actually it seems that unwrap will work anyway...
  echo "LiCSAR_04_unwrap.py -d . -f $frame -T gapfill_job/unwjob_$job.log -l gapfill_job/unwjob_$job" > gapfill_job/unwjob_$job.sh
  waitText=$waitText" && ended("$frame"_unw_"$job")"
  chmod 770 gapfill_job/unwjob_$job.sh
@@ -147,15 +172,43 @@ done
  for ifg in `cat gapfill_job/tmp_unw_todo`; do 
   if [ -d IFG/$ifg ]; then cp -r IFG/$ifg $SCRATCHDIR/$frame/IFG/.; fi;
  done
+ if [ $rlks != $orig_rlks ] || [ $azlks != $orig_azlks ]; then
+  echo "preparing MLI and DEM for the custom multilooking"
+  echo "(nothing will get rewritten in your workfolder)"
+  #mkdir $SCRATCHDIR/$frame/DEM
+  cp -r DEM $SCRATCHDIR/$frame/.
+  cd $SCRATCHDIR/$frame
+  #doing MLI for given rlks and azlks over master image
+  rm SLC/$master/$master.slc.mli SLC/$master/$master.slc.mli.par SLC/$master/$master.slc.mli.bmp 2>/dev/null
+  echo "..generating custom multilooked master"
+  #SLC_mosaic_S1_TOPS tab/$master'_tab' SLC/$master/$master.mli SLC/$master/$master.mli.par $rlks $azlks 0 2>/dev/null
+  multilookSLC $master $rlks $azlks 1 $SCRATCHDIR/$frame/SLC/$master
+  echo "..recreating geocoding tables"
+  python -c "from LiCSAR_lib.coreg_lib import geocode_dem; geocode_dem('"$SCRATCHDIR/$frame/SLC/$master"','"$SCRATCHDIR/$frame/geo"','"$SCRATCHDIR/$frame/DEM"','"$SCRATCHDIR/$frame"','"$master"')"
+  #echo "..generating custom multilooked hgt file"
+  #ml_width=`grep range_samples SLC/$master/$master.slc.mli.par | gawk {'print $2'}`
+  #demwidth=`grep width geo/EQA.dem_par | gawk {'print $2'}`
+  #rm geo/$master.hgt
+  #geocode geo/$master.lt_fine geo/EQA.dem $demwidth geo/$master.hgt $ml_width - 2 0 - - - - - >/dev/null 2>/dev/null
+  #rashgt geo/$master.hgt SLC/$master/$master.slc.mli $ml_width
+ fi
 ##########################################################
  echo "running jobs"
  cd $SCRATCHDIR/$frame
  #weird error - mk_ifg is reading SLC tabs instead of rslc?? (need debug).. quick fix here:
  #for x in `ls tab/20??????_tab`; do cp `echo $x | sed 's/_tab/R_tab/'` $x; done
+
+#first run mosaicking
+if [ `echo $waitTextmosaic | wc -w` -gt 0 ]; then waitcmdmosaic="-w "$waitTextmosaic;
+ else waitcmdmosaic='';
+fi
+bsub -q $bsubquery -n 1 -W 04:00 -J $frame"_mosaic" gapfill_job/mosaic.sh
+
+#now we can start jobs..
 for job in `seq 1 $nojobs`; do
  wait=''
  if [ -f gapfill_job/ifgjob_$job.sh ]; then
-  bsub -q $bsubquery -n $bsubncores -W 04:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out gapfill_job/ifgjob_$job.sh
+  bsub -q $bsubquery -n $bsubncores -W 04:00 $waitcmdmosaic -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out gapfill_job/ifgjob_$job.sh
   wait="-w \"ended('"$frame"_ifg_"$job"')\""
  fi
  #weird error in 'job not found'.. workaround:
@@ -171,7 +224,9 @@ done
  echo "chmod -R 770 $SCRATCHDIR/$frame" > $WORKFRAMEDIR/gapfill_job/copyjob.sh
  echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
  echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
- echo "rm -r $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+ if [ ! `date +'%Y%m%d'` == 20190726 ] ; then
+  echo "rm -r $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+ fi
  chmod 770 $WORKFRAMEDIR/gapfill_job/copyjob.sh
  #workaround for 'Empty job. Job not submitted'
  echo bsub -q short-serial -n 1 $waitcmd -W 03:00 -J $frame'_gapfill_out' $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp

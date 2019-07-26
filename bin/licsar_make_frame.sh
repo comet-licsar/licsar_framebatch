@@ -193,6 +193,14 @@ fi
     #get jobid from previous step that is connected to this image
     grep $image $stepprev.list | gawk {'print $1'} >> tmpText
    done
+   #need to wait for coreg and will wait also for ifg step
+   #the waiting of unwrap to mk_ifg should be improved! this way is safer but will wait for more than necessary
+   if [ $step == 'framebatch_03_mk_ifg' ] || [ $step == 'framebatch_04_unwrap' ]; then
+    for image in `grep ^$jobid $step.list | gawk {'print $4'}`; do
+     #get jobid from previous step that is connected to this image
+     grep $image $stepprev.list | gawk {'print $1'} >> tmpText
+    done
+   fi
    for jobid_prev in `cat tmpText | sort -nu`; do
     waitText=$waitText" && ended("$stepprev"_"$jobid_prev")"
    done
@@ -338,7 +346,7 @@ if [ ! -z \$1 ]; then
   waiting_str=\$waiting_str" && ended("\$stringg")"
  done
  waiting_string=\`echo \$waiting_str | cut -c 4-\`
- echo "bsub -w '"\$waiting_string"' -q short-serial -n 1 -J framebatch_05_gap_filling_$frame ./framebatch_05_gap_filling.sh" > framebatch_05_gap_filling_wait.sh
+ echo "bsub -w '"\$waiting_string"' -q short-serial -n 1 -J framebatch_05_gap_filling_$frame -o LOGS/framebatch_05_gap_filling.out -e LOGS/framebatch_05_gap_filling.err ./framebatch_05_gap_filling.sh" > framebatch_05_gap_filling_wait.sh
  chmod 770 framebatch_05_gap_filling_wait.sh
  ./framebatch_05_gap_filling_wait.sh
 else
@@ -346,7 +354,7 @@ else
 fi
 EOF
 chmod 770 framebatch_05_gap_filling.sh
-if [ $NORUN -eq 0 ]; then
+if [ $NORUN -eq 0 ] && [ $STORE -lt 1 ]; then
  ./framebatch_05_gap_filling.sh -w
 else
  echo "To run gapfilling afterwards, use ./framebatch_gapfill.sh"
@@ -355,8 +363,9 @@ fi
 echo "Preparing script for geocoding results"
 cat << EOF > framebatch_06_geotiffs.sh
 echo "You should better run this as: "
-echo "bsub -q $bsubquery -x -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
+echo "bsub -q $bsubquery -n 8 -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
 NOPAR=\`cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l\`
+NOPAR=8
 rm tmp_to_pub 2>/dev/null
 rm tmp_to_pub.sh 2>/dev/null
 
@@ -372,11 +381,22 @@ EOF
 chmod 770 framebatch_06_geotiffs.sh
 
 if [ $NORUN -eq 0 ]; then
+ #make it wait to finish of unwrapping - and not gapfilling!
+ waiting_str=''
+ for jobid in `cat framebatch_04_unwrap.sh | rev | gawk {'print $1'} | rev`; do
+  stringg="framebatch_04_unwrap_"$jobid
+  waiting_str=$waiting_str" && ended("$stringg")"
+ done
+ waiting_string=`echo $waiting_str | cut -c 4-`
+ echo "bsub -w '"$waiting_string"' -J $frame'_geo' -q $bsubquery -n 8 -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh" > framebatch_06_geotiffs_wait.sh
+ chmod 770 framebatch_06_geotiffs_wait.sh
+ ./framebatch_06_geotiffs_wait.sh
 # bsub -w framebatch_05_gap_filling_$frame -J framebatch_06_geotiffs_$frame -q $bsubquery -n $bsubncores -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh
- bsub -w framebatch_05_gap_filling_$frame -J framebatch_06_geotiffs_$frame -q $bsubquery -n 16 -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh
+# bsub -w framebatch_05_gap_filling_$frame -J framebatch_06_geotiffs_$frame -q $bsubquery -x -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh
+ #bsub -w $waiting_string -J framebatch_06_geotiffs_$frame -q $bsubquery -x -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh
 else
  echo "To run geotiff generation, use "
- echo "bsub -q "$bsubquery" -x -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
+ echo "bsub -q "$bsubquery" -n 8 -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
 fi
 
 ###################################################### Baseline plot
@@ -409,10 +429,11 @@ bperp_framebatch.py -i bperp_aqs.list -f $frame -c 0
 EOF
 chmod 770 framebatch_07_baseline_plot.sh
 
+##################################################### auto-store to LiCSAR_procdir and LiCSAR_public
 if [ $STORE -eq 1 ]; then
  echo "Making the system automatically store the generated data (for auto update of frames)"
  cd $BATCH_CACHE_DIR
- bsub -w framebatch_06_geotiffs_$frame -q cpom-comet -x -W 12:00 -o LOGS/framebatch_XX_store.out -e LOGS/framebatch_XX_store.err -J store_$frame store_to_curdir_earmla.sh $frame $deleteafterstore #$frame
+ bsub -w $frame'_geo' -q cpom-comet -n 1 -W 12:00 -o LOGS/framebatch_XX_store.out -e LOGS/framebatch_XX_store.err -J $frame'_ST' store_to_curdir_earmla.sh $frame $deleteafterstore #$frame
 fi
 
 

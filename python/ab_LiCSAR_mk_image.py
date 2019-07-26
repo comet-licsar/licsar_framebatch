@@ -21,7 +21,7 @@ from multiprocessing import cpu_count
 os.environ['OMP_NUM_THREADS'] = str(cpu_count())
 
 #to override missingBursts checks:
-check_missing_bursts_bool = False
+check_missing_bursts_bool = True
 
 ################################################################################
 #Statuses

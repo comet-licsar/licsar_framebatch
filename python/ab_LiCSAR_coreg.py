@@ -45,6 +45,7 @@ class CoregEnv(LicsEnv):
         self.outPats = ['RSLC/{0:%Y%m%d}/{0:%Y%m%d}\.IW[1-3]\.rslc.*'.format(date), # Patterns to output
                         'RSLC/{0:%Y%m%d}/{0:%Y%m%d}\.rslc\.par'.format(date), # Patterns to output
                         'RSLC/{0:%Y%m%d}/{0:%Y%m%d}.*mli.*'.format(date), # Patterns to output
+                        'RSLC/{0:%Y%m%d}/{1:%Y%m%d}_{0:%Y%m%d}.slc.mli.lt'.format(date,mstrDate),
                         'log.*',
                         'tab.*']
         self.srcSlcPath = 'SLC/{:%Y%m%d}'.format(date) #used to check source slc

@@ -43,7 +43,7 @@ class UnwrapEnv(LicsEnv):
                         'tab.*']
 
         self.srcIFGPath = 'IFG/{0:%Y%m%d}_{1:%Y%m%d}'.format(dateA,dateB)
-        self.newDirs = ['tab'] # empty directories to create
+        self.newDirs = ['tab','log'] # empty directories to create
         self.cleanDirs = ['./IFG','./tab'] # Directories to clean on failure
 
 ################################################################################
@@ -95,7 +95,7 @@ def main(argv):
                 ifgName = '{0:%Y%m%d}_{1:%Y%m%d}'.format(dateA,dateB)
                 lq.set_unw_status(row['unw_id'],BUILDING) #building status
                 set_lotus_job_status('Building {:%y-%m-%d}->{:%y-%m-%d}'.format(dateA, dateB))
-                rc = do_unwrapping(mstrDate.strftime('%Y%m%d'),frameName,ifgName,'./IFG','.',lq,-1)
+                rc = do_unwrapping(mstrDate.strftime('%Y%m%d'),ifgName,'./IFG','.',lq,-1)
                 #Finally set ifg status to return code
                 lq.set_unw_status(row['unw_id'],rc)
 
