@@ -24,8 +24,8 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
 #done
 
 if [ -z $2 ]; then echo "using default value of MAXBtemp="$MAXBTEMP; else MAXBTEMP=$2; fi
-if [ -z $3 ]; then echo "using default value of range_looks="$rlks; rlks=$orig_rlks; else rlks=$3; fi
-if [ -z $4 ]; then echo "using default value of azimuth_looks="$azlks; azlks=$orig_azlks; else azlks=$4; fi
+if [ -z $3 ]; then echo "using default value of range_looks="$orig_rlks; rlks=$orig_rlks; else rlks=$3; fi
+if [ -z $4 ]; then echo "using default value of azimuth_looks="$orig_azlks; azlks=$orig_azlks; else azlks=$4; fi
 
 if [ $rlks != $orig_rlks ] || [ $azlks != $orig_azlks ]; then
  echo "You have chosen for custom multilooking"
@@ -121,7 +121,7 @@ if [ -f gapfill_job/tmp_rslcs2mosaic ]; then
   echo "SLC_mosaic_S1_TOPS tab/$image'R_tab' RSLC/$image/$image.rslc RSLC/$image/$image.rslc.par $rlks $azlks 0 tab/$master'R_tab'" >> gapfill_job/mosaic.sh
  done
  chmod 770 gapfill_job/mosaic.sh
- waitTextmosaic="'ended("$frame"_mosaic)'"
+ waitTextmosaic="ended('"$frame"_mosaic')"
 fi
 if [ ! -f tab/$master'R_tab' ]; then cp tab/$master'_tab' tab/$master'R_tab'; fi
 for job in `seq 1 $nojobs`; do
@@ -199,37 +199,46 @@ done
  #for x in `ls tab/20??????_tab`; do cp `echo $x | sed 's/_tab/R_tab/'` $x; done
 
 #first run mosaicking
-if [ `echo $waitTextmosaic | wc -w` -gt 0 ]; then waitcmdmosaic="-w "$waitTextmosaic;
- else waitcmdmosaic='';
+if [ `echo $waitTextmosaic | wc -w` -gt 0 ]; then
+ waitcmdmosaic="-w \""$waitTextmosaic"\""
+ echo "..running for missing mosaics"
+ bsub -q $bsubquery -n 1 -W 04:00 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
+else
+ waitcmdmosaic='';
 fi
-bsub -q $bsubquery -n 1 -W 04:00 -J $frame"_mosaic" gapfill_job/mosaic.sh
 
 #now we can start jobs..
+echo "..running "$nojobs" jobs to generate ifgs/unws"
 for job in `seq 1 $nojobs`; do
  wait=''
  if [ -f gapfill_job/ifgjob_$job.sh ]; then
-  bsub -q $bsubquery -n $bsubncores -W 04:00 $waitcmdmosaic -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out gapfill_job/ifgjob_$job.sh
+  #weird error in 'job not found'.. workaround:
+  echo bsub -q $bsubquery -n $bsubncores -W 04:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
+  chmod 770 tmptmp; ./tmptmp >/dev/null
   wait="-w \"ended('"$frame"_ifg_"$job"')\""
  fi
  #weird error in 'job not found'.. workaround:
  echo bsub -q $bsubquery -n $bsubncores -W 12:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
- chmod 770 tmptmp; ./tmptmp
+ #echo "debug:"
+ #cat tmptmp
+ chmod 770 tmptmp; ./tmptmp >/dev/null
 done
+
 # copying and cleaning job
- waitcmd=''
- if [ `echo $waitText | wc -w` -gt 0 ]; then
+echo "..running job that will copy outputs from TEMP to your WORKDIR"
+waitcmd=''
+if [ `echo $waitText | wc -w` -gt 0 ]; then
   waitText=`echo $waitText | cut -c 4-`
   waitcmd='-w "'$waitText'"'
- fi
- echo "chmod -R 770 $SCRATCHDIR/$frame" > $WORKFRAMEDIR/gapfill_job/copyjob.sh
- echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
- echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
- if [ ! `date +'%Y%m%d'` == 20190726 ] ; then
-  echo "rm -r $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
- fi
- chmod 770 $WORKFRAMEDIR/gapfill_job/copyjob.sh
- #workaround for 'Empty job. Job not submitted'
- echo bsub -q short-serial -n 1 $waitcmd -W 03:00 -J $frame'_gapfill_out' $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
- chmod 770 $WORKFRAMEDIR/gapfill_job/tmptmp; $WORKFRAMEDIR/gapfill_job/tmptmp
- rm $WORKFRAMEDIR/gapfill_job/tmptmp
- cd -
+fi
+echo "chmod -R 770 $SCRATCHDIR/$frame" > $WORKFRAMEDIR/gapfill_job/copyjob.sh
+echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+chmod 770 $WORKFRAMEDIR/gapfill_job/copyjob.sh
+#workaround for 'Empty job. Job not submitted'
+echo bsub -q short-serial -n 1 $waitcmd -W 03:00 -J $frame'_gapfill_out' $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
+#echo "debug last:"
+#cat $WORKFRAMEDIR/gapfill_job/tmptmp
+chmod 770 $WORKFRAMEDIR/gapfill_job/tmptmp; $WORKFRAMEDIR/gapfill_job/tmptmp
+rm $WORKFRAMEDIR/gapfill_job/tmptmp
+cd -

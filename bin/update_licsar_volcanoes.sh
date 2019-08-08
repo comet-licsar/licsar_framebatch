@@ -10,9 +10,10 @@ echo 015A_03923_131313 >> $BATCH_CACHE_DIR/volc/allframes.tmp
 echo 088A_03925_131313 >> $BATCH_CACHE_DIR/volc/allframes.tmp
 echo 139D_04017_131313 >> $BATCH_CACHE_DIR/volc/allframes.tmp
 
+sed -i 's/000D_/175D_/' $BATCH_CACHE_DIR/volc/allframes.tmp
+sed -i 's/000A_/175A_/' $BATCH_CACHE_DIR/volc/allframes.tmp
 sort -u $BATCH_CACHE_DIR/volc/allframes.tmp >  $BATCH_CACHE_DIR/volc/allframes.txt
-sed -i 's/000D_/175D_/' $BATCH_CACHE_DIR/volc/allframes.txt
-sed -i 's/000A_/175A_/' $BATCH_CACHE_DIR/volc/allframes.txt
+
 rm $BATCH_CACHE_DIR/volc/allframes.tmp
 
 totalno=`wc -l $BATCH_CACHE_DIR/volc/allframes.txt | gawk {'print $1'}`
@@ -34,7 +35,9 @@ for frame in `cat $BATCH_CACHE_DIR/volc/allframes.txt`; do
  master=`ls $LiCSAR_procdir/$tr/$frame/SLC | head -n1`
  ls $LiCSAR_procdir/$tr/$frame/RSLC | cut -d '.' -f1 > tmp_volc
  sed -i '/'$master'/d' tmp_volc
- startdate=`tail -n4 tmp_volc | head -n1`
+ #startdate=`tail -n4 tmp_volc | head -n1`
+ #er... let's have only last 3 images....
+ startdate=`tail -n3 tmp_volc | head -n1`
  maybesd=`date -d '3 months ago' +%Y%m%d`
  if [ -z $startdate ]; then 
   startdate=`date -d '3 months ago' +%Y-%m-%d`
@@ -49,8 +52,10 @@ for frame in `cat $BATCH_CACHE_DIR/volc/allframes.txt`; do
 #if [ $startdate]
  #licsar_make_frame.sh -S $frame 0 1 `date -d '3 months ago' +%Y-%m-%d` `date  +%Y-%m-%d` >$BATCH_CACHE_DIR/volc/auto_volc_$frame.log 2>$BATCH_CACHE_DIR/volc/auto_volc_$frame.err
  licsar_make_frame.sh -S $frame 0 1 $startdate `date  +%Y-%m-%d` >$BATCH_CACHE_DIR/volc/auto_volc_$frame.log 2>$BATCH_CACHE_DIR/volc/auto_volc_$frame.err
- echo "waiting 30 minutes before starting another frame.."
- sleep 1800
+ #echo "waiting 30 minutes before starting another frame.."
+ #sleep 1800
+ echo "waiting 20 minutes before starting another frame.."
+ sleep 1200
 done
 
 #echo "Processing volcano frames over country "$country
