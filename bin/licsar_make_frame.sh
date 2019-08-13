@@ -19,9 +19,11 @@ if [ -z $1 ]; then
  echo "autodownload=1 if full_scale, otherwise 0"
  echo "------"
  echo "Additional parameters (must be put DIRECTLY AFTER the command, before other/main parameters):"
- echo "-n ........ norun (processing scripts are generated but they will not start automatically)"
- echo "-c ........ perform check if files are in neodc and ingested to licsar database (no download performed)"
- echo "-S ........ store to lics database - ONLY FOR EARMLA"
+ echo "-n ............... norun (processing scripts are generated but they will not start automatically)"
+ echo "-c ............... perform check if files are in neodc and ingested to licsar database (no download performed)"
+ #echo "-S ............... store to lics database - ONLY FOR EARMLA"
+ echo "-N ............... check if there are new acquisitions since the last run. If not, will cancel the processing"
+# echo "-k YYYY-MM-DD .... generate kml for the ifg pairs containing given date (e.g. earthquake..)"
  #echo "geocode_to_public_website=0"
  exit;
 fi
@@ -29,6 +31,7 @@ fi
 
 NORUN=0
 neodc_check=0
+only_new_rslc=0
 STORE=0
 #according to CEDA, it should be ncores=16, i.e. one process per core. I do not believe it though. So keeping ncores=1.
 bsubncores=16
@@ -38,7 +41,7 @@ bsubncores=1
 #options to be c,n,S
 #option=`echo $1 | rev | cut -d '-' -f1 | rev`
 #case $option in
-while getopts ":cnS" option; do
+while getopts ":cnSN" option; do
  case "${option}" in
   c) neodc_check=1; echo "performing check if files exist in neodc and are ingested to licsar db";
      ;;
@@ -47,6 +50,8 @@ while getopts ":cnS" option; do
   S) STORE=1; echo "After the processing, data will be stored to db and public dir";
      deleteafterstore=1;
      NORUN=0;
+     ;;
+  N) only_new_rslc=1; echo "Checking if new images appeared since the last processing";
      ;;
  esac
 done
@@ -76,7 +81,7 @@ if [ ! -z $3 ]; then fillgaps=$3; else fillgaps=$full_scale; fi #ye, if only las
 if [ ! -z $4 ]; then 
  startdate=$4; full_scale=1;
  if [ `echo $startdate | cut -c8` != '-' ]; then echo "You provided wrong startdate: "$startdate; exit; fi
- else startdate="2014-10-10";
+ else startdate="2014-10-01";
 fi
 if [ ! -z $5 ]; then
  enddate=$5;
@@ -84,7 +89,7 @@ if [ ! -z $5 ]; then
 fi
 if [ ! -z $6 ]; then extra_steps=$6; else extra_steps=0; fi
 
-if [ $full_scale -eq 1 ]; then
+if [ $full_scale -eq 1 ] && [ startdate == "2014-10-01" ]; then
  echo "WARNING:"
  echo "You have chosen to process in full scale"
  echo "This makes sense only if you have already done (two days ago) the nla request, i.e."
@@ -229,7 +234,14 @@ fi
 
 ## MAIN CODE
 ############### 
- #do not do if restarting - it will re-create the job IDs etc.
+ if [ $only_new_rslc -eq 1 ]; then
+  newrslc=`checkNewRslc.py $frame`
+  if [ $newrslc -eq 0 ]; then
+   echo "No new image was acquired since last run - exiting"
+   exit
+  fi
+  echo "There is "$newrslc" new images to process since the last run"
+ fi
  date
  setFrameInactive.py $frame
  echo "Activating the frame"
@@ -257,7 +269,8 @@ else
   framebatch_data_refill.sh -c $frame $startdate $enddate
  fi
  echo "Preparing the frame cache (full scale processing)"
- echo "..may take some 15 minutes or more"
+ echo "..may take some 15 minutes or (much) more"
+ echo "(recommending using tmux or screen here..)"
  createFrameCache.py $frame $no_of_jobs $startdate $enddate > tmp_jobid.txt
 fi
  grep first_job_id tmp_jobid.txt | gawk {'print $3'} > $logdir/job_start.txt
@@ -434,6 +447,7 @@ if [ $STORE -eq 1 ]; then
  echo "Making the system automatically store the generated data (for auto update of frames)"
  cd $BATCH_CACHE_DIR
  bsub -w $frame'_geo' -q cpom-comet -n 1 -W 12:00 -o LOGS/framebatch_XX_store.out -e LOGS/framebatch_XX_store.err -J $frame'_ST' store_to_curdir_earmla.sh $frame $deleteafterstore #$frame
+ cd -
 fi
 
 

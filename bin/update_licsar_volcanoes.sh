@@ -51,7 +51,7 @@ for frame in `cat $BATCH_CACHE_DIR/volc/allframes.txt`; do
 # maybesd=`date -d '3 months ago' +%Y-%m-%d`
 #if [ $startdate]
  #licsar_make_frame.sh -S $frame 0 1 `date -d '3 months ago' +%Y-%m-%d` `date  +%Y-%m-%d` >$BATCH_CACHE_DIR/volc/auto_volc_$frame.log 2>$BATCH_CACHE_DIR/volc/auto_volc_$frame.err
- licsar_make_frame.sh -S $frame 0 1 $startdate `date  +%Y-%m-%d` >$BATCH_CACHE_DIR/volc/auto_volc_$frame.log 2>$BATCH_CACHE_DIR/volc/auto_volc_$frame.err
+ licsar_make_frame.sh -S -N $frame 0 1 $startdate `date  +%Y-%m-%d` >$BATCH_CACHE_DIR/volc/auto_volc_$frame.log 2>$BATCH_CACHE_DIR/volc/auto_volc_$frame.err
  #echo "waiting 30 minutes before starting another frame.."
  #sleep 1800
  echo "waiting 20 minutes before starting another frame.."

@@ -37,8 +37,16 @@ thisDir=`pwd`
      #if it already doesn't exist in current dir
      if [ ! -d $frameDir/RSLC/$date ] && [ ! -f $frameDir/RSLC/$date.7z ]; then
       cd $frame/RSLC
-      echo "compressing date "$date
-      time 7za a -mx=1 $frameDir/RSLC/$date.7z $date >/dev/null 2>/dev/null
+      #cleaning the folder
+      if [ `ls $date/*.lt 2>/dev/null | wc -w` -gt 0 ]; then
+       mkdir -p $frameDir/LUT
+       rm -f $date/*.lt.orbitonly 2>/dev/null
+       echo "compressing LUT of "$date
+       7za a -mx=1 $frameDir/LUT/$date.7z $date/*.lt >/dev/null 2>/dev/null
+       rm -f $date/*.lt
+      fi
+      echo "compressing RSLC from "$date
+      time 7za a -mx=1 '-xr!*.lt' $frameDir/RSLC/$date.7z $date >/dev/null 2>/dev/null
       if [ $MOVE -eq 1 ]; then rm -r $date; fi
       cd $thisDir
      fi
@@ -100,20 +108,22 @@ if [ $DOGEOC -eq 1 ]; then
   for geoifg in `ls $frame/GEOC/2*_2* -d | rev | cut -d '/' -f1 | rev`; do
    if [ -f $frame/GEOC/$geoifg/$geoifg.geo.unw.bmp ]; then
     if [ -d $public/$track/$frame/products/$geoifg ]; then 
-     echo "warning, geoifg "$geoifg" already existed. Data will not be overwritten";
+     #echo "warning, geoifg "$geoifg" already existed. Data will not be overwritten";
+     echo "warning, geoifg "$geoifg" already exists. Data will be overwritten";
     else
      echo "moving geocoded "$geoifg
     fi
     mkdir -p $public/$track/$frame/products/$geoifg 2>/dev/null
     for toexp in cc.bmp cc.tif diff.bmp diff_mag.tif diff_pha.tif unw.bmp unw.tif disp_blk.png; do
        if [ -f $frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
-         if [ ! -f $public/$track/$frame/products/$geoifg/$geoifg.geo.$toexp ]; then
+         #this condition is to NOT TO OVERWRITE the GEOC results. But it makes sense to overwrite them 'always'
+         #if [ ! -f $public/$track/$frame/products/$geoifg/$geoifg.geo.$toexp ]; then
           if [ $MOVE -eq 1 ]; then 
            mv $frame/GEOC/$geoifg/$geoifg.geo.$toexp $public/$track/$frame/products/$geoifg/.
           else
            cp $frame/GEOC/$geoifg/$geoifg.geo.$toexp $public/$track/$frame/products/$geoifg/.
           fi
-         fi
+         #fi
        fi
     done
    fi

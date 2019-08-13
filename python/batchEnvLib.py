@@ -10,6 +10,7 @@ import shutil
 import glob
 import datetime as dt
 from dirsync import sync
+from configLib import config
 
 ################################################################################
 #Cache Exception
@@ -72,6 +73,23 @@ def create_lics_cache_dir(frame,srcDir,cacheDir,masterDate=None):
                 if not os.path.exists(newFile): os.symlink(oldFile,newFile)
     else:
         raise InvalidFrameError
+
+def get_rslc_list(frame):
+    procdir = config.get('Env','SourceDir')
+    track = str(int(frame[0:3]))
+    frameDir = os.path.join(procdir,track,frame)
+    rslclist = []
+    if os.path.isdir(frameDir):
+        rslcs = fnmatch.filter(os.listdir(frameDir+'/RSLC'), '20??????')
+        rslcs7z = fnmatch.filter(os.listdir(frameDir+'/RSLC'), '20??????.7z')
+        for rslc7z in rslcs7z:
+            rslc = rslc7z.split('.')[0]
+            rslclist.append(rslc)
+        for rslc in rslcs:
+            if rslc not in rslclist:
+                rslclist.append(rslc)
+        rslclist.sort()
+    return rslclist
 
 def get_rslcs_from_lics(frame,srcDir,cacheDir,date_strings):
     frameDir = srcDir + '/' + frame.split('_')[0].lstrip("0")[:-1] + '/' + frame
