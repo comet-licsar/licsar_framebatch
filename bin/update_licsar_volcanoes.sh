@@ -39,7 +39,7 @@ for frame in `cat $BATCH_CACHE_DIR/volc/allframes.txt`; do
  #er... let's have only last 3 images....
  startdate=`tail -n3 tmp_volc | head -n1`
  maybesd=`date -d '3 months ago' +%Y%m%d`
- if [ -z $startdate ]; then 
+ if [ -z $startdate ]; then
   startdate=`date -d '3 months ago' +%Y-%m-%d`
  else
   if [ $maybesd -gt $startdate ]; then
@@ -54,8 +54,8 @@ for frame in `cat $BATCH_CACHE_DIR/volc/allframes.txt`; do
  licsar_make_frame.sh -S -N $frame 0 1 $startdate `date  +%Y-%m-%d` >$BATCH_CACHE_DIR/volc/auto_volc_$frame.log 2>$BATCH_CACHE_DIR/volc/auto_volc_$frame.err
  #echo "waiting 30 minutes before starting another frame.."
  #sleep 1800
- echo "waiting 20 minutes before starting another frame.."
- sleep 1200
+# echo "waiting 20 minutes before starting another frame.."
+# sleep 1200
 done
 
 #echo "Processing volcano frames over country "$country
