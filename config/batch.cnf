@@ -2,8 +2,8 @@
 SourceDir : /gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current
 #CacheDir : /work/scratch-nompiio/greenall/
 #SpdCacheDir : /work/scratch-nompiio/greenall/
-#TempDir : /work/scratch-nompiio/licsar
-TempDir : /work/scratch/licsar
+TempDir : /work/scratch-nompiio/licsar
+#TempDir : /work/scratch/licsar
 
 [DB]
 User : lics

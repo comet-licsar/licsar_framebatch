@@ -72,7 +72,12 @@ def get_polyid(frame):
     conn = engine.connect()
     polygsSel = select([polygs.c.polyid]).where(polygs.c.polyid_name==frame)
     sqlRes = conn.execute(polygsSel)
-    return sqlRes.fetchone()[0]
+    try:
+        output = sqlRes.fetchone()[0]
+    except:
+        print('nothing found')
+        output = None
+    return output
 
 ################################################################################
 def get_frame_from_job(jobID):
