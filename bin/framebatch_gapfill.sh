@@ -78,7 +78,8 @@ for FIRST in `cat gapfill_job/tmp_rslcs`; do
  SECOND=`grep -A1 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
  THIRD=`grep -A2 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
  FOURTH=`grep -A3 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
- for LAST in $SECOND $THIRD $FOURTH; do
+ FIFTH=`grep -A4 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
+ for LAST in $SECOND $THIRD $FOURTH $FIFTH; do
   if [ `datediff $FIRST $LAST` -lt $MAXBTEMP ] && [ ! $FIRST == $LAST ]; then
    echo $FIRST'_'$LAST >> gapfill_job/tmp_ifg_all2;
   fi

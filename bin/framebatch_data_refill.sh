@@ -66,7 +66,8 @@ make_simple_polygon.sh ${frame}-poly.txt
  zips2cemszips.sh ${frame}_zipfile_names.list ${frame}_scihub.list >/dev/null
  sort -o ${frame}_scihub.list ${frame}_scihub.list
 ## make list from nla
-if [ ! -f ${frame}_db_query.list ]; then
+rm ${frame}_db_query.list 2>/dev/null
+#if [ ! -f ${frame}_db_query.list ]; then
  echo "getting expected filelist from NLA (takes quite long - coffee break)"
  echo "*******"
  if [ ! -z $enddate ]; then
@@ -75,7 +76,7 @@ if [ ! -f ${frame}_db_query.list ]; then
    LiCSAR_0_getFiles.py -f $frame -s $startdate -e `date +'%Y-%m-%d'` -z ${frame}_db_query.list
  fi
  echo "*******"
-fi
+#fi
  sort -o ${frame}_db_query.list ${frame}_db_query.list
  diff  ${frame}_scihub.list ${frame}_db_query.list | grep '^<' | cut -c 3- > ${frame}_todown
  echo "There are "`cat ${frame}_todown | wc -l`" extra images, not currently existing on CEMS (neodc) disk"

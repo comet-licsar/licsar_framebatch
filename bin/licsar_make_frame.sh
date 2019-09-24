@@ -73,7 +73,10 @@ echo 'Processing in your BATCH_CACHE_DIR that is '$BATCH_CACHE_DIR
 
 #startup variables
 frame=$1
-enddate=''
+track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
+if [ ! -d $LiCSAR_procdir/$track/$frame/geo ]; then echo "This frame has not been initialized. Please contact your LiCSAR admin (Milan)"; exit; fi
+enddate=`date -d '22 days ago' +%Y-%m-%d`
+
 #settings of full_scale and extra_steps - by default 0
 #these extra_steps are now just 'export to comet website'
 if [ ! -z $2 ]; then full_scale=$2; else full_scale=0; fi
@@ -258,7 +261,7 @@ if [ $full_scale -eq 0 ]; then
  echo "Preparing the frame cache (last 3 months)"
  echo "..may take some 5 minutes"
  #createFrameCache_last3months.py $frame $no_of_jobs > tmp_jobid.txt
- createFrameCache.py $frame $no_of_jobs `date -d "90 days ago" +'%Y-%m-%d'` `date +'%Y-%m-%d'` > tmp_jobid.txt
+ createFrameCache.py $frame $no_of_jobs `date -d "90 days ago" +'%Y-%m-%d'` `date -d "22 days ago" +'%Y-%m-%d'` > tmp_jobid.txt
 else
 #if we want to fill gaps throughout the whole time period
  if [ $fillgaps -eq 1 ]; then
@@ -446,7 +449,7 @@ chmod 770 framebatch_07_baseline_plot.sh
 if [ $STORE -eq 1 ]; then
  echo "Making the system automatically store the generated data (for auto update of frames)"
  cd $BATCH_CACHE_DIR
- bsub -w $frame'_geo' -q cpom-comet -n 1 -W 12:00 -o LOGS/framebatch_XX_store.out -e LOGS/framebatch_XX_store.err -J $frame'_ST' store_to_curdir_earmla.sh $frame $deleteafterstore #$frame
+ bsub -w $frame'_geo' -q cpom-comet -n 1 -W 08:00 -o LOGS/framebatch_XX_store.out -e LOGS/framebatch_XX_store.err -J $frame'_ST' store_to_curdir_earmla_norslc.sh $frame $deleteafterstore #$frame
  cd -
 fi
 

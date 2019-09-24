@@ -67,6 +67,9 @@ def main(argv):
     #Paramters
     jobID = int(argv[1])
     slcs = lq.get_unbuilt_slcs(jobID)
+    if slcs.empty:
+        print('no unbuilt slcs were found. exiting')
+        exit()
     frameName = lq.get_frame_from_job(jobID)
     try:
         cacheDir = os.environ['BATCH_CACHE_DIR']

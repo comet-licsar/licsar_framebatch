@@ -10,6 +10,9 @@ echo 015A_03923_131313 >> $BATCH_CACHE_DIR/volc/allframes.tmp
 echo 088A_03925_131313 >> $BATCH_CACHE_DIR/volc/allframes.tmp
 echo 139D_04017_131313 >> $BATCH_CACHE_DIR/volc/allframes.tmp
 
+#let's update also turkey frames..
+#cat /gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/turkey_frames.txt >> $BATCH_CACHE_DIR/volc/allframes.tmp
+
 sed -i 's/000D_/175D_/' $BATCH_CACHE_DIR/volc/allframes.tmp
 sed -i 's/000A_/175A_/' $BATCH_CACHE_DIR/volc/allframes.tmp
 sort -u $BATCH_CACHE_DIR/volc/allframes.tmp >  $BATCH_CACHE_DIR/volc/allframes.txt

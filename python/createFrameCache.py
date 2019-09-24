@@ -68,15 +68,15 @@ mstrDate = dt.datetime.strptime(dateStr,'%Y%m%d')
 #setup database for processing
 ################################################################################
 polyid = get_polyid(frame)
-acq_imgs = add_acq_images(polyid)
+acq_imgs = add_acq_images(polyid, startdate.date(), enddate.date(), mstrDate.date())
 masterset = set_master(polyid,mstrDate)
 mstrline = acq_imgs[acq_imgs['acq_date']==mstrDate]
 acq_imgs = acq_imgs[acq_imgs['acq_date']!=mstrDate]
 #start from startingdate
-if startdate:
-    acq_imgs = acq_imgs[acq_imgs['acq_date']>startdate]
-if enddate:
-    acq_imgs = acq_imgs[acq_imgs['acq_date']<enddate]
+#if startdate:
+#    acq_imgs = acq_imgs[acq_imgs['acq_date']>=startdate]
+#if enddate:
+#    acq_imgs = acq_imgs[acq_imgs['acq_date']<=enddate]
 
 #remove existing rslc dates from the list 
 #(only for make_img list since rslcs should be used further for ifgs)

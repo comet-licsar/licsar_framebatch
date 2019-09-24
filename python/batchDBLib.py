@@ -5,7 +5,7 @@
 ################################################################################
 import pandas as pd
 from sqlalchemy import create_engine,MetaData,Table,select,insert,update,func,delete,between,bindparam
-from sqlalchemy.sql import and_
+from sqlalchemy.sql import and_, or_
 from sqlalchemy.engine.reflection import Inspector
 import sys
 import datetime as dt
@@ -180,14 +180,31 @@ def get_master(frameName):
     return output
 
 ################################################################################
-def add_acq_images(polyid):
+def add_acq_images(polyid, startdate = None, enddate = None, masterdate = None):
+    #startdate and enddate MUST be of type date!!!
     conn = engine.connect()
     acq_dates = get_acq_dates(polyid)
     
-    #clean data
+    #clean data in db
     imgDlt = acq_img.delete().where(acq_img.c.polyid==polyid)
     conn.execute(imgDlt)
-
+    if masterdate:
+        masteracq = acq_dates[acq_dates['acq_date']==masterdate]
+        if startdate:
+            acq_dates = acq_dates[acq_dates['acq_date']>=startdate]
+        if enddate:
+            acq_dates = acq_dates[acq_dates['acq_date']<=enddate]
+        if acq_dates[acq_dates['acq_date']==masterdate].empty:
+            acq_dates = acq_dates.append(masteracq)
+    #fix for close-to-midnight values:
+    #this will not work for master image... but we assume there will be no problem here
+    acq_dates_sorted = acq_dates.sort_values('acq_date')
+    for i in range(len(acq_dates)-1):
+        date1 = acq_dates_sorted['acq_date'].values[i]
+        date2 = acq_dates_sorted['acq_date'].values[i+1]
+        if date2 == date1+dt.timedelta(days=1):
+            acq_dates = acq_dates[acq_dates['acq_date']!=date2]
+    
     #Rebuild
     polyidSrs = pd.Series(polyid,index=acq_dates.index,name='polyid')
     imgDtFrm = pd.concat([polyidSrs,acq_dates],axis=1)
@@ -580,7 +597,9 @@ def get_frame_files_period(frame,startdate,enddate):
 
 ################################################################################
 def get_frame_files_date(frame,date):
-
+    if type(date) is not type(dt.datetime.now().date()):
+        date = date.date()
+    
     conn = engine.connect()
 
     fileQry = select([polygs.c.polyid_name,\
@@ -592,8 +611,10 @@ def get_frame_files_date(frame,date):
                     .join(polygs,
                         onclause=polygs.c.polyid==polygs2bursts.c.polyid)
                     ).where(and_(polygs.c.polyid_name==frame,
-                        func.date(files.c.acq_date)==date.date()
-                        )
+                                 or_(func.date(files.c.acq_date)==date,
+                                     func.date(files.c.acq_date)==date+dt.timedelta(days=1)
+                                    )
+                                )
                         ).order_by(files.c.acq_date).distinct()
 
     sqlRes = conn.execute(fileQry)
