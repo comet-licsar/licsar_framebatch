@@ -100,7 +100,9 @@ if [ $full_scale -eq 1 ] && [ startdate == "2014-10-01" ]; then
  echo "If you didn't, please cancel it now (CTRL-C)"
  sleep 5
  echo "..waited 5 sec. Continuing"
- no_of_jobs=40
+ #this number was here before - but had to decrease since we use only 1 processor now, job time limit is 24h and coreg may take up to 2h (actually less) per image
+ #no_of_jobs=40
+ no_of_jobs=12
 else
  no_of_jobs=5 #enough for last 3 months data
 fi
@@ -379,9 +381,9 @@ fi
 echo "Preparing script for geocoding results"
 cat << EOF > framebatch_06_geotiffs.sh
 echo "You should better run this as: "
-echo "bsub -q $bsubquery -n 8 -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
+echo "bsub -q $bsubquery -x -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
 NOPAR=\`cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l\`
-NOPAR=8
+#NOPAR=8
 rm tmp_to_pub 2>/dev/null
 rm tmp_to_pub.sh 2>/dev/null
 
@@ -404,7 +406,7 @@ if [ $NORUN -eq 0 ]; then
   waiting_str=$waiting_str" && ended("$stringg")"
  done
  waiting_string=`echo $waiting_str | cut -c 4-`
- echo "bsub -w '"$waiting_string"' -J $frame'_geo' -q $bsubquery -n 8 -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh" > framebatch_06_geotiffs_wait.sh
+ echo "bsub -w '"$waiting_string"' -J $frame'_geo' -q $bsubquery -x -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh" > framebatch_06_geotiffs_wait.sh
  chmod 770 framebatch_06_geotiffs_wait.sh
  ./framebatch_06_geotiffs_wait.sh
 # bsub -w framebatch_05_gap_filling_$frame -J framebatch_06_geotiffs_$frame -q $bsubquery -n $bsubncores -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh
@@ -412,7 +414,7 @@ if [ $NORUN -eq 0 ]; then
  #bsub -w $waiting_string -J framebatch_06_geotiffs_$frame -q $bsubquery -x -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh
 else
  echo "To run geotiff generation, use "
- echo "bsub -q "$bsubquery" -n 8 -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
+ echo "bsub -q "$bsubquery" -n x -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
 fi
 
 ###################################################### Baseline plot
