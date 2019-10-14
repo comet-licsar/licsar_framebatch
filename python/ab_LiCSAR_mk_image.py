@@ -71,6 +71,11 @@ def main(argv):
         print('no unbuilt slcs were found. exiting')
         exit()
     frameName = lq.get_frame_from_job(jobID)
+    #get acquisition mode - default is 'iw'
+    acqMode = 'iw'
+    if frameName.split('_')[1] == 'SM':
+        acqMode = 'sm'
+        print('processing stripmap frame - EXPERIMENTAL')
     try:
         cacheDir = os.environ['BATCH_CACHE_DIR']
     except KeyError as error:
@@ -122,7 +127,7 @@ def main(argv):
                     print("All necessary bursts for frame {0} seem to be have been acquired "\
                             "on {1}...".format(frameName,date))
                     lq.set_slc_status(row['slc_id'],BUILDING) #building....
-                    rc = make_frame_image(date,frameName,imburstlist,env.actEnv, lq, -1) 
+                    rc = make_frame_image(date,frameName,imburstlist,env.actEnv, lq, -1, acqMode)
                     lq.set_slc_status(row['slc_id'],rc)
                     if rc!=0:
                         shutil.rmtree('./SLC')

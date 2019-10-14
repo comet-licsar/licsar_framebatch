@@ -73,6 +73,7 @@ echo 'Processing in your BATCH_CACHE_DIR that is '$BATCH_CACHE_DIR
 
 #startup variables
 frame=$1
+if [ `echo $frame | cut -d '_' -f2` == "SM" ]; then SM=1; echo "processing stripmap frame - WARNING, EXPERIMENTAL FEATURE"; else SM=0; fi
 track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
 if [ ! -d $LiCSAR_procdir/$track/$frame/geo ]; then echo "This frame has not been initialized. Please contact your LiCSAR admin (Milan)"; exit; fi
 enddate=`date -d '22 days ago' +%Y-%m-%d`
@@ -414,7 +415,7 @@ if [ $NORUN -eq 0 ]; then
  #bsub -w $waiting_string -J framebatch_06_geotiffs_$frame -q $bsubquery -x -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh
 else
  echo "To run geotiff generation, use "
- echo "bsub -q "$bsubquery" -n x -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
+ echo "bsub -q "$bsubquery" -x -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
 fi
 
 ###################################################### Baseline plot

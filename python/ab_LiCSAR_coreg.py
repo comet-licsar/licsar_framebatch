@@ -60,6 +60,10 @@ def main(argv):
     jobID = int(argv[1])
     rslcs = lq.get_unbuilt_rslcs(jobID)
     frameName = lq.get_frame_from_job(jobID)
+    acqMode = 'iw'
+    if frameName.split('_')[1] == 'SM':
+        acqMode = 'sm'
+        print('processing stripmap frame - EXPERIMENTAL')
     try:
         cacheDir = os.environ['BATCH_CACHE_DIR']
     except KeyError as error:
@@ -114,7 +118,11 @@ def main(argv):
                 set_lotus_job_status('Processing {:%y-%m-%d}'.format(date))
 
                 lq.set_rslc_status(row['rslc_id'],BUILDING) #building status
-                rc = coreg_slave(date,'SLC','RSLC',mstrDate.date(),frameName,'.', lq, -1)
+                
+                if acqMode == 'sm':
+                    rc = coreg_slave_sm(date,'SLC','RSLC',mstrDate.date(),frameName,'.', lq, -1)
+                else:
+                    rc = coreg_slave(date,'SLC','RSLC',mstrDate.date(),frameName,'.', lq, -1)
 
                 rslc = os.path.join(env.actEnv,'RSLC',date.strftime('%Y%m%d'),
                                     date.strftime('%Y%m%d.rslc'))

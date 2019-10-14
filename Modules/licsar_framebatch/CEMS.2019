@@ -22,10 +22,18 @@ prereq gmt
 set gwsSoftwarePath "/gws/smf/j04/nceo_geohazards/software"
 
 set LiCSFBpath "$gwsSoftwarePath/licsar_framebatch"
-set configpath "$LiCSFBpath/config/"
+set configpath "$LiCSFBpath/config"
  
-setenv FRAME_BATCH_CONFIG "$configpath/batch.cnf"
-setenv framebatch_config "$configpath/batch.cnf"
-                
+if { [exec hostname -d] == "comet-cpom-S.jasmin.ac.uk" } {
+      set FRAME_BATCH_CONFIG "$configpath/batch.S.cnf"
+      set framebatch_config "$configpath/batch.S.cnf"
+      setenv FRAME_BATCH_CONFIG "$configpath/batch.S.cnf"
+      setenv framebatch_config "$configpath/batch.S.cnf" 
+    } else {
+      setenv FRAME_BATCH_CONFIG "$configpath/batch.cnf"
+      setenv framebatch_config "$configpath/batch.cnf"
+   }
+            
 prepend-path PATH "$LiCSFBpath/bin:$LiCSFBpath/python"
 prepend-path PYTHONPATH "$LiCSFBpath/python"
+

@@ -43,7 +43,11 @@ thisDir=`pwd`
        rm -f $date/*.lt.orbitonly 2>/dev/null
        echo "compressing LUT of "$date
        7za a -mx=1 $frameDir/LUT/$date.7z $date/*.lt >/dev/null 2>/dev/null
-       rm -f $date/*.lt
+       if [ -f $frameDir/LUT/$date.7z ]; then
+          rm -f $date/*.lt
+       else
+          echo "error in zipping the "$date"/*.lt to "$frameDir"/LUT/"$date".7z - please check manually"
+       fi
       fi
       #echo "compressing RSLC from "$date
       echo "the RSLC will not get compressed anymore"
@@ -107,7 +111,7 @@ if [ $DOGEOC -eq 1 ]; then
   echo "Moving geoifgs to public folder for frame "$frame
   track=$tr
   for geoifg in `ls $frame/GEOC/2*_2* -d | rev | cut -d '/' -f1 | rev`; do
-   if [ -f $frame/GEOC/$geoifg/$geoifg.geo.unw.bmp ]; then
+   if [ -f $frame/GEOC/$geoifg/$geoifg.geo.unw.tif ]; then
     if [ -d $public/$track/$frame/products/$geoifg ]; then 
      #echo "warning, geoifg "$geoifg" already existed. Data will not be overwritten";
      echo "warning, geoifg "$geoifg" already exists. Data will be overwritten";
@@ -115,7 +119,7 @@ if [ $DOGEOC -eq 1 ]; then
      echo "moving geocoded "$geoifg
     fi
     mkdir -p $public/$track/$frame/products/$geoifg 2>/dev/null
-    for toexp in cc.bmp cc.tif diff.bmp diff_mag.tif diff_pha.tif unw.bmp unw.tif disp_blk.png; do
+    for toexp in cc.bmp cc.png cc.tif diff.bmp diff.png diff_pha.tif unw.bmp unw.png unw.tif disp_blk.png; do
        if [ -f $frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
          #this condition is to NOT TO OVERWRITE the GEOC results. But it makes sense to overwrite them 'always'
          #if [ ! -f $public/$track/$frame/products/$geoifg/$geoifg.geo.$toexp ]; then
