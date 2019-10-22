@@ -83,7 +83,9 @@ def main(argv):
     for ind,row in rslcs.iterrows():
         
         date = row['acq_date']
-
+        #oh no.. seeing the lines below makes me think that it is NOT GOOD IDEA to
+        # have many people solve the same issue...
+        # but keeping as it is since it works. ML
         #Get closes date and use as an aux
         rslcCache = os.path.join(cacheDir,frameName,'RSLC')
         #builtRslcDates = pd.to_datetime(os.listdir(rslcCache))

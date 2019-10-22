@@ -6,7 +6,7 @@ if [ `grep -c az_ovr_iteration_2 $log` -eq 0 ]; then
 #the condition below means that we use the updated (hopefully fixed) approach:
 #echo "yes. so check the version of log"
 if [ `grep -c "iteration was ignored" $log` -eq 0 ]; then
-#echo "it is new version"
+#echo "it is not the newest version"
  rslc=`echo $log | cut -d '_' -f4 | cut -d '.' -f1`
  val1=`grep intensity_matching $log | head -n1 | gawk {'print $2'} | cut -c -7`
  val2=`grep 'Total azimuth offset' $log | tail -n1 | gawk {'print $9'} | cut -c -7`
