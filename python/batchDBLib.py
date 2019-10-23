@@ -11,6 +11,9 @@ import sys
 import datetime as dt
 from configLib import config
 
+#this is a residual to trick batch processing - must be kept
+from LiCSAR_db.LiCSquery import get_ipf
+
 ################################################################################
 # Create SQL engine
 ################################################################################
@@ -538,10 +541,6 @@ def get_built_unws(polyID):
     return pd.read_sql_query(unwSel,engine,parse_dates=['acq_date_1','acq_date_2'])
 
 ################################################################################
-def get_ipf(filename):
-    # filename should be e.g. S1A_IW_SLC__1SSV_20141222T210739_20141222T210809_003837_00496E_C84D
-    sql_q = "select distinct proc_vers from files where name='{0}';".format(filename)
-    return do_query(sql_q)[0][0]
 
 def get_bursts_in_frame(framename):
     conn = engine.connect()
