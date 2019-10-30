@@ -374,6 +374,11 @@ fi
 EOF
 chmod 770 framebatch_05_gap_filling.sh
 if [ $NORUN -eq 0 ] && [ $STORE -lt 1 ]; then
+#this below option means that even in AUTOSTORE, the gapfilling will be performed...
+#in this case, however, it will be sent to bsub together with geotiff generation script
+#so.. more connections now depend on 'luck having to wait for bsub -x'
+#this definitely needs improvement, yet better 'than nothing'.. i suppose
+#if [ $NORUN -eq 0 ]; then
  ./framebatch_05_gap_filling.sh -w
 else
  echo "To run gapfilling afterwards, use ./framebatch_gapfill.sh"

@@ -33,7 +33,10 @@ for badrslc in `cat $framebad`; do
 done
 
 startdate=`head -n1 $framebad`
-enddate=`tail -n1 $framebad`
+enddate=`grep 20 $framebad | tail -n1`
 
+echo "module load licsar_framebatch_testing"
+echo "source /gws/smf/j04/nceo_geohazards/software/condalics/load_condalics.rc"
 echo LiCSAR_0_getFiles.py -f $frame -s `date -d $startdate" -13 days" +%Y-%m-%d` -e `date -d $enddate" +13 days" +%Y-%m-%d` -r
-echo licsar_make_frame.sh -S -f $frame 1 1 `date -d $startdate" -13 days" +%Y-%m-%d` `date -d $enddate" +13 days" +%Y-%m-%d`
+echo "sleep 86400"
+echo licsar_make_frame.sh -S -c $frame 1 0 `date -d $startdate" -13 days" +%Y-%m-%d` `date -d $enddate" +13 days" +%Y-%m-%d`

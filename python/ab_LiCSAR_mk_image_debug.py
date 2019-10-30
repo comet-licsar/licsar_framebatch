@@ -5,7 +5,7 @@
 ################################################################################
 import batchDBLib as lq
 from configLib import config
-from batchEnvLib import LicsEnv
+#from batchEnvLib import LicsEnv
 import os
 import shutil
 import sys
@@ -13,7 +13,7 @@ import global_config as gc
 import re
 from LiCSAR_lib.mk_imag_lib import *
 from LiCSAR_lib.LiCSAR_misc import *
-from batchLSFLib import set_lotus_job_status
+#from batchLSFLib import set_lotus_job_status
 
 
 #to ensure GAMMA will have proper value for CPU count
@@ -33,20 +33,6 @@ MISSING_BURSTS = -2
 UNBUILT = -1
 BUILT = 0
 
-################################################################################
-#SLC env class
-################################################################################
-class SlcEnv(LicsEnv):
-    def __init__(self,jobID,frame,date,cacheDir,tempDir):
-        LicsEnv.__init__(self,jobID,frame,cacheDir,tempDir)
-        self.srcPats = []
-        self.outPats = ['SLC/{0:%Y%m%d}/{0:%Y%m%d}\.IW[1-3]\.slc.*'.format(date),
-                        'SLC/{0:%Y%m%d}/{0:%Y%m%d}\..*mli.*'.format(date),
-                        'SLC/{0:%Y%m%d}/{0:%Y%m%d}\.slc\.par'.format(date),
-                        'SLC/{0:%Y%m%d}/{0:%Y%m%d}\.slc'.format(date),
-                        'log.*',
-                        'tab.*']
-        self.cleanDirs = ['./SLC','./tab']
 ################################################################################
 #Check files
 ################################################################################
@@ -108,34 +94,28 @@ def main(argv):
                     f.write(missFile+'\n')
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
         else:
-            set_lotus_job_status('Setting up {:%y-%m-%d}'.format(date))
-            with SlcEnv(jobID,frameName,date,cacheDir,tempDir) as env:
-                print("created new processing environment {}".format(env.actEnv))
-                print("processing slc {0} on acquisition date {1:%Y%m%d}".format(
-                        row['slc_id'],row['acq_date']))
+#            set_lotus_job_status('Setting up {:%y-%m-%d}'.format(date))
+            print("processing slc {0} on acquisition date {1:%Y%m%d}".format(
+                    row['slc_id'],row['acq_date']))
 
-                set_lotus_job_status('Processing {:%y-%m-%d}'.format(date))
-                env.cleanHook = lambda : lq.set_slc_status(row['slc_id'],UNKOWN_ERROR)
+#            set_lotus_job_status('Processing {:%y-%m-%d}'.format(date))
 
-                #Check that we have no missing bursts
-                imburstlist = lq.get_frame_bursts_on_date(frameName,date)
-                missingbursts = [b for b in burstlist if not b in imburstlist]
-                if not missingbursts or not check_missing_bursts(burstlist,missingbursts) or not check_missing_bursts_bool:
-                    print('List of missing bursts:')
-                    print(missingbursts)
-                    #we will relax the condition here and checking for only critical missing bursts
-                    #if not check_missing_bursts(burstlist,missingbursts):
-                    print("All necessary bursts for frame {0} seem to be have been acquired "\
-                            "on {1}...".format(frameName,date))
-                    lq.set_slc_status(row['slc_id'],BUILDING) #building....
-                    rc = make_frame_image(date,frameName,imburstlist,env.actEnv, lq, -1, acqMode)
-                    lq.set_slc_status(row['slc_id'],rc)
-                    if rc!=0:
-                        shutil.rmtree('./SLC')
-                else:
-                    print("Missing bursts for date {:%Y%m%d}".format(date))
-                    lq.set_slc_status(row['slc_id'],MISSING_BURSTS)
-                set_lotus_job_status('Cleaning {:%y-%m-%d}'.format(date))
+            #Check that we have no missing bursts
+            imburstlist = lq.get_frame_bursts_on_date(frameName,date)
+            missingbursts = [b for b in burstlist if not b in imburstlist]
+            if not missingbursts or not check_missing_bursts(burstlist,missingbursts) or not check_missing_bursts_bool:
+                print('List of missing bursts:')
+                print(missingbursts)
+                #we will relax the condition here and checking for only critical missing bursts
+                #if not check_missing_bursts(burstlist,missingbursts):
+                print("All necessary bursts for frame {0} seem to be have been acquired "\
+                        "on {1}...".format(frameName,date))
+                lq.set_slc_status(row['slc_id'],BUILDING) #building....
+                rc = make_frame_image(date,frameName,imburstlist,'.', lq, -1, acqMode)
+                lq.set_slc_status(row['slc_id'],rc)
+            else:
+                print("Missing bursts for date {:%Y%m%d}".format(date))
+                lq.set_slc_status(row['slc_id'],MISSING_BURSTS)
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
     lq.set_job_finished(jobID,3)

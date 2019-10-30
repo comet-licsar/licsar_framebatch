@@ -42,7 +42,7 @@ thisDir=`pwd`
        mkdir -p $frameDir/LUT
        rm -f $date/*.lt.orbitonly 2>/dev/null
        echo "compressing LUT of "$date
-       7za a -mx=1 $frameDir/LUT/$date.7z $date/*.lt >/dev/null 2>/dev/null
+       7za a -mx=1 $frameDir/LUT/$date.7z $date/*.lt $date/*.off >/dev/null 2>/dev/null
        if [ -f $frameDir/LUT/$date.7z ]; then
           rm -f $date/*.lt
        else
@@ -136,7 +136,34 @@ if [ $DOGEOC -eq 1 ]; then
  else
   echo "warning, geocoding was not performed for "$frame
  fi
+
+ if [ -d $frame/GEOC.MLI ]; then
+  echo "Moving geoimages to public folder for frame "$frame
+  track=$tr
+  for img in `ls $frame/GEOC.MLI/2* -d | rev | cut -d '/' -f1 | rev`; do
+   if [ -f $frame/GEOC.MLI/$img/$img.geo.mli.tif ]; then
+    if [ -d $public/$track/$frame/products/epochs/$img ]; then
+     echo "epoch for "$img" exists, we will not overwrite now"
+    else
+     echo "moving/copying epoch "$img
+     mkdir -p $public/$track/$frame/products/epochs/$img
+     for toexp in mli.png mli.tif; do
+     if [ -f $frame/GEOC.MLI/$img/$img.geo.$toexp ]; then
+      if [ $MOVE -eq 1 ]; then
+       mv $frame/GEOC.MLI/$img/$img.geo.$toexp $public/$track/$frame/products/epochs/$img/.
+      else
+       cp $frame/GEOC.MLI/$img/$img.geo.$toexp $public/$track/$frame/products/epochs/$img/.
+      fi
+     fi
+     done
+    fi
+   fi
+  done
+ fi
 fi
+
+
+
 #  for dates in `ls $frame/GEOC/20??????_20?????? -d | cut -d '/' -f3`; do
 #   if [ -f $frame/GEOC/$dates.geo.diff ] && [ ! -d $frameDir/GEOC/$dates ]; then
 #   fi
