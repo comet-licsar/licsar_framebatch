@@ -130,9 +130,9 @@ def main(argv):
 
                 rslc = os.path.join(env.actEnv,'RSLC',date.strftime('%Y%m%d'),
                                     date.strftime('%Y%m%d.rslc'))
-                if os.path.exists(rslc):
-                    print("Removing mosaiced image {0}".format(rslc))
-                    os.remove(rslc)
+                #if os.path.exists(rslc):
+                #    print("Removing mosaiced image {0}".format(rslc))
+                #    os.remove(rslc)
 
                 #Finally set rslc status to return code
                 lq.set_rslc_status(row['rslc_id'],rc)
