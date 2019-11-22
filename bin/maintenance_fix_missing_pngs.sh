@@ -1,4 +1,7 @@
 if [ ! -f lack_png.list.temp ]; then echo "do what you have to do"; exit; fi
+#instructions:
+#have following lines in your lack_png.list.temp file:
+#080D_05003_131312-20170528_20170603.geo.unw.png
 
 #for line in `sed 's/ /-/' lack_png.list`; do 
 pom=0

@@ -18,8 +18,10 @@ from batchLSFLib import set_lotus_job_status
 
 
 #to ensure GAMMA will have proper value for CPU count
-from multiprocessing import cpu_count
-os.environ['OMP_NUM_THREADS'] = str(cpu_count())
+#however i had to force processing on 1 core only, so hardcoding here
+#from multiprocessing import cpu_count
+#os.environ['OMP_NUM_THREADS'] = str(cpu_count())
+os.environ['OMP_NUM_THREADS'] = str(1)
 
 ################################################################################
 #Status Codes

@@ -35,7 +35,7 @@ fi
 #NBATCH=5
 NBATCH=$1
 master=`basename geo/20??????.hgt .hgt`
-SCRATCHDIR=/work/scratch/licsar
+SCRATCHDIR=/work/scratch-nompiio/licsar
 WORKFRAMEDIR=`pwd`
 frame=`pwd | rev | cut -d '/' -f1 | rev`
 echo "Executing gap filling routine (results will be saved in this folder: "$WORKFRAMEDIR" )."

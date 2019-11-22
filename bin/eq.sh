@@ -1,1 +1,1 @@
-earthquake_responder.py; while sleep 40000; do earthquake_responder.py; done
+earthquake_responder.py; while sleep 21800; do earthquake_responder.py; done

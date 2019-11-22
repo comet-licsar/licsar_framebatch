@@ -18,8 +18,10 @@ from LiCSAR_lib.LiCSAR_misc import *
 from batchLSFLib import set_lotus_job_status
 
 #to ensure GAMMA will have proper value for CPU count
-from multiprocessing import cpu_count
-os.environ['OMP_NUM_THREADS'] = str(cpu_count())
+#however i had to force processing on 1 core only, so hardcoding here
+#from multiprocessing import cpu_count
+#os.environ['OMP_NUM_THREADS'] = str(cpu_count())
+os.environ['OMP_NUM_THREADS'] = str(1)
 
 ################################################################################
 #Statuses
@@ -37,6 +39,7 @@ class CoregEnv(LicsEnv):
     def __init__(self,jobID,frame,mstrDate,auxDate,date,cacheDir,tempDir):
         LicsEnv.__init__(self,jobID,frame,cacheDir,tempDir)
         self.srcPats = ['SLC/{:%Y%m%d}.*'.format(date), #patterns to source
+                'LUT/{:%Y%m%d}.*'.format(date),
                 'RSLC/{:%Y%m%d}.*'.format(mstrDate),
                 'SLC/{:%Y%m%d}.*'.format(mstrDate),
                 'geo','DEM']
@@ -51,6 +54,7 @@ class CoregEnv(LicsEnv):
                         'log.*',
                         'tab.*']
         self.srcSlcPath = 'SLC/{:%Y%m%d}'.format(date) #used to check source slc
+        self.srcLutPath = 'LUT/{:%Y%m%d}'.format(date) #used to check source slc
         self.newDirs = ['tab','log'] # empty directories to create
         self.cleanDirs = ['./RSLC','./tab'] # Directories to clean on failure
 
@@ -123,10 +127,24 @@ def main(argv):
 
                 lq.set_rslc_status(row['rslc_id'],BUILDING) #building status
                 
-                if acqMode == 'sm':
-                    rc = coreg_slave_sm(date,'SLC','RSLC',mstrDate.date(),frameName,'.', lq, -1)
+                if os.path.exists(env.srcLutPath):
+                    #so if LUT exists for this date, do re-recoregistration. otherwise just.. normal one
+                    if acqMode == 'sm':
+                        print('recoregistration for stripmaps is not ready yet, reprocessing instead!')
+                        rc = coreg_slave_sm(date,'SLC','RSLC',mstrDate.date(),frameName,'.', lq, -1)
+                    else:
+                        rc = recoreg_slave(date,'SLC','RSLC',mstrDate.date(),frameName,'.', lq)
+                        if rc != 0:
+                            # rc code 7 means LUT not found..
+                            slaveLockFile = 'RSLC/'+date.strftime('/%Y%m%d.lock')
+                            if os.path.exists(slaveLockFile):
+                                os.remove(slaveLockFile)
+                            rc = coreg_slave(date,'SLC','RSLC',mstrDate.date(),frameName,'.', lq, -1)
                 else:
-                    rc = coreg_slave(date,'SLC','RSLC',mstrDate.date(),frameName,'.', lq, -1)
+                    if acqMode == 'sm':
+                        rc = coreg_slave_sm(date,'SLC','RSLC',mstrDate.date(),frameName,'.', lq, -1)
+                    else:
+                        rc = coreg_slave(date,'SLC','RSLC',mstrDate.date(),frameName,'.', lq, -1)
 
                 rslc = os.path.join(env.actEnv,'RSLC',date.strftime('%Y%m%d'),
                                     date.strftime('%Y%m%d.rslc'))

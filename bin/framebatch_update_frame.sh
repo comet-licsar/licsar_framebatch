@@ -7,6 +7,10 @@ extra=''
 
 track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
 lastepoch=`ls $LiCSAR_public/$track/$frame/products/2*_2* -d | tail -n1 | rev | cut -d '_' -f1 | rev`
+if [ ! -z $2 ]; then
+ echo "You have provided second parameter - here it means PROCESS FROM BEGINNING TILL THE END"
+ lastepoch='20141001'
+fi
 startdate=`date -d $lastepoch"-25 days" +%Y-%m-%d`
 enddate=`date -d "-21 days" +%Y-%m-%d`
 
@@ -30,7 +34,7 @@ if [ $nlamaxdateshort -gt $lastepoch ]; then
     #
     pom=0
     hours=0
-    while [ pom == 0 ]; do
+    while [ $pom == 0 ]; do
       let hours=$hours+1
       echo "waiting for NLA to finish: "$hours" hours"
       sleep 3600

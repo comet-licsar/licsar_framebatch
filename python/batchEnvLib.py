@@ -74,7 +74,7 @@ def create_lics_cache_dir(frame,srcDir,cacheDir,masterDate=None):
     else:
         raise InvalidFrameError
 
-def get_rslc_list(frame):
+def get_rslc_list(frame, lutBool = False):
     procdir = config.get('Env','SourceDir')
     track = str(int(frame[0:3]))
     frameDir = os.path.join(procdir,track,frame)
@@ -82,6 +82,12 @@ def get_rslc_list(frame):
     if os.path.isdir(frameDir):
         rslcs = fnmatch.filter(os.listdir(frameDir+'/RSLC'), '20??????')
         rslcs7z = fnmatch.filter(os.listdir(frameDir+'/RSLC'), '20??????.7z')
+        #add lut table here?
+        if lutBool:
+            luts7z = fnmatch.filter(os.listdir(frameDir+'/LUT'), '20??????.7z')
+            for lut7z in luts7z:
+                lut = lut7z.split('.')[0]
+                rslclist.append(lut)
         for rslc7z in rslcs7z:
             rslc = rslc7z.split('.')[0]
             rslclist.append(rslc)
@@ -96,6 +102,7 @@ def get_rslcs_from_lics(frame,srcDir,cacheDir,date_strings):
     outrslcs=[]
     if not os.path.isdir(os.path.join(cacheDir,frame,'RSLC')): os.mkdir(os.path.join(cacheDir,frame,'RSLC'))
     if os.path.isdir(frameDir):
+        #getting RSLCs
         rslcs = fnmatch.filter(os.listdir(frameDir+'/RSLC'), '20??????')
         #for r in rslcs:
         #    if r not in date_strings: rslcs.remove(r)
@@ -121,6 +128,22 @@ def get_rslcs_from_lics(frame,srcDir,cacheDir,date_strings):
                 cmd="7za x -o"+os.path.join(cacheDir,frame,'RSLC')+" "+os.path.join(frameDir,'RSLC',r)+" >/dev/null"
                 b=os.system(cmd)
             if os.path.exists(os.path.join(cacheDir,frame,'RSLC',r.split('.')[0])): outrslcs.append(r.split('.')[0])
+
+        #finally check for LUTs
+        if os.path.exists(frameDir+'/LUT'):
+            luts7z = fnmatch.filter(os.listdir(frameDir+'/LUT'), '20??????.7z')
+            luts7z_ok = []
+            for l in luts7z:
+                if (os.path.splitext(l)[0] in date_strings) and (os.path.splitext(l)[0] not in outrslcs): luts7z_ok.append(l)
+            for l in luts7z_ok:
+                if not os.path.exists(os.path.join(cacheDir,frame,'RSLC',l.split('.')[0])):
+                    print('Extracting LUT of '+l)
+                    if not os.path.exists(os.path.join(cacheDir,frame,'LUT')):
+                        os.mkdir(os.path.join(cacheDir,frame,'LUT'))
+                    cmd="7za x -o"+os.path.join(cacheDir,frame,'LUT')+" "+os.path.join(frameDir,'LUT',l)+" >/dev/null"
+                    b=os.system(cmd)
+            #this line is not used - the LUTs will just physically exist in RSLC folders and therefore used for recoreg
+            #if os.path.exists(os.path.join(cacheDir,frame,'RSLC',l.split('.')[0])): outrslcs.append(l.split('.')[0])
         #update_existing_rslcs(frame,rslcs)
     return outrslcs
 

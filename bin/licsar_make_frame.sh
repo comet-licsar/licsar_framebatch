@@ -34,7 +34,7 @@ neodc_check=0
 only_new_rslc=0
 STORE=0
 #according to CEDA, it should be ncores=16, i.e. one process per core. I do not believe it though. So keeping ncores=1.
-bsubncores=16
+#bsubncores=16
 bsubncores=1
 
 #while [ "$1" != "" ]; do
@@ -65,8 +65,8 @@ if [ -z $BATCH_CACHE_DIR ] || [ ! -d $BATCH_CACHE_DIR ]; then
 fi
 # 03/2019 - we started to use scratch-nompiio disk as a possible solution for constant stuck job problems
 # after JASMIN update to Phase 4
-#if [ ! -d /work/scratch-nompiio/licsar/$USER ]; then mkdir /work/scratch-nompiio/licsar/$USER; fi
-if [ ! -d /work/scratch/licsar/$USER ]; then mkdir /work/scratch/licsar/$USER; fi
+if [ ! -d /work/scratch-nompiio/licsar/$USER ]; then mkdir /work/scratch-nompiio/licsar/$USER; fi
+#if [ ! -d /work/scratch/licsar/$USER ]; then mkdir /work/scratch/licsar/$USER; fi
 
 basefolder=$BATCH_CACHE_DIR
 echo 'Processing in your BATCH_CACHE_DIR that is '$BATCH_CACHE_DIR
@@ -119,7 +119,8 @@ fi
 #echo "debu 0"
 
 #testing.. but perhaps helps in getting proper num threads in CEMS environment
-export OMP_NUM_THREADS=16
+#export OMP_NUM_THREADS=16
+export OMP_NUM_THREADS=1
 
 #getting access to database
 mysqlhost=`grep ^Host $framebatch_config | cut -d ':' -f2 | sed 's/^\ //'`
@@ -383,44 +384,40 @@ if [ $NORUN -eq 0 ] && [ $STORE -lt 1 ]; then
 else
  echo "To run gapfilling afterwards, use ./framebatch_gapfill.sh"
 fi
+
+
+
+
 ###################################################### Geocoding to tiffs
 echo "Preparing script for geocoding results"
 cat << EOF > framebatch_06_geotiffs.sh
-echo "You should better run this as: "
-echo "bsub -q $bsubquery -x -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
-NOPAR=\`cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l\`
-#NOPAR=8
-rm tmp_to_pub 2>/dev/null
-rm tmp_to_pub.sh 2>/dev/null
+NOPAR=4
+MAXPAR=12
+frame=$frame
 
-for ifg in \`ls $BATCH_CACHE_DIR/$frame/IFG/*_* -d | rev | cut -d '/' -f1 | rev\`; do
- if [ -f $BATCH_CACHE_DIR/$frame/IFG/\$ifg/\$ifg.unw ]; then
-  echo \$ifg >> $BATCH_CACHE_DIR/$frame/tmp_to_pub
- fi
-done
-echo "Generating geotiffs (parallelized)"
-cat tmp_to_pub | parallel -j \$NOPAR create_geoctiffs_to_pub.sh $BATCH_CACHE_DIR/$frame
-rm tmp_to_pub
+#let's have 10 images per cpu
+imgpercpu=10
+noimgs=\`wc -l framebatch_01_mk_image.list | gawk {'print \$1'}\`
+if [ \$noimgs -gt 0 ]; then
+ let NOPAR=1+\$noimgs/\$imgpercpu
+ if [ \$NOPAR -gt \$MAXPAR ]; then NOPAR=\$MAXPAR; fi
+fi
 EOF
-chmod 770 framebatch_06_geotiffs.sh
+cp framebatch_06_geotiffs.sh framebatch_06_geotiffs_nowait.sh
+echo "bsub -q $bsubquery -W 08:00 -J $frame'_geo' -n \$NOPAR -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR" >> framebatch_06_geotiffs_nowait.sh
+chmod 770 framebatch_06_geotiffs*.sh
+
+waiting_str=''
+for jobid in `cat framebatch_04_unwrap.sh | rev | gawk {'print $1'} | rev`; do
+ stringg="framebatch_04_unwrap_"$jobid
+ waiting_str=$waiting_str" && ended("$stringg")"
+done
+waiting_string=`echo $waiting_str | cut -c 4-`
+echo "bsub -w '"$waiting_string"' -J $frame'_geo' -n \$NOPAR -q $bsubquery -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR" >> framebatch_06_geotiffs.sh
 
 if [ $NORUN -eq 0 ]; then
- #make it wait to finish of unwrapping - and not gapfilling!
- waiting_str=''
- for jobid in `cat framebatch_04_unwrap.sh | rev | gawk {'print $1'} | rev`; do
-  stringg="framebatch_04_unwrap_"$jobid
-  waiting_str=$waiting_str" && ended("$stringg")"
- done
- waiting_string=`echo $waiting_str | cut -c 4-`
- echo "bsub -w '"$waiting_string"' -J $frame'_geo' -q $bsubquery -x -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh" > framebatch_06_geotiffs_wait.sh
- chmod 770 framebatch_06_geotiffs_wait.sh
- ./framebatch_06_geotiffs_wait.sh
-# bsub -w framebatch_05_gap_filling_$frame -J framebatch_06_geotiffs_$frame -q $bsubquery -n $bsubncores -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh
-# bsub -w framebatch_05_gap_filling_$frame -J framebatch_06_geotiffs_$frame -q $bsubquery -x -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh
- #bsub -w $waiting_string -J framebatch_06_geotiffs_$frame -q $bsubquery -x -W 12:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh
-else
- echo "To run geotiff generation, use "
- echo "bsub -q "$bsubquery" -x -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err ./framebatch_06_geotiffs.sh"
+ echo "Sending geocoding script to the LOTUS job waitlist"
+ ./framebatch_06_geotiffs.sh
 fi
 
 ###################################################### Baseline plot
