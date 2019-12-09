@@ -13,7 +13,7 @@ rslcs = get_rslc_list(frame)
 last_rslc = rslcs[-1]
 
 #to compare I have to get the next day..
-last_rslc_date = datetime.strptime(last_rslc,'%Y%m%d') + timedelta(days=1)
+last_rslc_date = datetime.strptime(last_rslc,'%Y%m%d') + timedelta(days=2)
 last_rslc_date = last_rslc_date.date()
 #curDir = os.environ['LiCSAR_procdir']
 new_images = get_images_for_frame(frame, last_rslc_date)

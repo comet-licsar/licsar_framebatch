@@ -38,7 +38,7 @@ class UnwrapEnv(LicsEnv):
         LicsEnv.__init__(self,jobID,frame,cacheDir,tempDir)
         self.srcPats = ['IFG/{0:%Y%m%d}_{1:%Y%m%d}.*'.format(dateA,dateB), 
                 'SLC/{:%Y%m%d}.*'.format(mstrDate),
-                'geo','DEM','log/snaphu.conf']
+                'geo','DEM','log/snaphu.conf','local_config.py']
 
         self.outPats = ['IFG.*', # Patterns to output
                         'log.*',

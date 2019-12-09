@@ -40,7 +40,7 @@ BUILT = 0
 class SlcEnv(LicsEnv):
     def __init__(self,jobID,frame,date,cacheDir,tempDir):
         LicsEnv.__init__(self,jobID,frame,cacheDir,tempDir)
-        self.srcPats = []
+        self.srcPats = ['local_config.py']
         self.outPats = ['SLC/{0:%Y%m%d}/{0:%Y%m%d}\.IW[1-3]\.slc.*'.format(date),
                         'SLC/{0:%Y%m%d}/{0:%Y%m%d}\..*mli.*'.format(date),
                         'SLC/{0:%Y%m%d}/{0:%Y%m%d}\.slc\.par'.format(date),

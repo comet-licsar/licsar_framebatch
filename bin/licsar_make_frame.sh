@@ -229,10 +229,20 @@ fi
     extrabsub='-R "rusage[mem='$maxmem']" -M '$maxmem
    fi
   fi
+  #get expected time
+  notoprocess=`grep -c $jobid $step.list`
+  if [ $step == 'framebatch_01_mk_image' ]; then hoursperone=0.4; fi
+  if [ $step == 'framebatch_02_coreg' ]; then hoursperone=1; fi
+  if [ $step == 'framebatch_03_mk_ifg' ]; then hoursperone=0.25; fi
+  if [ $step == 'framebatch_04_unwrap' ]; then hoursperone=1; fi
+  #to be included also number of bursts per frame...
+  exptime=`echo $hoursperone*$notoprocess+1 | bc | cut -d '.' -f1`
+  if [ $exptime -gt 23 ]; then exptime=23; fi
+  if [ $exptime -lt 10 ]; then exptime=0$exptime; fi
   echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
-     -q $bsubquery -n $bsubncores -W 23:59 $extrabsub $waitcmd $stepcmd $jobid >> $step.sh
+     -q $bsubquery -n $bsubncores -W $exptime:59 $extrabsub $waitcmd $stepcmd $jobid >> $step.sh
   echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
-     -q $bsubquery -n $bsubncores -W 23:59 $extrabsub $stepcmd $jobid >> $step'_nowait.sh'
+     -q $bsubquery -n $bsubncores -W $exptime:59 $extrabsub $stepcmd $jobid >> $step'_nowait.sh'
  done
  
  rm tmpText 2>/dev/null

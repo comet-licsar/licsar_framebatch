@@ -27,6 +27,7 @@ thisDir=`pwd`
  #move rslcs
  if [ -d $frame/RSLC ]; then
   mkdir -p $frameDir/RSLC
+  chmod 774 $frameDir/RSLC 2>/dev/null
   for date in `ls $frame/RSLC/20?????? -d | cut -d '/' -f3`; do
    # if it is not master
    if [ ! -d $frameDir/SLC/$date ]; then
@@ -40,10 +41,12 @@ thisDir=`pwd`
       #cleaning the folder
       if [ `ls $date/*.lt 2>/dev/null | wc -w` -gt 0 ]; then
        mkdir -p $frameDir/LUT
+       chmod 774 $frameDir/LUT 2>/dev/null
        rm -f $date/*.lt.orbitonly 2>/dev/null
        echo "compressing LUT of "$date
        7za a -mx=1 $frameDir/LUT/$date.7z $date/*.lt $date/*.off >/dev/null 2>/dev/null
        if [ -f $frameDir/LUT/$date.7z ]; then
+          chmod 664 $frameDir/LUT/$date.7z
           rm -f $date/*.lt
        else
           echo "error in zipping the "$date"/*.lt to "$frameDir"/LUT/"$date".7z - please check manually"
@@ -68,6 +71,7 @@ if [ $DOIFG -eq 1 ]; then
    if [ -f $frame/IFG/$dates/$dates.unw ]; then
        if [ ! -d $frameDir/IFG/$dates ]; then
         mkdir -p $frameDir/IFG/$dates
+        chmod 774 $frameDir/IFG/$dates 2>/dev/null
         echo "moving (or copying) ifg "$dates
         for ext in cc diff filt.cc filt.diff off unw; do
         if [ $MOVE -eq 1 ]; then 
@@ -76,6 +80,7 @@ if [ $DOIFG -eq 1 ]; then
          cp $frame/IFG/$dates/$dates.$ext $frameDir/IFG/$dates/.
          fi
         done
+        chmod 664 $frameDir/IFG/$dates/$dates.$ext
        fi
 #   else
        #this is a quick fix if the geocoding was not performed, then i want to copy ifgs back
@@ -89,6 +94,8 @@ if [ $DOIFG -eq 1 ]; then
 fi
 
  echo "Stored "$frame" on "`date +'%Y-%m-%d'`>> $thisDir/stored_to_curdir.txt
+ #local_config.py file
+ cp $frame/local_config.py $frameDir/.
  #move tabs and logs
  if [ -d $frame/tab ]; then
   echo "copying new tabs and logs"
@@ -119,6 +126,7 @@ if [ $DOGEOC -eq 1 ]; then
      echo "moving geocoded "$geoifg
     fi
     mkdir -p $public/$track/$frame/products/$geoifg 2>/dev/null
+    chmod 774 $public/$track/$frame/products/$geoifg 2>/dev/null
     for toexp in cc.bmp cc.png cc.tif diff.bmp diff.png diff_pha.tif unw.bmp unw.png unw.tif disp_blk.png; do
        if [ -f $frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
          #this condition is to NOT TO OVERWRITE the GEOC results. But it makes sense to overwrite them 'always'
@@ -129,6 +137,7 @@ if [ $DOGEOC -eq 1 ]; then
            cp $frame/GEOC/$geoifg/$geoifg.geo.$toexp $public/$track/$frame/products/$geoifg/.
           fi
          #fi
+         chmod 664 $public/$track/$frame/products/$geoifg/$geoifg.geo.$toexp
        fi
     done
    fi
@@ -147,6 +156,7 @@ if [ $DOGEOC -eq 1 ]; then
     else
      echo "moving/copying epoch "$img
      mkdir -p $public/$track/$frame/products/epochs/$img
+     chmod 774 $public/$track/$frame/products/epochs/$img 2>/dev/null
      for toexp in mli.png mli.tif; do
      if [ -f $frame/GEOC.MLI/$img/$img.geo.$toexp ]; then
       if [ $MOVE -eq 1 ]; then
@@ -154,6 +164,7 @@ if [ $DOGEOC -eq 1 ]; then
       else
        cp $frame/GEOC.MLI/$img/$img.geo.$toexp $public/$track/$frame/products/epochs/$img/.
       fi
+      chmod 664 $public/$track/$frame/products/epochs/$img/$img.geo.$toexp
      fi
      done
     fi

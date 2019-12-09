@@ -42,7 +42,7 @@ class CoregEnv(LicsEnv):
                 'LUT/{:%Y%m%d}.*'.format(date),
                 'RSLC/{:%Y%m%d}.*'.format(mstrDate),
                 'SLC/{:%Y%m%d}.*'.format(mstrDate),
-                'geo','DEM']
+                'geo','DEM','local_config.py']
         if auxDate:
             self.srcPats += ['RSLC/{:%Y%m%d}.*'.format(auxDate)]
         self.outPats = ['RSLC/{0:%Y%m%d}/{0:%Y%m%d}\.IW[1-3]\.rslc.*'.format(date), # Patterns to output

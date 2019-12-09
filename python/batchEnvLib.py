@@ -71,6 +71,10 @@ def create_lics_cache_dir(frame,srcDir,cacheDir,masterDate=None):
                 oldFile = os.path.join(slcDir,oldFile)
                 newFile = os.path.join(rslcDir,newFile)
                 if not os.path.exists(newFile): os.symlink(oldFile,newFile)
+        #now, local config python parameters:
+        lcfile = os.path.join(frameDir,'local_config.py')
+        if os.path.exists(lcfile):
+            rc = shutil.copyfile(lcfile,os.path.join(frameCacheDir,'local_config.py'))
     else:
         raise InvalidFrameError
 
