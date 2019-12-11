@@ -231,12 +231,12 @@ fi
   fi
   #get expected time
   notoprocess=`grep -c $jobid $step.list`
-  if [ $step == 'framebatch_01_mk_image' ]; then hoursperone=0.4; fi
-  if [ $step == 'framebatch_02_coreg' ]; then hoursperone=1; fi
-  if [ $step == 'framebatch_03_mk_ifg' ]; then hoursperone=0.25; fi
+  if [ $step == 'framebatch_01_mk_image' ]; then hoursperone=0.7; fi
+  if [ $step == 'framebatch_02_coreg' ]; then hoursperone=1.7; fi
+  if [ $step == 'framebatch_03_mk_ifg' ]; then hoursperone=0.35; fi
   if [ $step == 'framebatch_04_unwrap' ]; then hoursperone=1; fi
   #to be included also number of bursts per frame...
-  exptime=`echo $hoursperone*$notoprocess+1 | bc | cut -d '.' -f1`
+  exptime=`echo $hoursperone*$notoprocess+1.5 | bc | cut -d '.' -f1`
   if [ $exptime -gt 23 ]; then exptime=23; fi
   if [ $exptime -lt 10 ]; then exptime=0$exptime; fi
   echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
@@ -464,7 +464,7 @@ chmod 770 framebatch_07_baseline_plot.sh
 if [ $STORE -eq 1 ]; then
  echo "Making the system automatically store the generated data (for auto update of frames)"
  cd $BATCH_CACHE_DIR
- bsub -w $frame'_geo' -q cpom-comet -n 1 -W 08:00 -o LOGS/framebatch_XX_store.out -e LOGS/framebatch_XX_store.err -J $frame'_ST' store_to_curdir_earmla_norslc.sh $frame $deleteafterstore #$frame
+ bsub -w $frame'_geo' -q cpom-comet -n 1 -W 08:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore #$frame
  cd -
 fi
 

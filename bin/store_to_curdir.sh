@@ -193,6 +193,10 @@ update_bperp_file.sh
 echo "Deactivating the frame after its storing to db"
 setFrameInactive.py $frame
 
+echo "Expiring NLA requests (if any)"
+for nlareqid in `nla.py requests | grep $frame | gawk {'print $1'} 2>/dev/null`; do
+ nla.py expire $nlareqid
+done
 
 
 ##
