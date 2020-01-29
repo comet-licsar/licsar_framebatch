@@ -71,7 +71,7 @@ polyid = get_polyid(frame)
 acq_imgs = add_acq_images(polyid, startdate.date(), enddate.date(), mstrDate.date())
 if len(acq_imgs)<2:
     print('No acquisitions registered for this frame in this time period. Try framebatch_data_refill.sh first?')
-    exit
+    exit()
 masterset = set_master(polyid,mstrDate)
 mstrline = acq_imgs[acq_imgs['acq_date']==mstrDate]
 acq_imgs = acq_imgs[acq_imgs['acq_date']!=mstrDate]

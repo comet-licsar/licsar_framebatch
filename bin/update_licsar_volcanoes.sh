@@ -16,7 +16,9 @@ echo 139D_04017_131313 >> $BATCH_CACHE_DIR/volc/allframes.tmp
 sed -i 's/000D_/175D_/' $BATCH_CACHE_DIR/volc/allframes.tmp
 sed -i 's/000A_/175A_/' $BATCH_CACHE_DIR/volc/allframes.tmp
 sed -i '/014A_04939_131313/d' $BATCH_CACHE_DIR/volc/allframes.tmp
-sort -u $BATCH_CACHE_DIR/volc/allframes.tmp >  $BATCH_CACHE_DIR/volc/allframes.txt
+#sort -u $BATCH_CACHE_DIR/volc/allframes.tmp >  $BATCH_CACHE_DIR/volc/allframes.txt
+#if to start from 175-->1
+sort -u -r $BATCH_CACHE_DIR/volc/allframes.tmp >  $BATCH_CACHE_DIR/volc/allframes.txt
 
 rm $BATCH_CACHE_DIR/volc/allframes.tmp
 

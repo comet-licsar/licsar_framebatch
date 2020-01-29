@@ -105,6 +105,7 @@ if [ $nla_start == 1 ]; then
    fi
    rm temp_nla.$frame
    #after couple of hours, autodownload is not working. so setting to zero
+  fi
 else
    echo "autodownload will be used"
    autodown=1

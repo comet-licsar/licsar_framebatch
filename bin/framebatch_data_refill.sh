@@ -30,8 +30,8 @@ startdate=$2 #should be as 2014-10-10
 #this is to use scihub to download only the today's and yesterday's data
 if [ ! -z $3 ]; then 
  enddate=$3;
- if [ `date -d $enddate +'%Y%m%d'` -gt `date +'%Y%m%d'` ]; then enddate=`date +'%Y-%m-%d'`; fi
- if [ $enddate == `date +'%Y-%m-%d'` ] || [ $enddate == `date -d 'yesterday' +'%Y-%m-%d'` ]; then
+ #if [ `date -d $enddate +'%Y%m%d'` -gt `date +'%Y%m%d'` ]; then enddate=`date +'%Y-%m-%d'`; fi
+ if [ $enddate == `date +'%Y-%m-%d'` ] || [ $enddate == `date -d 'tomorrow' +'%Y-%m-%d'` ] || [ $enddate == `date -d 'yesterday' +'%Y-%m-%d'` ]; then
   if [ -f ~/.scihub_credentials ]; then use_scihub=1; fi
  fi
 fi
@@ -279,7 +279,6 @@ fi
  echo "(press CTRL-C if you want to cancel.. waiting 5 sec)"
  sleep 5
 
-
 if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
  cd $SLCdir
  count=0
@@ -298,6 +297,10 @@ if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
    echo "downloading file "$x" from alaska server"
    echo "( it is file no. "$count" from "$filestodown" )"
    scihub_pom=0
+   if [ `echo $x | cut -c 18-25` -ge `date -d 'yesterday' +'%Y%m%d'` ]; then
+    echo "( it is latest date, will check for RESORBs and download them )"
+    update_resorb_for_slc.sh $x
+   fi
    if [ `echo $x | cut -c 18-25` -ge `date -d 'yesterday' +'%Y%m%d'` ] && [ $use_scihub -eq 1 ]; then
     echo "(actually will use scihub for this one..)"
     scihub_pom=1

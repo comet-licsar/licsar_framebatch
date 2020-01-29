@@ -12,8 +12,16 @@ MOVE=0
 DORSLC=1
 DOGEOC=1
 DOIFG=1
+GEOC_OVERWRITE=1
+IFG_OVERWRITE=1
 DELETEAFTER=0
+
+#second parameter - if 1, then delete after storing
+#third parameter - if 0, then disable overwriting of GEOC and IFG files
 if [ ! -z $2 ]; then if [ $2 -eq 1 ]; then DELETEAFTER=1; echo "setting to delete"; fi; fi
+if [ ! -z $3 ]; then if [ $3 -eq 0 ]; then GEOC_OVERWRITE=0; IFG_OVERWRITE=0; echo "overwrite disabled"; fi; fi
+#have to remove this line ASAP:
+#DELETEAFTER=0
 
 #for thisDir in /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc/frames; do
 #cd $thisDir
@@ -73,15 +81,24 @@ if [ $DOIFG -eq 1 ]; then
         mkdir -p $frameDir/IFG/$dates
         chmod 774 $frameDir/IFG/$dates 2>/dev/null
         echo "moving (or copying) ifg "$dates
+       fi
         for ext in cc diff filt.cc filt.diff off unw; do
-        if [ $MOVE -eq 1 ]; then 
-         mv $frame/IFG/$dates/$dates.$ext $frameDir/IFG/$dates/.
-         else
-         cp $frame/IFG/$dates/$dates.$ext $frameDir/IFG/$dates/.
+         if [ -f $frame/IFG/$dates/$dates.$ext ]; then
+          GOON=1
+          if [ $IFG_OVERWRITE == 0 ]; then
+           if [ -f $frameDir/IFG/$dates/$dates.$ext ]; then GOON=0; fi
+          fi
+          if [ $GOON == 1 ]; then
+           if [ $MOVE -eq 1 ]; then
+            mv $frame/IFG/$dates/$dates.$ext $frameDir/IFG/$dates/.
+           else
+            cp $frame/IFG/$dates/$dates.$ext $frameDir/IFG/$dates/.
+           fi
+          fi
          fi
         done
         chmod 664 $frameDir/IFG/$dates/$dates.$ext
-       fi
+       #fi
 #   else
        #this is a quick fix if the geocoding was not performed, then i want to copy ifgs back
 #       if [ -d $frameDir/IFG/$dates ]; then
@@ -120,8 +137,11 @@ if [ $DOGEOC -eq 1 ]; then
   for geoifg in `ls $frame/GEOC/2*_2* -d | rev | cut -d '/' -f1 | rev`; do
    if [ -f $frame/GEOC/$geoifg/$geoifg.geo.unw.tif ]; then
     if [ -d $public/$track/$frame/products/$geoifg ]; then 
-     #echo "warning, geoifg "$geoifg" already existed. Data will not be overwritten";
-     echo "warning, geoifg "$geoifg" already exists. Data will be overwritten";
+      if [ $GEOC_OVERWRITE == 1 ]; then
+       echo "warning, geoifg "$geoifg" already exists. Data will be overwritten";
+      else
+       echo "warning, geoifg "$geoifg" already existed. Data will not be overwritten";
+      fi;
     else
      echo "moving geocoded "$geoifg
     fi
@@ -129,6 +149,11 @@ if [ $DOGEOC -eq 1 ]; then
     chmod 774 $public/$track/$frame/products/$geoifg 2>/dev/null
     for toexp in cc.bmp cc.png cc.tif diff.bmp diff.png diff_pha.tif unw.bmp unw.png unw.tif disp_blk.png; do
        if [ -f $frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
+         GOON=1
+         if [ $GEOC_OVERWRITE == 0 ]; then
+          if [ -f $public/$track/$frame/products/$geoifg/$geoifg.geo.$toexp ]; then GOON=0; fi
+         fi
+         if [ $GOON == 1 ]; then
          #this condition is to NOT TO OVERWRITE the GEOC results. But it makes sense to overwrite them 'always'
          #if [ ! -f $public/$track/$frame/products/$geoifg/$geoifg.geo.$toexp ]; then
           if [ $MOVE -eq 1 ]; then 
@@ -137,7 +162,8 @@ if [ $DOGEOC -eq 1 ]; then
            cp $frame/GEOC/$geoifg/$geoifg.geo.$toexp $public/$track/$frame/products/$geoifg/.
           fi
          #fi
-         chmod 664 $public/$track/$frame/products/$geoifg/$geoifg.geo.$toexp
+          chmod 664 $public/$track/$frame/products/$geoifg/$geoifg.geo.$toexp
+         fi
        fi
     done
    fi
@@ -193,11 +219,6 @@ update_bperp_file.sh
 echo "Deactivating the frame after its storing to db"
 setFrameInactive.py $frame
 
-echo "Expiring NLA requests (if any)"
-for nlareqid in `nla.py requests | grep $frame | gawk {'print $1'} 2>/dev/null`; do
- nla.py expire $nlareqid
-done
-
 
 ##
 #remove this:
@@ -219,6 +240,12 @@ then
  fi
  echo "Deleting the frame folder "$frame
  rm -r $frame
+
+echo "Expiring NLA requests (if any)"
+for nlareqid in `nla.py requests | grep $frame | gawk {'print $1'} 2>/dev/null`; do
+ nla.py expire $nlareqid
+done
+
 fi
 
 echo "done"

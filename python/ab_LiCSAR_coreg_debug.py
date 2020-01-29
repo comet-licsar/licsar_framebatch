@@ -5,7 +5,7 @@
 ################################################################################
 import batchDBLib as lq
 from configLib import config
-from batchEnvLib import LicsEnv
+#from batchEnvLib import LicsEnv
 import os
 import shutil
 import sys
@@ -15,7 +15,7 @@ import fnmatch
 import pandas as pd
 from LiCSAR_lib.coreg_lib import *
 from LiCSAR_lib.LiCSAR_misc import *
-from batchLSFLib import set_lotus_job_status
+#from batchLSFLib import set_lotus_job_status
 
 #to ensure GAMMA will have proper value for CPU count
 from multiprocessing import cpu_count
@@ -72,7 +72,13 @@ def main(argv):
         gc.rglks = int(grep1('range_looks',os.path.join(slcCache,mstrDate.strftime('%Y%m%d/%Y%m%d.slc.mli.par'))).split(':')[1].strip())
         gc.aglks = int(grep1('azimuth_looks',os.path.join(slcCache,mstrDate.strftime('%Y%m%d/%Y%m%d.slc.mli.par'))).split(':')[1].strip())
     #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-        rc = coreg_slave(date,'SLC','RSLC',mstrDate.date(),frameName,'.', lq, -1)
+        if acqMode == 'sm':
+            rc = coreg_slave_sm(date,'SLC','RSLC',mstrDate.date(),frameName,'.', lq, -1)
+        else:
+            if os.path.exists('LUT/{:%Y%m%d}'.format(date)):
+                rc = recoreg_slave(date,'SLC','RSLC',mstrDate.date(),frameName,'.', lq)
+            else:
+                rc = coreg_slave(date,'SLC','RSLC',mstrDate.date(),frameName,'.', lq, -1)
 
 
 if __name__ == "__main__":

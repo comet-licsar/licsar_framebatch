@@ -110,6 +110,7 @@ if [ $full_scale -eq 1 ]; then
  fi
 else
  no_of_jobs=5 #enough for last 3 months data
+ startdate=`date -d '91 days ago' +%Y-%m-%d`
 fi
 
 #decide for query based on user rights
@@ -261,7 +262,7 @@ fi
    echo "No new image was acquired since last run - exiting"
    exit
   fi
-  echo "There is "$newrslc" new images to process since the last run"
+  echo "There are "$newrslc" new images to process since the last run"
  fi
  date
  setFrameInactive.py $frame

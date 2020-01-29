@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 frame=sys.argv[1]
 #polyID = get_polyid(sys.argv[1])
 
-rslcs = get_rslc_list(frame)
+rslcs = get_rslc_list(frame, True)
 last_rslc = rslcs[-1]
 
 #to compare I have to get the next day..
