@@ -4,6 +4,7 @@ NOPAR=$1
 echo "./tmp_geocmd_\${LSF_PM_TASKID}.sh" > tmp_geocmd.sh
 chmod 777 tmp_geocmd.sh
 
+mkdir GEOC 2>/dev/null
 #getting list of files to geocode:
 rm -f tmp_to_pub 2>/dev/null
 for ifg in `ls IFG/*_* -d | rev | cut -d '/' -f1 | rev`; do

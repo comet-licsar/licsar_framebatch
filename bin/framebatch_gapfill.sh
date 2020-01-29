@@ -6,22 +6,34 @@ bsubncores=16
 #according to CEDA Support, we should keep 1 process per processor.
 #but -n1 was working usually fine... so keeping -n1
 bsubncores=1
-#waiting=0
+geocode=0
+waiting=0
+store=0
 
 if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_looks] [azimuth_looks]";
                    echo "NBATCH.... number of interferograms to generate per job (licsar defaults to 5)";
                    echo "MAXBTEMP.. max temporal baseline in days. Default is "$MAXBTEMP" [days]";
                    echo "range_looks and azimuth_looks - defaults are range_looks="$orig_rlks" and azimuth_looks="$orig_azlks;
 #                  echo "parameter -w ... will wait for the unwrapping jobs to end (useful only if unwrap is running, see licsar_make_frame)";
+                   echo "parameter -g ... will run further framebatch step, i.e. geocoding"
+#                   echo "parameter -S ... will run store and delete after geocoding.."
                    exit; fi
 
-#while getopts ":w" option; do
-# case "${option}" in
-#  w ) waiting=1; echo "parameter -w set: will wait for standard unwrapping before ifg gap filling"
+while getopts ":wgSa" option; do
+ case "${option}" in
+  w ) waiting=1; echo "parameter -w set: will wait for standard unwrapping before ifg gap filling";
 #      shift
-#      ;;
-#esac
-#done
+      ;;
+  g ) geocode=1; echo "parameter -g set: will do post-processing step - geocoding after the finish";
+#      shift
+      ;;
+  S ) store=1; echo "parameter -S set: will store after geocoding";
+#      shift
+      ;;
+  esac
+done
+shift $((OPTIND-1))
+
 
 if [ -z $2 ]; then echo "using default value of MAXBtemp="$MAXBTEMP; else MAXBTEMP=$2; fi
 if [ -z $3 ]; then echo "using default value of range_looks="$orig_rlks; rlks=$orig_rlks; else rlks=$3; fi
@@ -215,14 +227,15 @@ for job in `seq 1 $nojobs`; do
  if [ -f gapfill_job/ifgjob_$job.sh ]; then
   #weird error in 'job not found'.. workaround:
   echo bsub -q $bsubquery -n $bsubncores -W 04:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
-  chmod 770 tmptmp; ./tmptmp >/dev/null
+  chmod 777 tmptmp; ./tmptmp #>/dev/null
   wait="-w \"ended('"$frame"_ifg_"$job"')\""
  fi
  #weird error in 'job not found'.. workaround:
  echo bsub -q $bsubquery -n $bsubncores -W 12:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
  #echo "debug:"
  #cat tmptmp
- chmod 770 tmptmp; ./tmptmp >/dev/null
+ chmod 777 tmptmp
+ ./tmptmp #>/dev/null
 done
 
 # copying and cleaning job
@@ -235,11 +248,19 @@ fi
 echo "chmod -R 770 $SCRATCHDIR/$frame" > $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+echo "echo sync done, deleting TEMP folder" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+echo "cd $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+echo "rm -rf $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+if [ $geocode == 1 ]; then
+ echo "echo 'starting geocoding job'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+ echo $WORKFRAMEDIR/framebatch_06_geotiffs_nowait.sh >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+ echo "sleep 60" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+fi
 chmod 770 $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #workaround for 'Empty job. Job not submitted'
-echo bsub -q short-serial -n 1 $waitcmd -W 03:00 -J $frame'_gapfill_out' $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
+echo bsub -q $bsubquery -n 1 $waitcmd -W 05:00 -J $frame'_gapfill_out' -e LOGS/framebatch_gapfill_postproc.err -o LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
 #echo "debug last:"
 #cat $WORKFRAMEDIR/gapfill_job/tmptmp
-chmod 770 $WORKFRAMEDIR/gapfill_job/tmptmp; $WORKFRAMEDIR/gapfill_job/tmptmp
-rm $WORKFRAMEDIR/gapfill_job/tmptmp
+chmod 777 $WORKFRAMEDIR/gapfill_job/tmptmp; $WORKFRAMEDIR/gapfill_job/tmptmp
+#rm $WORKFRAMEDIR/gapfill_job/tmptmp
 cd -

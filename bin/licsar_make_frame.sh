@@ -93,17 +93,21 @@ if [ ! -z $5 ]; then
 fi
 if [ ! -z $6 ]; then extra_steps=$6; else extra_steps=0; fi
 
-if [ $full_scale -eq 1 ] && [ startdate == "2014-10-01" ]; then
- echo "WARNING:"
- echo "You have chosen to process in full scale"
- echo "This makes sense only if you have already done (two days ago) the nla request, i.e."
- echo "LiCSAR_0_getFiles.py -f FRAME etc. -- see documentation"
- echo "If you didn't, please cancel it now (CTRL-C)"
- sleep 5
- echo "..waited 5 sec. Continuing"
- #this number was here before - but had to decrease since we use only 1 processor now, job time limit is 24h and coreg may take up to 2h (actually less) per image
- #no_of_jobs=40
- no_of_jobs=12
+if [ $full_scale -eq 1 ]; then
+ if [ $startdate == "2014-10-01" ]; then
+  echo "WARNING:"
+  echo "You have chosen to process in full scale"
+  echo "This makes sense only if you have already done (two days ago) the nla request, i.e."
+  echo "LiCSAR_0_getFiles.py -f FRAME etc. -- see documentation"
+  echo "If you didn't, please cancel it now (CTRL-C)"
+  sleep 5
+  echo "..waited 5 sec. Continuing"
+  #this number was here before - but had to decrease since we use only 1 processor now, job time limit is 24h and coreg may take up to 2h (actually less) per image
+  #no_of_jobs=40
+  no_of_jobs=20
+ else
+  no_of_jobs=12
+ fi
 else
  no_of_jobs=5 #enough for last 3 months data
 fi
@@ -367,6 +371,13 @@ fi
 ###################################################### Gap Filling
 echo "Preparing script for gap filling"
 NBATCH=2
+gpextra=''
+if [ $NORUN -eq 0 ]; then
+ gpextra="-g "
+fi
+if [ $NORUN -eq 0 ] && [ $STORE -eq 1 ]; then
+ gpextra=$gpextra"-S "
+fi
 cat << EOF > framebatch_05_gap_filling.sh
 echo "The gapfilling will use RSLCs in your work folder and update ifg or unw that were not generated (in background - check bjobs)"
 if [ ! -z \$1 ]; then
@@ -376,20 +387,20 @@ if [ ! -z \$1 ]; then
   waiting_str=\$waiting_str" && ended("\$stringg")"
  done
  waiting_string=\`echo \$waiting_str | cut -c 4-\`
- echo "bsub -w '"\$waiting_string"' -q short-serial -n 1 -J framebatch_05_gap_filling_$frame -o LOGS/framebatch_05_gap_filling.out -e LOGS/framebatch_05_gap_filling.err ./framebatch_05_gap_filling.sh" > framebatch_05_gap_filling_wait.sh
+ echo "bsub -w '"\$waiting_string"' -q $bsubquery -W 08:00 -n 1 -J framebatch_05_gap_filling_$frame -o LOGS/framebatch_05_gap_filling.out -e LOGS/framebatch_05_gap_filling.err ./framebatch_05_gap_filling.sh" > framebatch_05_gap_filling_wait.sh
  chmod 770 framebatch_05_gap_filling_wait.sh
  ./framebatch_05_gap_filling_wait.sh
 else
- framebatch_gapfill.sh $NBATCH
+ framebatch_gapfill.sh $gpextra $NBATCH
 fi
 EOF
 chmod 770 framebatch_05_gap_filling.sh
-if [ $NORUN -eq 0 ] && [ $STORE -lt 1 ]; then
+#if [ $NORUN -eq 0 ] && [ $STORE -lt 1 ]; then
 #this below option means that even in AUTOSTORE, the gapfilling will be performed...
 #in this case, however, it will be sent to bsub together with geotiff generation script
 #so.. more connections now depend on 'luck having to wait for bsub -x'
 #this definitely needs improvement, yet better 'than nothing'.. i suppose
-#if [ $NORUN -eq 0 ]; then
+if [ $NORUN -eq 0 ]; then
  ./framebatch_05_gap_filling.sh -w
 else
  echo "To run gapfilling afterwards, use ./framebatch_gapfill.sh"
@@ -425,10 +436,18 @@ done
 waiting_string=`echo $waiting_str | cut -c 4-`
 echo "bsub -w '"$waiting_string"' -J $frame'_geo' -n \$NOPAR -q $bsubquery -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR" >> framebatch_06_geotiffs.sh
 
-if [ $NORUN -eq 0 ]; then
- echo "Sending geocoding script to the LOTUS job waitlist"
- ./framebatch_06_geotiffs.sh
+if [ $STORE -eq 1 ]; then
+ echo "Making the system automatically store the generated data (for auto update of frames)"
+ echo "cd $BATCH_CACHE_DIR" >> framebatch_06_geotiffs_nowait.sh
+ echo "bsub -w $frame'_geo' -q cpom-comet -n 1 -W 08:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore" >> framebatch_06_geotiffs_nowait.sh #$frame
+ #cd -
 fi
+
+#this is not wanted now as i use auto-geotiffing after framebatch_gapfill...
+#if [ $NORUN -eq 0 ]; then
+# echo "Sending geocoding script to the LOTUS job waitlist"
+# ./framebatch_06_geotiffs.sh
+#fi
 
 ###################################################### Baseline plot
 echo "Preparing script for generating baseline plot"
@@ -460,13 +479,14 @@ bperp_framebatch.py -i bperp_aqs.list -f $frame -c 0
 EOF
 chmod 770 framebatch_07_baseline_plot.sh
 
+
 ##################################################### auto-store to LiCSAR_procdir and LiCSAR_public
-if [ $STORE -eq 1 ]; then
- echo "Making the system automatically store the generated data (for auto update of frames)"
- cd $BATCH_CACHE_DIR
- bsub -w $frame'_geo' -q cpom-comet -n 1 -W 08:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore #$frame
- cd -
-fi
+#if [ $STORE -eq 1 ]; then
+# echo "Making the system automatically store the generated data (for auto update of frames)"
+# cd $BATCH_CACHE_DIR
+# bsub -w $frame'_geo' -q cpom-comet -n 1 -W 08:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore #$frame
+# cd -
+#fi
 
 
 # I disabled it since it wasn't really starting.. too complicated -w , I guess J

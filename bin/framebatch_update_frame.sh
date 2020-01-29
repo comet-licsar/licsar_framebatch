@@ -52,6 +52,10 @@ if [ $nlamaxdateshort -gt $lastepoch ]; then
           then pom=0
         fi
       done
+      if [ $hours -gt 50 ]; then
+           echo "enough waiting, NLA didnt work fully"
+           pom=1
+      fi
     done
     #
     extra="-c"
