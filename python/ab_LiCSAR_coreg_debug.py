@@ -41,6 +41,11 @@ def main(argv):
     jobID = int(argv[1])
     rslcs = lq.get_unbuilt_rslcs(jobID)
     frameName = lq.get_frame_from_job(jobID)
+    acqMode = 'iw'
+    if frameName.split('_')[1] == 'SM':
+        acqMode = 'sm'
+        print('processing stripmap frame - EXPERIMENTAL')
+
     try:
         cacheDir = os.environ['BATCH_CACHE_DIR']
     except KeyError as error:

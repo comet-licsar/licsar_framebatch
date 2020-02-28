@@ -2,24 +2,32 @@
 #curdir=/gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current
 curdir=$LiCSAR_procdir
 public=$LiCSAR_public
-if [ -z $1 ]; then echo "Parameter: *_*_* frame folder.. MUST BE IN THIS FOLDER"; exit;
+if [ -z $1 ]; then 
+ echo "Parameter: *_*_* frame folder.. MUST BE IN THIS FOLDER";
+ echo "full parameters are:"; 
+ echo "store_to_curdir.sh FRAME [DELETEAFTER] [OVERWRITE]";
+ echo "defaults are 0 0"
+ exit;
  else frame=`basename $1`; fi
 
-if [ ! -d $frame ]; then echo "wrong framedir - you should be in the \$BATCH_CACHE_DIR, sorry"; exit; fi
+if [ ! -d $frame ]; then echo "framedir does not exist - are you be in the \$BATCH_CACHE_DIR \?"; exit; fi
 #if [ $USER != 'earmla' ]; then echo "you are not admin. Not storing anything."; exit; fi
 
 MOVE=0
 DORSLC=1
+KEEPRSLC=1
 DOGEOC=1
 DOIFG=1
-GEOC_OVERWRITE=1
-IFG_OVERWRITE=1
+#previously the default was to overwrite...
+GEOC_OVERWRITE=0
+IFG_OVERWRITE=0
 DELETEAFTER=0
+store_logs=1 #for autodelete only
 
 #second parameter - if 1, then delete after storing
 #third parameter - if 0, then disable overwriting of GEOC and IFG files
-if [ ! -z $2 ]; then if [ $2 -eq 1 ]; then DELETEAFTER=1; echo "setting to delete"; fi; fi
-if [ ! -z $3 ]; then if [ $3 -eq 0 ]; then GEOC_OVERWRITE=0; IFG_OVERWRITE=0; echo "overwrite disabled"; fi; fi
+if [ ! -z $2 ]; then if [ $2 -eq 1 ]; then DELETEAFTER=1; store_logs=1; MOVE=1; echo "setting to delete"; fi; fi
+if [ ! -z $3 ]; then if [ $3 -eq 0 ] || [ $3 -eq 1 ]; then GEOC_OVERWRITE=$3; IFG_OVERWRITE=$3; echo "overwrite switched to "$3; fi; fi
 #have to remove this line ASAP:
 #DELETEAFTER=0
 
@@ -29,17 +37,54 @@ if [ ! -z $3 ]; then if [ $3 -eq 0 ]; then GEOC_OVERWRITE=0; IFG_OVERWRITE=0; ec
 cd $frame
 cd ..
 thisDir=`pwd`
- tr=`echo $frame | cut -d '_' -f1 | sed 's/^0//' | sed 's/^0//' | rev | cut -c 2- | rev`
- frameDir=$curdir/$tr/$frame
- if [ $DORSLC -eq 1 ]; then
+tr=`echo $frame | cut -d '_' -f1 | sed 's/^0//' | sed 's/^0//' | rev | cut -c 2- | rev`
+frameDir=$curdir/$tr/$frame
+pubDir_ifgs=$public/$tr/$frame/interferograms
+pubDir_epochs=$public/$tr/$frame/epochs
+if [ $DORSLC -eq 1 ]; then
  #move rslcs
  if [ -d $frame/RSLC ]; then
   mkdir -p $frameDir/RSLC
   chmod 774 $frameDir/RSLC 2>/dev/null
+  #first of all check and move last three RSLCs - if they are full-bursted
+  if [ $KEEPRSLC -eq 1 ]; then
+    #check only last 10 rslcs
+    ls $frame/RSLC/20?????? -d | cut -d '/' -f3 | head -n 10 > temp_$frame'_keeprslc'
+    master=`ls $frame/geo/20??????.hgt | cut -d '.' -f1 | cut -d '/' -f3`
+    mastersize=`ls -l $frame/SLC/$master/$master.slc | gawk {'print $5'}`
+    sed -i '/'$master'/d' temp_$frame'_keeprslc'
+    for date in `cat temp_$frame'_keeprslc' `; do
+      if [ ! `ls -l $frame/RSLC/$date/$date.rslc | gawk {'print $5'}` -eq $mastersize ]; then
+       sed -i '/'$date'/d' temp_$frame'_keeprslc'
+      fi
+    done
+    for date in `sort -r temp_$frame'_keeprslc' | head -n2`; do
+     #let's keep only newer 2 ones
+     if [ $date -gt $master ]; then
+      #these should be kept in RSLC folder!
+      out7z=$frameDir/RSLC/$date.7z
+      if [ ! -f $out7z ]; then
+       echo "compressing RSLC of "$date" to keep last 2 dates"
+       cd $frame/RSLC
+       7za a -mx=1 '-xr!*.lt' '-xr!20??????.rslc' $out7z $date >/dev/null 2>/dev/null
+       cd -
+      fi
+     fi
+    done
+    if [ `ls $frameDir/RSLC/*7z 2>/dev/null | wc -l` -gt 2 ]; then
+     #delete more rslc 7z files than last 2 dates
+     ls $frameDir/RSLC/*7z > temp_$frame'_keeprslc2'
+     for todel in `head -n-2 temp_$frame'_keeprslc2'`; do
+      rm -f $todel
+     done
+    fi
+    rm -f temp_$frame'_keeprslc' temp_$frame'_keeprslc2' 2>/dev/null
+  fi
+  #now do the routine export
   for date in `ls $frame/RSLC/20?????? -d | cut -d '/' -f3`; do
    # if it is not master
    if [ ! -d $frameDir/SLC/$date ]; then
-    if [ $MOVE -eq 1 ]; then rm $frame/RSLC/$date/$date.rslc 2>/dev/null; fi
+    #if [ $MOVE -eq 1 ]; then rm $frame/RSLC/$date/$date.rslc 2>/dev/null; fi
     # if there are 'some' rslc files
     if [ -f $frame/RSLC/$date/$date.IW2.rslc ]; then
      echo "checking "$frame"/"$date
@@ -61,9 +106,9 @@ thisDir=`pwd`
        fi
       fi
       #echo "compressing RSLC from "$date
-      echo "the RSLC will not get compressed anymore"
+      #echo "the RSLC will not get compressed anymore"
       #time 7za a -mx=1 '-xr!*.lt' $frameDir/RSLC/$date.7z $date >/dev/null 2>/dev/null
-      if [ $MOVE -eq 1 ]; then rm -r $date; fi
+      #if [ $MOVE -eq 1 ]; then rm -r $date; fi
       cd $thisDir
      fi
     fi
@@ -73,6 +118,7 @@ thisDir=`pwd`
  fi
 
 if [ $DOIFG -eq 1 ]; then
+ echo "checking interferograms"
  #move ifgs (if unwrapped is also done)
  if [ -d $frame/IFG ]; then
   for dates in `ls $frame/IFG/20??????_20?????? -d | cut -d '/' -f3`; do
@@ -83,16 +129,17 @@ if [ $DOIFG -eq 1 ]; then
         echo "moving (or copying) ifg "$dates
        fi
         for ext in cc diff filt.cc filt.diff off unw; do
-         if [ -f $frame/IFG/$dates/$dates.$ext ]; then
+         if [ -f $frame/IFG/$dates/$dates.$ext ] && [ ! -L $frame/IFG/$dates/$dates.$ext ]; then
           GOON=1
           if [ $IFG_OVERWRITE == 0 ]; then
            if [ -f $frameDir/IFG/$dates/$dates.$ext ]; then GOON=0; fi
           fi
           if [ $GOON == 1 ]; then
+           echo "copying ifg file "$dates.$ext
            if [ $MOVE -eq 1 ]; then
-            mv $frame/IFG/$dates/$dates.$ext $frameDir/IFG/$dates/.
+            mv $frame/IFG/$dates/$dates.$ext $frameDir/IFG/$dates/. 2>/dev/null
            else
-            cp $frame/IFG/$dates/$dates.$ext $frameDir/IFG/$dates/.
+            cp $frame/IFG/$dates/$dates.$ext $frameDir/IFG/$dates/. 2>/dev/null
            fi
           fi
          fi
@@ -110,20 +157,29 @@ if [ $DOIFG -eq 1 ]; then
  fi
 fi
 
- echo "Stored "$frame" on "`date +'%Y-%m-%d'`>> $thisDir/stored_to_curdir.txt
+# echo "Stored "$frame" on "`date +'%Y-%m-%d'`>> $thisDir/stored_to_curdir.txt
  #local_config.py file
- cp $frame/local_config.py $frameDir/.
+ if [ -f $frame/local_config.py ]; then
+  echo "copying local config file"
+  cp $frame/local_config.py $frameDir/. 2>/dev/null
+ fi
+
  #move tabs and logs
- if [ -d $frame/tab ]; then
-  echo "copying new tabs and logs"
-  for tab in `ls $frame/tab`; do
-   if [ ! -f $frameDir/tab/$tab ]; then
-    cp $frame/tab/$tab $frameDir/tab/.
-   fi
-  done
-  for log in `ls $frame/log`; do
-   if [ ! -f $frameDir/log/$log ]; then
-    cp $frame/log/$log $frameDir/log/.
+# if [ -d $frame/tab ]; then
+#  echo "copying new tabs and logs"
+#  for tab in `ls $frame/tab`; do
+#   if [ ! -f $frameDir/tab/$tab ]; then
+#    cp $frame/tab/$tab $frameDir/tab/.
+#   fi
+#  done
+# fi
+ if [ -d $frame/log ]; then
+  echo "copying logs"
+  echo "only *quality* logs will be saved"
+  for log in `ls $frame/log/*quality*`; do
+   if [ ! -f $frameDir/log/`basename $log` ]; then
+    cp $log $frameDir/log/.
+    #cp $frame/log/$log $frameDir/log/.
    fi
   done
  fi
@@ -136,7 +192,7 @@ if [ $DOGEOC -eq 1 ]; then
   track=$tr
   for geoifg in `ls $frame/GEOC/2*_2* -d | rev | cut -d '/' -f1 | rev`; do
    if [ -f $frame/GEOC/$geoifg/$geoifg.geo.unw.tif ]; then
-    if [ -d $public/$track/$frame/products/$geoifg ]; then 
+    if [ -d $pubDir_ifgs/$geoifg ]; then 
       if [ $GEOC_OVERWRITE == 1 ]; then
        echo "warning, geoifg "$geoifg" already exists. Data will be overwritten";
       else
@@ -145,24 +201,24 @@ if [ $DOGEOC -eq 1 ]; then
     else
      echo "moving geocoded "$geoifg
     fi
-    mkdir -p $public/$track/$frame/products/$geoifg 2>/dev/null
-    chmod 774 $public/$track/$frame/products/$geoifg 2>/dev/null
+    mkdir -p $pubDir_ifgs/$geoifg 2>/dev/null
+    chmod 774 $pubDir_ifgs/$geoifg 2>/dev/null
     for toexp in cc.bmp cc.png cc.tif diff.bmp diff.png diff_pha.tif unw.bmp unw.png unw.tif disp_blk.png; do
        if [ -f $frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
          GOON=1
          if [ $GEOC_OVERWRITE == 0 ]; then
-          if [ -f $public/$track/$frame/products/$geoifg/$geoifg.geo.$toexp ]; then GOON=0; fi
+          if [ -f $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp ]; then GOON=0; fi
          fi
          if [ $GOON == 1 ]; then
          #this condition is to NOT TO OVERWRITE the GEOC results. But it makes sense to overwrite them 'always'
-         #if [ ! -f $public/$track/$frame/products/$geoifg/$geoifg.geo.$toexp ]; then
+         #if [ ! -f $public/$tr/$frame/products/$geoifg/$geoifg.geo.$toexp ]; then
           if [ $MOVE -eq 1 ]; then 
-           mv $frame/GEOC/$geoifg/$geoifg.geo.$toexp $public/$track/$frame/products/$geoifg/.
+           mv $frame/GEOC/$geoifg/$geoifg.geo.$toexp $pubDir_ifgs/$geoifg/.
           else
-           cp $frame/GEOC/$geoifg/$geoifg.geo.$toexp $public/$track/$frame/products/$geoifg/.
+           cp $frame/GEOC/$geoifg/$geoifg.geo.$toexp $pubDir_ifgs/$geoifg/.
           fi
          #fi
-          chmod 664 $public/$track/$frame/products/$geoifg/$geoifg.geo.$toexp
+          chmod 664 $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp
          fi
        fi
     done
@@ -177,20 +233,20 @@ if [ $DOGEOC -eq 1 ]; then
   track=$tr
   for img in `ls $frame/GEOC.MLI/2* -d | rev | cut -d '/' -f1 | rev`; do
    if [ -f $frame/GEOC.MLI/$img/$img.geo.mli.tif ]; then
-    if [ -d $public/$track/$frame/products/epochs/$img ]; then
+    if [ -d $pubDir_epochs/$img ]; then
      echo "epoch for "$img" exists, we will not overwrite now"
     else
      echo "moving/copying epoch "$img
-     mkdir -p $public/$track/$frame/products/epochs/$img
-     chmod 774 $public/$track/$frame/products/epochs/$img 2>/dev/null
+     mkdir -p $pubDir_epochs/$img
+     chmod 774 $pubDir_epochs/$img 2>/dev/null
      for toexp in mli.png mli.tif; do
      if [ -f $frame/GEOC.MLI/$img/$img.geo.$toexp ]; then
       if [ $MOVE -eq 1 ]; then
-       mv $frame/GEOC.MLI/$img/$img.geo.$toexp $public/$track/$frame/products/epochs/$img/.
+       mv $frame/GEOC.MLI/$img/$img.geo.$toexp $pubDir_epochs/$img/.
       else
-       cp $frame/GEOC.MLI/$img/$img.geo.$toexp $public/$track/$frame/products/epochs/$img/.
+       cp $frame/GEOC.MLI/$img/$img.geo.$toexp $pubDir_epochs/$img/.
       fi
-      chmod 664 $public/$track/$frame/products/epochs/$img/$img.geo.$toexp
+      chmod 664 $pubDir_epochs/$img/$img.geo.$toexp
      fi
      done
     fi
@@ -234,17 +290,23 @@ then
  if [ -f $frame/$frame'_todown' ]; then
   for zipf in `cat $frame/$frame'_todown' | rev | cut -d '/' -f1 | rev`; do
    if [ -f /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/SLC/$zipf ]; then
-    rm /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/SLC/$zipf
+    rm -f /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/SLC/$zipf
    fi
   done
  fi
+ if [ $store_logs -eq 1 ]; then
+  echo "storing log files"
+  logoutf=$BATCH_CACHE_DIR/LOGS/$frame'.7z'
+  rm -f $logoutf 2>/dev/null
+  7za a $logoutf $frame/LOGS/* >/dev/null 2>/dev/null
+ fi
  echo "Deleting the frame folder "$frame
- rm -r $frame
+ rm -rf $frame
 
-echo "Expiring NLA requests (if any)"
-for nlareqid in `nla.py requests | grep $frame | gawk {'print $1'} 2>/dev/null`; do
- nla.py expire $nlareqid
-done
+#echo "Expiring NLA requests (if any)"
+#for nlareqid in `nla.py requests | grep $frame | gawk {'print $1'} 2>/dev/null`; do
+# nla.py expire $nlareqid
+#done
 
 fi
 

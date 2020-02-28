@@ -376,9 +376,9 @@ gpextra=''
 if [ $NORUN -eq 0 ]; then
  gpextra="-g "
 fi
-if [ $NORUN -eq 0 ] && [ $STORE -eq 1 ]; then
- gpextra=$gpextra"-S "
-fi
+#if [ $NORUN -eq 0 ] && [ $STORE -eq 1 ]; then
+# gpextra=$gpextra"-S "
+#fi
 cat << EOF > framebatch_05_gap_filling.sh
 echo "The gapfilling will use RSLCs in your work folder and update ifg or unw that were not generated (in background - check bjobs)"
 if [ ! -z \$1 ]; then
@@ -440,6 +440,8 @@ echo "bsub -w '"$waiting_string"' -J $frame'_geo' -n \$NOPAR -q $bsubquery -W 08
 if [ $STORE -eq 1 ]; then
  echo "Making the system automatically store the generated data (for auto update of frames)"
  echo "cd $BATCH_CACHE_DIR" >> framebatch_06_geotiffs_nowait.sh
+ echo "echo 'waiting 20 seconds for bjobs to synchronize'" >> framebatch_06_geotiffs_nowait.sh
+ echo "sleep 20" >> framebatch_06_geotiffs_nowait.sh
  echo "bsub -w $frame'_geo' -q cpom-comet -n 1 -W 08:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore" >> framebatch_06_geotiffs_nowait.sh #$frame
  #cd -
 fi

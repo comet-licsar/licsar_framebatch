@@ -67,6 +67,7 @@ make_simple_polygon.sh ${frame}-poly.txt
  sort -o ${frame}_scihub.list ${frame}_scihub.list
 ## make list from nla
 rm ${frame}_db_query.list 2>/dev/null
+touch ${frame}_db_query.list 2>/dev/null
 #if [ ! -f ${frame}_db_query.list ]; then
  echo "getting expected filelist from NLA (takes quite long - coffee break)"
  echo "*******"

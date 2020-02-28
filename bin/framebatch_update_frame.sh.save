@@ -2,33 +2,27 @@
 #this variable will be used to choose whether to download from ASF or use NLA..
 PROCESSING=1
 DAYSTOLERANCE=61
+#how many hours should we wait for NLA requests to finish...
+maxwaithours=72
 #STORE_AND_DELETE=1
-if [ -z $2 ]; then echo "parameters are frame and code (code is either upfill or backfill.. or gapfill)"; exit; fi
+if [ -z $2 ]; then echo "parameters are frame and code (code is either upfill or backfill)"; exit; fi
 frame=$1
 code=$2
 #if [ ! -z $2 ]; then PROCESSING=0; fi
 extra=''
-maxwaithours=168
 
 #check for writing rights
-touch pokuspokus_$frame
-if [ ! -f pokuspokus_$frame ]; then echo "you do not have writing rights here, cancelling"; exit; fi
-rm pokuspokus_$frame
+touch pokuspokus
+if [ ! -f pokuspokus ]; then echo "you do not have writing rights here, cancelling"; exit; fi
+rm pokuspokus
 
 track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
-lastepoch=`ls $LiCSAR_public/$track/$frame/products/2*_2* -d 2>/dev/null | tail -n1 | rev | cut -d '_' -f1 | rev`
-firstepoch=`ls $LiCSAR_public/$track/$frame/products/2*_2* -d 2>/dev/null | head -n1 | rev | cut -d '_' -f1 | rev`
-
-if [ -z $lastepoch ]; then
- echo "you are using script for updating frames for a new frame"
- echo "well.. trying to satisfy your needs, good luck anyway"
- lastepoch=`ls $LiCSAR_procdir/$track/$frame/SLC`
- firstepoch=$lastepoch
-fi
+lastepoch=`ls $LiCSAR_public/$track/$frame/products/2*_2* -d | tail -n1 | rev | cut -d '_' -f1 | rev`
+firstepoch=`ls $LiCSAR_public/$track/$frame/products/2*_2* -d | head -n1 | rev | cut -d '_' -f1 | rev`
 
 #if [ ! -z $2 ]; then
 # echo "You have provided second parameter - here it means PROCESS FROM BEGINNING TILL THE END"
-#lastepoch='20141001'
+# lastepoch='20141001'
 #fi
 
 if [ $code == "upfill" ]; then
@@ -38,26 +32,16 @@ if [ $code == "upfill" ]; then
 elif [ $code == "backfill" ]; then
  startdate='2014-10-01'
  enddate=`date -d $firstepoch"+25 days" +%Y-%m-%d`
-
-elif [ $code == "gapfill" ]; then
- if [ -z $4 ]; then echo "for gapfilling, provide start and end dates, e.g. 2017-05-08 2019-07-05"; exit; fi
- startdate=$3
- enddate=$4
- nlamaxdate=$enddate
 else
  echo "you have provided wrong code: "$code
- echo "currently working codes: upfill, backfill, in testing: gapfill"
+ echo "currently working codes: upfill, backfill"
  exit
 fi
 
 echo "first epoch: "$firstepoch
 echo "last epoch: "$lastepoch
 
-if [ ! -z $4 ]; then
- echo "for gapfilling: "
- echo "startdate = "$startdate
- echo "enddate = "$enddate
-fi
+
 
 
 #check if to start nla or just use autodownload
@@ -78,9 +62,6 @@ elif [ $code == "backfill" ]; then
   nla_start=1
   nlamaxdate=$enddate
  fi
-elif [ $code == "gapfill" ]; then
- #assuming all gapfilling will be performed through nla requests..
- nla_start=1
 fi
 
 
@@ -132,6 +113,5 @@ else
    autodown=1
 fi
 
-echo licsar_make_frame.sh -S $extra $frame 1 $autodown $startdate $enddate
 licsar_make_frame.sh -S $extra $frame 1 $autodown $startdate $enddate
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-MAXBTEMP=60
+MAXBTEMP=181
 orig_rlks=20
 orig_azlks=4
 bsubncores=16
@@ -47,7 +47,8 @@ fi
 #NBATCH=5
 NBATCH=$1
 master=`basename geo/20??????.hgt .hgt`
-SCRATCHDIR=/work/scratch-nompiio/licsar
+SCRATCHDIR=/work/scratch-nompiio/licsar_temp
+#SCRATCHDIR=/work/scratch-nompiio/licsar
 WORKFRAMEDIR=`pwd`
 frame=`pwd | rev | cut -d '/' -f1 | rev`
 echo "Executing gap filling routine (results will be saved in this folder: "$WORKFRAMEDIR" )."
@@ -161,16 +162,30 @@ for job in `seq 1 $nojobs`; do
  waitText=$waitText" && ended("$frame"_unw_"$job")"
  chmod 770 gapfill_job/unwjob_$job.sh
 done
+
+#check if there is nothing to process, then just ... finish
+if [ `wc -l gapfill_job/tmp_ifg_todo | gawk {'print $1'}` == 0 ] && [ `wc -l gapfill_job/tmp_unw_todo | gawk {'print $1'}` == 0 ]; then
+ echo "there is nothing else to process - gapfilling done"
+ if [ $geocode == 1 ]; then
+  echo "starting geocoding job now"
+  cd $WORKFRAMEDIR
+  ./framebatch_06_geotiffs_nowait.sh
+ fi
+ #cleaning
+ rm -r gapfill_job
+ exit
+fi
  #move it for processing in SCRATCHDIR
  echo "There are "`wc -l gapfill_job/tmp_ifg_todo | gawk {'print $1'}`" interferograms to process and "`wc -l gapfill_job/tmp_unw_todo | gawk {'print $1'}`" to unwrap."
  echo "Preparation phase: copying data to SCRATCH disk (may take long)"
  #if [ -d $SCRATCHDIR/$frame ]; then echo "..cleaning scratchdir"; rm -rf $SCRATCHDIR/$frame; fi
  mkdir -p $SCRATCHDIR/$frame/RSLC
+ chmod -R 777 $SCRATCHDIR/$frame
  mkdir $SCRATCHDIR/$frame/IFG 2>/dev/null
  mkdir $SCRATCHDIR/$frame/SLC $SCRATCHDIR/$frame/LOGS  2>/dev/null
  if [ -f gapfill_job/tmp_rslcs2copy ]; then
   echo "..copying "`wc -l gapfill_job/tmp_rslcs2copy | gawk {'print $1'}`" needed rslcs"
-  for rslc in `cat gapfill_job/tmp_rslcs2copy`; do if [ ! -d $SCRATCHDIR/$frame/RSLC/$rslc ]; then cp -r RSLC/$rslc $SCRATCHDIR/$frame/RSLC/.; fi; done
+  for rslc in `cat gapfill_job/tmp_rslcs2copy`; do if [ ! -d $SCRATCHDIR/$frame/RSLC/$rslc ]; then echo "copying "$rslc; cp -r RSLC/$rslc $SCRATCHDIR/$frame/RSLC/.; fi; done
  fi
  echo "..copying master slc"
  cp -r SLC/$master $SCRATCHDIR/$frame/SLC/.
@@ -226,16 +241,19 @@ for job in `seq 1 $nojobs`; do
  wait=''
  if [ -f gapfill_job/ifgjob_$job.sh ]; then
   #weird error in 'job not found'.. workaround:
-  echo bsub -q $bsubquery -n $bsubncores -W 04:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
+  echo bsub -q $bsubquery -n $bsubncores -W 05:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
   chmod 777 tmptmp; ./tmptmp #>/dev/null
+  #this wait text would work for unwrapping to wait for the previous job:
   wait="-w \"ended('"$frame"_ifg_"$job"')\""
  fi
- #weird error in 'job not found'.. workaround:
- echo bsub -q $bsubquery -n $bsubncores -W 12:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
- #echo "debug:"
- #cat tmptmp
- chmod 777 tmptmp
- ./tmptmp #>/dev/null
+ if [ -f gapfill_job/unwjob_$job.sh ]; then
+  #weird error in 'job not found'.. workaround:
+  echo bsub -q $bsubquery -n $bsubncores -W 08:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
+  #echo "debug:"
+  #cat tmptmp
+  chmod 777 tmptmp
+  ./tmptmp #>/dev/null
+ fi
 done
 
 # copying and cleaning job
@@ -245,20 +263,20 @@ if [ `echo $waitText | wc -w` -gt 0 ]; then
   waitText=`echo $waitText | cut -c 4-`
   waitcmd='-w "'$waitText'"'
 fi
-echo "chmod -R 770 $SCRATCHDIR/$frame" > $WORKFRAMEDIR/gapfill_job/copyjob.sh
+echo "chmod -R 777 $SCRATCHDIR/$frame" > $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
-echo "echo sync done, deleting TEMP folder" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+echo "echo 'sync done, deleting TEMP folder'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "cd $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
-echo "rm -rf $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 if [ $geocode == 1 ]; then
  echo "echo 'starting geocoding job'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
  echo $WORKFRAMEDIR/framebatch_06_geotiffs_nowait.sh >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
  echo "sleep 60" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 fi
+echo "rm -rf $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 chmod 770 $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #workaround for 'Empty job. Job not submitted'
-echo bsub -q $bsubquery -n 1 $waitcmd -W 05:00 -J $frame'_gapfill_out' -e LOGS/framebatch_gapfill_postproc.err -o LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
+echo bsub -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
 #echo "debug last:"
 #cat $WORKFRAMEDIR/gapfill_job/tmptmp
 chmod 777 $WORKFRAMEDIR/gapfill_job/tmptmp; $WORKFRAMEDIR/gapfill_job/tmptmp
