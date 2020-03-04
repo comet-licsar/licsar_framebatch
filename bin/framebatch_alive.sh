@@ -7,7 +7,7 @@ onlyPOD=$2
 totalno=`wc -l $inputfile | gawk {'print $1'}`
 echo "there are "$totalno" frames to update"
 
-if [ -f $inputfile.lock ]; then echo "Update is locked - did the previous processing not finish??? Check it"; exit; fi
+if [ -f $inputfile.lock ]; then echo "Update is locked - did the previous processing not finish??? Check it"; rm $inputfile.lock; exit; fi
 touch $inputfile.lock
 
 i=0
@@ -33,4 +33,4 @@ for frame in `cat $inputfile`; do
 
 done
 
-rm $inputfile.lock
+rm $inputfile.lock 2>/dev/null
