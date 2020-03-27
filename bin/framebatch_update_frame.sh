@@ -1,7 +1,9 @@
 #!/bin/bash
 #this variable will be used to choose whether to download from ASF or use NLA..
 PROCESSING=1
+#tolerance of days to either only autodownload or use nla + waiting
 DAYSTOLERANCE=61
+#DAYSTOLERANCE=961
 #STORE_AND_DELETE=1
 if [ -z $2 ]; then echo "parameters are frame and code (code is either upfill or backfill.. or gapfill)"; exit; fi
 frame=$1

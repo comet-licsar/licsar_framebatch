@@ -11,6 +11,16 @@ if [ -z $1 ]; then
  else frame=`basename $1`; fi
 
 if [ ! -d $frame ]; then echo "framedir does not exist - are you be in the \$BATCH_CACHE_DIR \?"; exit; fi
+
+#check for changed frame IDs
+framechanges=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/frameid_changes.txt
+if [ `grep -c $frame $framechanges` -gt 0 ]; then
+ echo "the frame ID has changed:"
+ grep $frame $framechanges
+ exit
+fi
+#echo $frame
+#exit
 #if [ $USER != 'earmla' ]; then echo "you are not admin. Not storing anything."; exit; fi
 
 MOVE=0
