@@ -14,7 +14,7 @@ if [ ! -d $frame ]; then echo "framedir does not exist - are you be in the \$BAT
 
 #check for changed frame IDs
 framechanges=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/frameid_changes.txt
-if [ `grep -c $frame $framechanges` -gt 0 ]; then
+if [ `grep -c ^$frame $framechanges` -gt 0 ]; then
  echo "the frame ID has changed:"
  grep $frame $framechanges
  exit
@@ -109,7 +109,7 @@ if [ $DORSLC -eq 1 ]; then
        echo "compressing LUT of "$date
        7za a -mx=1 $frameDir/LUT/$date.7z $date/*.lt $date/*.off >/dev/null 2>/dev/null
        if [ -f $frameDir/LUT/$date.7z ]; then
-          chmod 664 $frameDir/LUT/$date.7z
+          chmod 664 $frameDir/LUT/$date.7z 2>/dev/null
           rm -f $date/*.lt
        else
           echo "error in zipping the "$date"/*.lt to "$frameDir"/LUT/"$date".7z - please check manually"
@@ -154,7 +154,7 @@ if [ $DOIFG -eq 1 ]; then
           fi
          fi
         done
-        chmod 664 $frameDir/IFG/$dates/$dates.$ext
+        chmod 664 $frameDir/IFG/$dates/$dates.$ext 2>/dev/null
        #fi
 #   else
        #this is a quick fix if the geocoding was not performed, then i want to copy ifgs back
@@ -228,7 +228,7 @@ if [ $DOGEOC -eq 1 ]; then
            cp $frame/GEOC/$geoifg/$geoifg.geo.$toexp $pubDir_ifgs/$geoifg/.
           fi
          #fi
-          chmod 664 $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp
+          chmod 664 $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp 2>/dev/null
          fi
        fi
     done
@@ -256,7 +256,7 @@ if [ $DOGEOC -eq 1 ]; then
       else
        cp $frame/GEOC.MLI/$img/$img.geo.$toexp $pubDir_epochs/$img/.
       fi
-      chmod 664 $pubDir_epochs/$img/$img.geo.$toexp
+      chmod 664 $pubDir_epochs/$img/$img.geo.$toexp 2>/dev/null
      fi
      done
     fi

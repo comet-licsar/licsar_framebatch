@@ -7,6 +7,7 @@
 
 code=$1
 batchesdir=/gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current/batches
+cd $batchesdir
 
 if [ $code == 'weekly' ] || [ $code == 'monthly' ]; then
  if [ $code == 'weekly' ]; then onlyPOD=0; else onlyPOD=1; fi
@@ -42,7 +43,7 @@ elif [ $code == 'upfill' ] || [ $code == 'backfill' ]; then
 
  for frame in `cat $batchfile`; do
   nohup framebatch_update_frame.sh $frame $code > $batchesdir/$code/$todayymd'_'$frame'.log' &
-  sleep 60
+  sleep 1800
  done
 
 else

@@ -76,6 +76,8 @@ frame=$1
 if [ `echo $frame | cut -d '_' -f2` == "SM" ]; then SM=1; echo "processing stripmap frame - WARNING, EXPERIMENTAL FEATURE"; else SM=0; fi
 track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
 if [ ! -d $LiCSAR_procdir/$track/$frame/geo ]; then echo "This frame has not been initialized. Please contact your LiCSAR admin (Milan)"; exit; fi
+#some older frames would not have this folder
+mkdir $LiCSAR_procdir/$track/$frame/LUT 2>/dev/null
 enddate=`date -d '22 days ago' +%Y-%m-%d`
 
 #settings of full_scale and extra_steps - by default 0

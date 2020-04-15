@@ -55,8 +55,8 @@ def create_lics_cache_dir(frame,srcDir,cacheDir,masterDate=None):
         dateStr = masterDate.strftime('%Y%m%d')
         rslcDir = os.path.join(frameCacheDir,'RSLC',dateStr)
         if os.path.exists(rslcDir):
-            print('The project exists..will try to use existing RSLCs')
-            #    shutil.rmtree(rslcDir)
+            print('The project exists..will remove master rslcs and recreate, hope it is ok')
+            shutil.rmtree(rslcDir)
         else:
             os.makedirs(rslcDir)
         slcDir = os.path.join(frameCacheDir,'SLC',dateStr)
@@ -68,9 +68,13 @@ def create_lics_cache_dir(frame,srcDir,cacheDir,masterDate=None):
             mtch = re.search('.*slc.*',oldFile)
             if mtch:
                 newFile = re.sub('slc','rslc',oldFile)
-                oldFile = os.path.join(slcDir,oldFile)
-                newFile = os.path.join(rslcDir,newFile)
-                if not os.path.exists(newFile): os.symlink(oldFile,newFile)
+                oldFileFull = os.path.join(slcDir,oldFile)
+                newFileFull = os.path.join(rslcDir,newFile)
+                #this way we will copy the par files to temp
+                if 'par' in oldFile:
+                    if not os.path.exists(newFileFull): shutil.copy(oldFileFull,newFileFull)
+                else:
+                    if not os.path.exists(newFileFull): os.symlink(oldFileFull,newFileFull)
         #now, local config python parameters:
         lcfile = os.path.join(frameDir,'local_config.py')
         if os.path.exists(lcfile):

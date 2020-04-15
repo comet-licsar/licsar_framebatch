@@ -11,6 +11,7 @@ code=$2
 #if [ ! -z $2 ]; then PROCESSING=0; fi
 extra=''
 maxwaithours=168
+batchesdir='/gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current/batches'
 
 #check for writing rights
 touch pokuspokus_$frame
@@ -45,7 +46,7 @@ elif [ $code == "gapfill" ]; then
  if [ -z $4 ]; then echo "for gapfilling, provide start and end dates, e.g. 2017-05-08 2019-07-05"; exit; fi
  startdate=$3
  enddate=$4
- nlamaxdate=$enddate
+ #nlamaxdate=$enddate
 else
  echo "you have provided wrong code: "$code
  echo "currently working codes: upfill, backfill, in testing: gapfill"
@@ -83,6 +84,7 @@ elif [ $code == "backfill" ]; then
 elif [ $code == "gapfill" ]; then
  #assuming all gapfilling will be performed through nla requests..
  nla_start=1
+ nlamaxdate=$enddate
 fi
 
 
@@ -93,7 +95,7 @@ fi
 
 if [ $nla_start == 1 ]; then
    echo "starting NLA request"
-   LiCSAR_0_getFiles.py -f $frame -s $startdate -e $nlamaxdate -r > temp_nla.$frame
+   LiCSAR_0_getFiles.py -f $frame -s $startdate -e $nlamaxdate -r > $batchesdir/temp/temp_nla.$frame
    if [ $PROCESSING -eq 0 ]; then
      echo "indicated NLA only - exiting";
      echo "you may start the processing itself manually using: "
@@ -101,7 +103,7 @@ if [ $nla_start == 1 ]; then
      exit;
    fi
    #hourly checking of NLA requests status...
-   if [ `grep -c "Created request" temp_nla.$frame` -gt 0 ]; then
+   if [ `grep -c "Created request" $batchesdir/temp/temp_nla.$frame` -gt 0 ]; then
     pom=0
     hours=0
     while [ $pom == 0 ]; do
@@ -109,7 +111,7 @@ if [ $nla_start == 1 ]; then
       echo "waiting for NLA to finish: "$hours" hours"
       sleep 3600
       pom=1
-      for request in `grep "Created request" temp_nla.$frame | gawk {'print $3'}`; do
+      for request in `grep "Created request" $batchesdir/temp/temp_nla.$frame | gawk {'print $3'}`; do
         if [ `nla.py req $request | grep Status | grep -c "On disk"` -eq 0 ];
           then pom=0
         fi
@@ -127,7 +129,7 @@ if [ $nla_start == 1 ]; then
     echo "will check on scihub/ASF"
     autodown=1
    fi
-   rm temp_nla.$frame
+   rm $batchesdir/temp/temp_nla.$frame
    #after couple of hours, autodownload is not working. so setting to zero
 else
    echo "autodownload will be used"
