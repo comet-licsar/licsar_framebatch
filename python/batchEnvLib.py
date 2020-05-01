@@ -11,7 +11,7 @@ import glob
 import datetime as dt
 from dirsync import sync
 from configLib import config
-
+from framecare import get_master
 ################################################################################
 #Cache Exception
 ################################################################################
@@ -36,14 +36,22 @@ def create_lics_cache_dir(frame,srcDir,cacheDir,masterDate=None):
         frameDir = os.path.join(srcDir,track,frame)
         frameCacheDir = os.path.join(cacheDir,frame)
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-        if not masterDate: #Find master date from geo dir
-            geoDir = os.path.join(frameDir,'geo')
-            geoFls = os.listdir(geoDir)
-            while not masterDate: # Randomly search geo files for date
-                mtch = re.search(mstrDatePat,geoFls.pop())
-                if mtch:
-                    dateStr = mtch.group('dt')
-                    masterDate = dt.datetime.strptime(dateStr,'%Y%m%d')
+        if not masterDate:
+            #use new version
+            dateStr = get_master(frame)
+            if dateStr:
+                masterDate = dt.datetime.strptime(dateStr,'%Y%m%d')
+            if not masterDate:
+                print('error getting masterdate from LiCSAR_public metadata file')
+                print('trying from the directory structure')
+                 #Find master date from geo dir
+                geoDir = os.path.join(frameDir,'geo')
+                geoFls = os.listdir(geoDir)
+                while not masterDate: # Randomly search geo files for date
+                    mtch = re.search(mstrDatePat,geoFls.pop())
+                    if mtch:
+                        dateStr = mtch.group('dt')
+                        masterDate = dt.datetime.strptime(dateStr,'%Y%m%d')
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
         subPats = ['DEM.*',
                 'geo.*',
@@ -55,26 +63,33 @@ def create_lics_cache_dir(frame,srcDir,cacheDir,masterDate=None):
         dateStr = masterDate.strftime('%Y%m%d')
         rslcDir = os.path.join(frameCacheDir,'RSLC',dateStr)
         if os.path.exists(rslcDir):
-            print('The project exists..will remove master rslcs and recreate, hope it is ok')
+            print('The project exists..will remove master rslcs and recreate (links)')
             shutil.rmtree(rslcDir)
-        else:
-            os.makedirs(rslcDir)
+        os.makedirs(rslcDir)
         slcDir = os.path.join(frameCacheDir,'SLC',dateStr)
         slcFiles = os.listdir(slcDir)
         #print('debug')
         #print(slcFiles)
         while slcFiles: #Link all "slc" type files -- for master
             oldFile = slcFiles.pop()
-            mtch = re.search('.*slc.*',oldFile)
-            if mtch:
+            #mtch = re.search('*.slc.*',oldFile)
+            if '.slc' in oldFile:
                 newFile = re.sub('slc','rslc',oldFile)
                 oldFileFull = os.path.join(slcDir,oldFile)
                 newFileFull = os.path.join(rslcDir,newFile)
                 #this way we will copy the par files to temp
                 if 'par' in oldFile:
-                    if not os.path.exists(newFileFull): shutil.copy(oldFileFull,newFileFull)
+                    if not os.path.exists(newFileFull):
+                        try:
+                            rc = shutil.copy(oldFileFull,newFileFull)
+                        except:
+                            print('warning, file {} was not found'.format(oldFileFull))
                 else:
-                    if not os.path.exists(newFileFull): os.symlink(oldFileFull,newFileFull)
+                    if not os.path.exists(newFileFull):
+                        try:
+                            os.symlink(oldFileFull,newFileFull)
+                        except:
+                            print('warning, file {} was not found'.format(oldFileFull))
         #now, local config python parameters:
         lcfile = os.path.join(frameDir,'local_config.py')
         if os.path.exists(lcfile):

@@ -22,6 +22,7 @@ if [ -z $1 ]; then
  echo "-n ............... norun (processing scripts are generated but they will not start automatically)"
  echo "-c ............... perform check if files are in neodc and ingested to licsar database (no download performed)"
  #echo "-S ............... store to lics database - ONLY FOR EARMLA"
+ echo "-E ............... after resampling, move to an area for copying to ARC4 EQR"
  echo "-N ............... check if there are new acquisitions since the last run. If not, will cancel the processing"
 # echo "-k YYYY-MM-DD .... generate kml for the ifg pairs containing given date (e.g. earthquake..)"
  #echo "geocode_to_public_website=0"
@@ -36,12 +37,13 @@ STORE=0
 #according to CEDA, it should be ncores=16, i.e. one process per core. I do not believe it though. So keeping ncores=1.
 #bsubncores=16
 bsubncores=1
+EQR=0
 
 #while [ "$1" != "" ]; do
 #options to be c,n,S
 #option=`echo $1 | rev | cut -d '-' -f1 | rev`
 #case $option in
-while getopts ":cnSN" option; do
+while getopts ":cnSEN" option; do
  case "${option}" in
   c) neodc_check=1; echo "performing check if files exist in neodc and are ingested to licsar db";
      ;;
@@ -50,6 +52,8 @@ while getopts ":cnSN" option; do
   S) STORE=1; echo "After the processing, data will be stored to db and public dir";
      deleteafterstore=1;
      NORUN=0;
+     ;;
+  E) EQR=1; echo "option to make it ready for Earthquake Responder";
      ;;
   N) only_new_rslc=1; echo "Checking if new images appeared since the last processing";
      ;;
@@ -338,6 +342,28 @@ fi
   echo "To run this step, use ./"$step".sh"
  fi
 
+################################################# in case of EQR=1, prepare it:
+if [ $EQR -eq 1 ]; then
+cat << EOF > framebatch_eqr.sh
+if [ ! -z \$1 ]; then
+ waiting_str=''
+ for jobid in \`cat framebatch_02_coreg.sh | rev | gawk {'print \$1'} | rev\`; do
+  stringg="framebatch_02_coreg_"\$jobid
+  waiting_str=\$waiting_str" && ended("\$stringg")"
+ done
+ waiting_string=\`echo \$waiting_str | cut -c 4-\`
+ echo "bsub -w '"\$waiting_string"' -q $bsubquery -W 04:00 -n 1 -J EQR_$frame -o LOGS/EQR.out -e LOGS/EQR.err ./framebatch_eqr.sh" > framebatch_eqr_wait.sh
+ chmod 770 framebatch_eqr_wait.sh
+ ./framebatch_eqr_wait.sh
+else
+ framebatch_eqr.sh $NBATCH
+fi
+EOF
+chmod 770 framebatch_eqr.sh
+if [ $NORUN -eq 0 ]; then
+ ./framebatch_eqr.sh
+else
+fi
 ###################################################### Make ifgs
  echo "..setting make_ifg job (IFG)"
  

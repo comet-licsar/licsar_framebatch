@@ -43,7 +43,7 @@ elif [ $code == 'upfill' ] || [ $code == 'backfill' ]; then
 
  for frame in `cat $batchfile`; do
   nohup framebatch_update_frame.sh $frame $code > $batchesdir/$code/$todayymd'_'$frame'.log' &
-  sleep 1800
+  sleep 900
  done
 
 else

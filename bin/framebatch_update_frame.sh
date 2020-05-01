@@ -19,8 +19,8 @@ if [ ! -f pokuspokus_$frame ]; then echo "you do not have writing rights here, c
 rm pokuspokus_$frame
 
 track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
-lastepoch=`ls $LiCSAR_public/$track/$frame/products/2*_2* -d 2>/dev/null | tail -n1 | rev | cut -d '_' -f1 | rev`
-firstepoch=`ls $LiCSAR_public/$track/$frame/products/2*_2* -d 2>/dev/null | head -n1 | rev | cut -d '_' -f1 | rev`
+lastepoch=`ls $LiCSAR_public/$track/$frame/interferograms/2*_2* -d 2>/dev/null | tail -n1 | rev | cut -d '_' -f1 | rev`
+firstepoch=`ls $LiCSAR_public/$track/$frame/interferograms/2*_2* -d 2>/dev/null | head -n1 | rev | cut -d '_' -f1 | rev`
 
 if [ -z $lastepoch ]; then
  echo "you are using script for updating frames for a new frame"
@@ -44,8 +44,11 @@ elif [ $code == "backfill" ]; then
 
 elif [ $code == "gapfill" ]; then
  if [ -z $4 ]; then echo "for gapfilling, provide start and end dates, e.g. 2017-05-08 2019-07-05"; exit; fi
- startdate=$3
- enddate=$4
+# startdate=$3
+# enddate=$4
+ startdate=`date -d $3"-25 days" +%Y-%m-%d`
+ enddate=`date -d $4"+25 days" +%Y-%m-%d`
+
  #nlamaxdate=$enddate
 else
  echo "you have provided wrong code: "$code

@@ -18,7 +18,7 @@ from LiCSAR_db.LiCSquery import get_ipf
 # Create SQL engine
 ################################################################################
 engine = create_engine(
-    'mysql+pymysql://{usr}:{psswd}@{hst}/{dbname}'.format(
+    'mysql+pymysql://{usr}:{psswd}@{hst}/{dbname}?charset=utf8'.format(
         usr=config.get('DB','User'),
         psswd=config.get('DB','Password'),
         hst=config.get('DB','Host'),

@@ -33,7 +33,7 @@ fi
 for i in `seq 1 $NOPAR`; do
 cat << EOF > tmp_geocmd_$i'.sh'
 for ifg in \`cat tmp_to_pub_$i\`; do
- create_geoctiffs_to_pub.sh \`pwd\` \$ifg
+ create_geoctiffs_to_pub.sh -u \`pwd\` \$ifg
 done
 EOF
 done

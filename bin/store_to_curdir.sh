@@ -61,10 +61,10 @@ if [ $DORSLC -eq 1 ]; then
     #check only last 10 rslcs
     ls $frame/RSLC/20?????? -d | cut -d '/' -f3 | head -n 10 > temp_$frame'_keeprslc'
     master=`ls $frame/geo/20??????.hgt | cut -d '.' -f1 | cut -d '/' -f3`
-    mastersize=`ls -l $frame/SLC/$master/$master.slc | gawk {'print $5'}`
+    mastersize=`grep azimuth_lines $frame/SLC/$master/$master.slc.par | gawk {'print $2'}`
     sed -i '/'$master'/d' temp_$frame'_keeprslc'
     for date in `cat temp_$frame'_keeprslc' `; do
-      if [ ! `ls -l $frame/RSLC/$date/$date.rslc | gawk {'print $5'}` -eq $mastersize ]; then
+      if [ ! `grep azimuth_lines $frame/RSLC/$date/$date.rslc.par | gawk {'print $2'}` -eq $mastersize ]; then
        sed -i '/'$date'/d' temp_$frame'_keeprslc'
       fi
     done
@@ -213,7 +213,7 @@ if [ $DOGEOC -eq 1 ]; then
     fi
     mkdir -p $pubDir_ifgs/$geoifg 2>/dev/null
     chmod 774 $pubDir_ifgs/$geoifg 2>/dev/null
-    for toexp in cc.bmp cc.png cc.tif diff.bmp diff.png diff_pha.tif unw.bmp unw.png unw.tif disp_blk.png; do
+    for toexp in cc.png cc.tif diff.png diff_unfiltered.png diff_unfiltered_pha.tif diff_pha.tif unw.png unw.tif disp_blk.png; do
        if [ -f $frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
          GOON=1
          if [ $GEOC_OVERWRITE == 0 ]; then
