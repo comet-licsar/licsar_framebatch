@@ -8,13 +8,22 @@ class NotLSFJob(Exception):
         return 'Not Valid LSF Job'
 
 
-def get_lotus_job_id():
+def get_job_id():
     try:
-        return int(os.environ['LSB_JOBID'])
-    except KeyError:
-        raise NotLSFJob
+        jobid = os.environ['LSB_JOBID']
+        jtype = 'LSB'
+    except:
+        jobid = os.environ['SLURM_JOBID']
+        jtype = 'SLURM'
+    if jobid:
+        return int(jobid), jtype
+    else:
+        return NotLSFJob
 
 
 def set_lotus_job_status(status):
-    jobID = get_lotus_job_id()
-    subprocess.call(['bstatus', '-d', '"{}"'.format(status), str(jobID)])
+    jobID, jtype = get_job_id()
+    if jtype == 'SLURM':
+        print(status)
+    if jtype == 'LSB':
+        subprocess.call(['bstatus', '-d', '"{}"'.format(status), str(jobID)])

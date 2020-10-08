@@ -12,6 +12,12 @@ import datetime as dt
 from dirsync import sync
 from configLib import config
 from framecare import get_master
+from gamma_functions import SLC_mosaic_S1_TOPS, make_SLC_tab
+import glob
+import global_config as gc
+
+pubdir = os.environ['LiCSAR_public']
+
 ################################################################################
 #Cache Exception
 ################################################################################
@@ -59,14 +65,39 @@ def create_lics_cache_dir(frame,srcDir,cacheDir,masterDate=None):
         # Sync src geo,dem and master rslc
         sync(frameDir,frameCacheDir,'sync',create=True,only=subPats)
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-        #Link master rslc to master slc
+        # regenerate SLC mosaic for the master (needed later, for ifgs.
+        # coregistration would work without it)
         dateStr = masterDate.strftime('%Y%m%d')
+        slcDir = os.path.join(frameCacheDir,'SLC',dateStr)
+        mastermosaic = os.path.join(slcDir,dateStr+'.slc')
+        if not os.path.exists(mastermosaic):
+            print('regenerating master mosaic (some 2 minutes)')
+            slctab = os.path.join(slcDir,dateStr+'.mosaic.tab')
+            #mastertab = os.path.join(slcDir,dateStr+'.master.tab')
+            logmosaic = os.path.join(slcDir,dateStr+'.mosaic.log')
+            #import glob
+            iwfiles = glob.glob(os.path.join(slcDir,dateStr+'.IW*.slc'))
+            swathlist = []
+            for iwfile in iwfiles:
+                swathlist.append(iwfile.split('/')[-1].split('.')[1])
+            swathlist.sort()
+            rc, msg = make_SLC_tab(slctab,mastermosaic,swathlist)
+            #rc, msg = make_SLC_tab(mastertab,mastermosaic,swathlist)
+            if rc > 0:
+                print('Something went wrong creating the tab file for mosaic...')
+                return 1
+            rc = SLC_mosaic_S1_TOPS(slctab,mastermosaic,gc.rglks,gc.azlks,logmosaic)
+            if not rc:
+                print('something got wrong generating master mosaic. but going on..')
+            os.remove(slctab)
+        
+        #Link master rslc to master slc
         rslcDir = os.path.join(frameCacheDir,'RSLC',dateStr)
         if os.path.exists(rslcDir):
             print('The project exists..will remove master rslcs and recreate (links)')
             shutil.rmtree(rslcDir)
         os.makedirs(rslcDir)
-        slcDir = os.path.join(frameCacheDir,'SLC',dateStr)
+        #slcDir = os.path.join(frameCacheDir,'SLC',dateStr)
         slcFiles = os.listdir(slcDir)
         #print('debug')
         #print(slcFiles)
@@ -173,10 +204,15 @@ def get_rslcs_from_lics(frame,srcDir,cacheDir,date_strings):
 
 def get_ifgs_from_lics(frame,srcDir,cacheDir,startDate = False,endDate = False):
     frameDir = srcDir + '/' + frame.split('_')[0].lstrip("0")[:-1] + '/' + frame
+    track = frame.split('_')[0].lstrip("0")[:-1]
     outifgs=[]
     if not os.path.isdir(os.path.join(cacheDir,frame,'IFG')): os.mkdir(os.path.join(cacheDir,frame,'IFG'))
-    if os.path.isdir(frameDir+'/IFG'):
-        ifgs = fnmatch.filter(os.listdir(frameDir+'/IFG'), '20??????_20??????')
+    pubframeDir = os.path.join(pubdir,track,frame)
+    pubframeDir_ifgs = os.path.join(pubframeDir, 'interferograms')
+    if os.path.isdir(pubframeDir_ifgs):
+        ifgs = fnmatch.filter(os.listdir(pubframeDir_ifgs), '20??????_20??????')
+        #if os.path.isdir(frameDir+'/IFG'):
+        #    ifgs = fnmatch.filter(os.listdir(frameDir+'/IFG'), '20??????_20??????')
         if startDate and ifgs:
             ifgs_ok = []
             for ifg in ifgs:
@@ -186,17 +222,21 @@ def get_ifgs_from_lics(frame,srcDir,cacheDir,startDate = False,endDate = False):
                 #print(endDate)
                 first_date = dt.datetime.strptime(ifg.split('_')[0],'%Y%m%d')
                 second_date = dt.datetime.strptime(ifg.split('_')[1],'%Y%m%d')
-                if first_date > startDate and second_date < endDate:
+                if first_date >= startDate and second_date <= endDate:
                     ifgs_ok.append(ifg)
             ifgs = ifgs_ok
         #sometimes the saved ifgs are not unwrapped!
         #hmm.. but perhaps it would be only good if to keep it...
         #ifgs = [ifg for ifg in ifgs if os.path.exists(os.path.join(frameDir,'IFG',ifg,ifg+'.unw')]
+        
         for ifg in ifgs:
             if not os.path.exists(os.path.join(cacheDir,frame,'IFG',ifg)):
                 os.mkdir(os.path.join(cacheDir,frame,'IFG',ifg))
-                for ifgfile in os.listdir(os.path.join(frameDir,'IFG',ifg)):
-                    os.symlink(os.path.join(frameDir,'IFG',ifg,ifgfile),os.path.join(cacheDir,frame,'IFG',ifg,ifgfile))
+                #ok, now.. if there are some files in LiCSAR_procdir, link them here:
+                if os.path.isdir(frameDir+'/IFG'):
+                    if os.path.isdir(os.path.join(frameDir,'IFG',ifg)):
+                        for ifgfile in os.listdir(os.path.join(frameDir,'IFG',ifg)):
+                            os.symlink(os.path.join(frameDir,'IFG',ifg,ifgfile),os.path.join(cacheDir,frame,'IFG',ifg,ifgfile))
             outifgs.append(ifg)
     return outifgs
 ################################################################################
@@ -213,8 +253,11 @@ class LicsEnv():
         self.cleanDirs = []
         self.cleanHook = None
         try:
-            lotusJobID = os.environ['LSB_JOBID']
-            self.envID = '{}_{}'.format(jobID,lotusJobID)
+            try:
+                JOBID = os.environ['LSB_JOBID']
+            except:
+                JOBID = os.environ['SLURM_JOBID']
+            self.envID = '{}_{}'.format(jobID,JOBID)
         except:
             self.envID = str(jobID)
     def __enter__(self):

@@ -1,26 +1,33 @@
 [Env]
 SourceDir : /gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current
-#CacheDir : /work/scratch-nompiio/greenall/
-#SpdCacheDir : /work/scratch-nompiio/greenall/
-TempDir : /work/scratch-nompiio/licsar
+#CacheDir : /work/scratch-nopw/greenall/
+#SpdCacheDir : /work/scratch-nopw/greenall/
+TempDir : /work/scratch-pw/licsar
 #TempDir : /work/scratch/licsar
 
 [DB]
-User : lics
+#ceda prepared only one user (me), without rights to CREATE
+User : earmla
+#User : lics
 Password : T34mLiCS
 #Host : 192.168.3.7
-Host : 130.246.129.18
+Host : 130.246.129.155
+#on CentOS6 was:
+# Host : 130.246.129.18
 #i had to do an ssh tunnel here...
 #you may need it also, using:
 #ssh -L 3306:192.168.3.7:3306 -N $USER@130.246.129.19
 #Host : 127.0.0.1
-DBName : licsinfo_batch
+#DBName : licsinfo_batch
+DBName : licsar_batch
+#other dbs here: licsinfo_dev and licsinfo_live
 
 [Config]
 SQLPath = /gws/nopw/j04/nceo_geohazards_vol1/software/licsar_framebatch/sql
 JsonPath = /gws/nopw/j04/nceo_geohazards_vol1/software/licsar_framebatch/config
 
 [Sheets]
+#super old way - not functional anymore, but kept for interest..
 Url = https://docs.google.com/spreadsheets/d/1UcCmv8rqyMrDvjD0OAY2IT4HdSapvxXgWsKbbecXO9k # Feb 2019, author: COMET LiCSAR at google
 #Url = https://docs.google.com/spreadsheets/d/1C2xDreZi8FRp7u51TN-Ir-8E1LY1geLM3YqA7zr0uZ0 # Feb 2019, author: espiritocz
 #Url = https://docs.google.com/spreadsheets/d/1Rbt_nd5nok-UZ7dfBXFHsZ66IqozrHwxiRj-TDnVDMY # Non-dev -- but full

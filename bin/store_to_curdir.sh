@@ -1,5 +1,7 @@
 #!/bin/bash
 #curdir=/gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current
+module load LiCSBAS
+
 curdir=$LiCSAR_procdir
 public=$LiCSAR_public
 if [ -z $1 ]; then 
@@ -19,6 +21,7 @@ if [ `grep -c ^$frame $framechanges` -gt 0 ]; then
  grep $frame $framechanges
  exit
 fi
+
 #echo $frame
 #exit
 #if [ $USER != 'earmla' ]; then echo "you are not admin. Not storing anything."; exit; fi
@@ -32,6 +35,7 @@ DOIFG=1
 GEOC_OVERWRITE=0
 IFG_OVERWRITE=0
 DELETEAFTER=0
+QUALCHECK=1
 store_logs=1 #for autodelete only
 
 #second parameter - if 1, then delete after storing
@@ -44,18 +48,32 @@ if [ ! -z $3 ]; then if [ $3 -eq 0 ] || [ $3 -eq 1 ]; then GEOC_OVERWRITE=$3; IF
 #for thisDir in /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc/frames; do
 #cd $thisDir
 #for frame in `ls [0-9]*_?????_?????? -d`; do
-cd $frame
-cd ..
+#cd $frame
+#cd ..
 thisDir=`pwd`
 tr=`echo $frame | cut -d '_' -f1 | sed 's/^0//' | sed 's/^0//' | rev | cut -c 2- | rev`
 frameDir=$curdir/$tr/$frame
+pubDir=$public/$tr/$frame
 pubDir_ifgs=$public/$tr/$frame/interferograms
 pubDir_epochs=$public/$tr/$frame/epochs
+pubDir_meta=$public/$tr/$frame/metadata
+if [ ! -d $pubDir_meta ]; then
+ echo "public directory does not exist for the frame. Cancelling"
+ exit
+fi
+
+if [ $QUALCHECK -eq 1 ]; then
+ echo "performing a fast quality check/removal of bad ifgs/epochs"
+ frame_ifg_quality_check.py -l -d $frame
+fi
+
+
 if [ $DORSLC -eq 1 ]; then
  #move rslcs
  if [ -d $frame/RSLC ]; then
   mkdir -p $frameDir/RSLC
   chmod 774 $frameDir/RSLC 2>/dev/null
+  chgrp gws_lics_admin $frameDir/RSLC 2>/dev/null
   #first of all check and move last three RSLCs - if they are full-bursted
   if [ $KEEPRSLC -eq 1 ]; then
     #check only last 10 rslcs
@@ -77,7 +95,9 @@ if [ $DORSLC -eq 1 ]; then
        echo "compressing RSLC of "$date" to keep last 2 dates"
        cd $frame/RSLC
        7za a -mx=1 '-xr!*.lt' '-xr!20??????.rslc' $out7z $date >/dev/null 2>/dev/null
-       cd -
+       chmod 664 $out7z 2>/dev/null
+       chgrp gws_lics_admin $out7z 2>/dev/null
+       cd - 2>/dev/null
       fi
      fi
     done
@@ -96,7 +116,7 @@ if [ $DORSLC -eq 1 ]; then
    if [ ! -d $frameDir/SLC/$date ]; then
     #if [ $MOVE -eq 1 ]; then rm $frame/RSLC/$date/$date.rslc 2>/dev/null; fi
     # if there are 'some' rslc files
-    if [ -f $frame/RSLC/$date/$date.IW2.rslc ]; then
+    if [ `ls $frame/RSLC/$date/$date.IW?.rslc 2>/dev/null | wc -l` -gt 0 ]; then
      echo "checking "$frame"/"$date
      #if it already doesn't exist in current dir
      if [ ! -d $frameDir/RSLC/$date ] && [ ! -f $frameDir/RSLC/$date.7z ]; then
@@ -105,11 +125,13 @@ if [ $DORSLC -eq 1 ]; then
       if [ `ls $date/*.lt 2>/dev/null | wc -w` -gt 0 ]; then
        mkdir -p $frameDir/LUT
        chmod 774 $frameDir/LUT 2>/dev/null
+       chgrp gws_lics_admin $frameDir/LUT 2>/dev/null
        rm -f $date/*.lt.orbitonly 2>/dev/null
        echo "compressing LUT of "$date
        7za a -mx=1 $frameDir/LUT/$date.7z $date/*.lt $date/*.off >/dev/null 2>/dev/null
        if [ -f $frameDir/LUT/$date.7z ]; then
           chmod 664 $frameDir/LUT/$date.7z 2>/dev/null
+          chgrp gws_lics_admin $frameDir/LUT/$date.7z 2>/dev/null
           rm -f $date/*.lt
        else
           echo "error in zipping the "$date"/*.lt to "$frameDir"/LUT/"$date".7z - please check manually"
@@ -136,9 +158,11 @@ if [ $DOIFG -eq 1 ]; then
        if [ ! -d $frameDir/IFG/$dates ]; then
         mkdir -p $frameDir/IFG/$dates
         chmod 774 $frameDir/IFG/$dates 2>/dev/null
+        chgrp gws_lics_admin $frameDir/IFG/$dates 2>/dev/null
         echo "moving (or copying) ifg "$dates
        fi
-        for ext in cc diff filt.cc filt.diff off unw; do
+        #for ext in cc diff filt.cc filt.diff off unw; do
+        for ext in cc diff off; do
          if [ -f $frame/IFG/$dates/$dates.$ext ] && [ ! -L $frame/IFG/$dates/$dates.$ext ]; then
           GOON=1
           if [ $IFG_OVERWRITE == 0 ]; then
@@ -151,10 +175,11 @@ if [ $DOIFG -eq 1 ]; then
            else
             cp $frame/IFG/$dates/$dates.$ext $frameDir/IFG/$dates/. 2>/dev/null
            fi
+           chmod 664 $frameDir/IFG/$dates/$dates.$ext 2>/dev/null
+           chgrp gws_lics_admin $frameDir/IFG/$dates/$dates.$ext 2>/dev/null
           fi
          fi
         done
-        chmod 664 $frameDir/IFG/$dates/$dates.$ext 2>/dev/null
        #fi
 #   else
        #this is a quick fix if the geocoding was not performed, then i want to copy ifgs back
@@ -172,6 +197,8 @@ fi
  if [ -f $frame/local_config.py ]; then
   echo "copying local config file"
   cp $frame/local_config.py $frameDir/. 2>/dev/null
+  chmod 774 $frameDir/local_config.py 2>/dev/null
+  chgrp gws_lics_admin $frameDir/local_config.py 2>/dev/null
  fi
 
  #move tabs and logs
@@ -187,10 +214,12 @@ fi
   echo "copying logs"
   echo "only *quality* logs will be saved"
   for log in `ls $frame/log/*quality*`; do
-   if [ ! -f $frameDir/log/`basename $log` ]; then
+   #if [ ! -f $frameDir/log/`basename $log` ]; then
     cp $log $frameDir/log/.
-    #cp $frame/log/$log $frameDir/log/.
-   fi
+    chmod 774 $frameDir/log/$log 2>/dev/null
+    chgrp gws_lics_admin $frameDir/log/$log 2>/dev/null
+    ##cp $frame/log/$log $frameDir/log/.
+   #fi
   done
  fi
 
@@ -213,7 +242,10 @@ if [ $DOGEOC -eq 1 ]; then
     fi
     mkdir -p $pubDir_ifgs/$geoifg 2>/dev/null
     chmod 774 $pubDir_ifgs/$geoifg 2>/dev/null
-    for toexp in cc.png cc.tif diff.png diff_unfiltered.png diff_unfiltered_pha.tif diff_pha.tif unw.png unw.tif disp_blk.png; do
+    #chgrp gws_lics_admin $pubDir_ifgs/$geoifg 2>/dev/null
+    
+    # update this for unfiltered ones..
+    for toexp in cc.png cc.tif cc.full.png diff.png diff.full.png diff_unfiltered.png diff_unfiltered.full.png diff_unfiltered_pha.tif diff_pha.tif unw.png unw.full.png unw.tif disp_blk.png; do
        if [ -f $frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
          GOON=1
          if [ $GEOC_OVERWRITE == 0 ]; then
@@ -229,6 +261,7 @@ if [ $DOGEOC -eq 1 ]; then
           fi
          #fi
           chmod 664 $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp 2>/dev/null
+          #chgrp gws_lics_admin $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp 2>/dev/null
          fi
        fi
     done
@@ -249,6 +282,7 @@ if [ $DOGEOC -eq 1 ]; then
      echo "moving/copying epoch "$img
      mkdir -p $pubDir_epochs/$img
      chmod 774 $pubDir_epochs/$img 2>/dev/null
+     #chgrp gws_lics_admin $pubDir_epochs/$img 2>/dev/null
      for toexp in mli.png mli.tif; do
      if [ -f $frame/GEOC.MLI/$img/$img.geo.$toexp ]; then
       if [ $MOVE -eq 1 ]; then
@@ -257,6 +291,7 @@ if [ $DOGEOC -eq 1 ]; then
        cp $frame/GEOC.MLI/$img/$img.geo.$toexp $pubDir_epochs/$img/.
       fi
       chmod 664 $pubDir_epochs/$img/$img.geo.$toexp 2>/dev/null
+      #chgrp gws_lics_admin $pubDir_epochs/$img/$img.geo.$toexp 2>/dev/null
      fi
      done
     fi
@@ -275,12 +310,20 @@ fi
 #done
 #done
 
+
+#this does not work well due to multiple connections...of course
+#echo "Updating frame csv"
+#update_framecsv.py -f $frame
+
 echo "Updating bperp file in pubdir"
 cd $thisDir/$frame
 #mk_bperp_file.sh
 #if [ -f bperp_file ]; then
 update_bperp_file.sh
 #fi
+
+echo "regenerating baseline plot and gaps.txt file"
+plot_network.py $pubDir $pubDir_meta/network.png $pubDir_meta/gaps.txt
 
 echo "Deactivating the frame after its storing to db"
 setFrameInactive.py $frame

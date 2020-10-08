@@ -1,16 +1,26 @@
 ###### following lines should be started in LOTUS... and in the frame directory:
 NOPAR=$1
 
-echo "./tmp_geocmd_\${LSF_PM_TASKID}.sh" > tmp_geocmd.sh
-chmod 777 tmp_geocmd.sh
+#second parameter is for whether to do full res previews as well or not
+if [ ! -z $2 ]; then
+ #FULL=1
+ extracmd='-F'
+else
+ #FULL=0
+ extracmd=''
+fi
+#echo "./tmp_geocmd_\${LSF_PM_TASKID}.sh" > tmp_geocmd.sh
+#chmod 777 tmp_geocmd.sh
 
 mkdir GEOC 2>/dev/null
 #getting list of files to geocode:
 rm -f tmp_to_pub 2>/dev/null
 for ifg in `ls IFG/*_* -d | rev | cut -d '/' -f1 | rev`; do
+if [ ! -d GEOC/$ifg ]; then
  if [ -f IFG/$ifg/$ifg.unw ]; then
   echo $ifg >> tmp_to_pub
  fi
+fi
 done
 
 #now i need to distribute the list of files to process to $NOPAR files:
@@ -33,7 +43,7 @@ fi
 for i in `seq 1 $NOPAR`; do
 cat << EOF > tmp_geocmd_$i'.sh'
 for ifg in \`cat tmp_to_pub_$i\`; do
- create_geoctiffs_to_pub.sh -u \`pwd\` \$ifg
+ create_geoctiffs_to_pub.sh $extracmd -u \`pwd\` \$ifg
 done
 EOF
 done
@@ -43,5 +53,16 @@ chmod 777 tmp_geocmd_*
 #echo bsub -q cpom-comet -n $NOPAR blaunch ./tmp_geocmd.sh
 #echo -n $NOPAR blaunch ./tmp_geocmd.sh
 
+#this was in case of PBS:
 #now starting the blaunch
-blaunch ./tmp_geocmd.sh
+#blaunch ./tmp_geocmd.sh
+
+rm framebatch_geocode_script.sh 2>/dev/null
+touch framebatch_geocode_script.sh
+for script in `ls tmp_geocmd_*`; do
+ echo "nohup ./"$script" & " >> framebatch_geocode_script.sh
+done
+chmod 777 framebatch_geocode_script.sh
+./framebatch_geocode_script.sh
+
+#mv tmp_geocmd.sh framebatch_geocode_script.sh

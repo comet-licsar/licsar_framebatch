@@ -182,6 +182,21 @@ def get_master(frameName):
         output = None
     return output
 
+
+def get_user(frameName):
+    conn = engine.connect()
+    #query to get user that started processing of the given frame
+    userIDQry = select([jobs.c.user]).select_from(
+            polygs.join(jobs,onclause=polygs.c.polyid==jobs.c.polyid)).where(
+            polygs.c.polyid_name==frameName)
+    userID = conn.execute(userIDQry).fetchone()
+    if userID:
+        output = userID[0]
+    else:
+        output = None
+    return output
+
+
 ################################################################################
 def add_acq_images(polyid, startdate = None, enddate = None, masterdate = None):
     #startdate and enddate MUST be of type date!!!

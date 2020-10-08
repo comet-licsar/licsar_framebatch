@@ -14,8 +14,8 @@ if [ ! -f pokuspokus ]; then echo "you do not have writing rights here, cancelli
 rm pokuspokus
 
 track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
-lastepoch=`ls $LiCSAR_public/$track/$frame/products/2*_2* -d | tail -n1 | rev | cut -d '_' -f1 | rev`
-firstepoch=`ls $LiCSAR_public/$track/$frame/products/2*_2* -d | head -n1 | rev | cut -d '_' -f1 | rev`
+lastepoch=`ls $LiCSAR_public/$track/$frame/interferograms/2*_2* -d | tail -n1 | rev | cut -d '_' -f1 | rev`
+firstepoch=`ls $LiCSAR_public/$track/$frame/interferograms/2*_2* -d | head -n1 | rev | cut -d '_' -f1 | rev`
 
 #if [ ! -z $2 ]; then
 # echo "You have provided second parameter - here it means PROCESS FROM BEGINNING TILL THE END"

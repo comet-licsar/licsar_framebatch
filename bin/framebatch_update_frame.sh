@@ -44,11 +44,13 @@ elif [ $code == "backfill" ]; then
 
 elif [ $code == "gapfill" ]; then
  if [ -z $4 ]; then echo "for gapfilling, provide start and end dates, e.g. 2017-05-08 2019-07-05"; exit; fi
-# startdate=$3
-# enddate=$4
- startdate=`date -d $3"-25 days" +%Y-%m-%d`
- enddate=`date -d $4"+25 days" +%Y-%m-%d`
-
+ startdate=$3
+ enddate=$4
+ #so normally we would add 25 days to both date borders, unless there is 5th parameter (e.g. number 1)
+ if [ -z $5 ]; then
+  startdate=`date -d $3"-25 days" +%Y-%m-%d`
+  enddate=`date -d $4"+25 days" +%Y-%m-%d`
+ fi
  #nlamaxdate=$enddate
 else
  echo "you have provided wrong code: "$code
@@ -102,7 +104,7 @@ if [ $nla_start == 1 ]; then
    if [ $PROCESSING -eq 0 ]; then
      echo "indicated NLA only - exiting";
      echo "you may start the processing itself manually using: "
-     echo licsar_make_frame.sh -S $extra $frame 1 1 $startdate $enddate
+     echo licsar_make_frame.sh -S -f $extra $frame 1 1 $startdate $enddate
      exit;
    fi
    #hourly checking of NLA requests status...
@@ -140,5 +142,5 @@ else
 fi
 
 echo licsar_make_frame.sh -S $extra $frame 1 $autodown $startdate $enddate
-licsar_make_frame.sh -S $extra $frame 1 $autodown $startdate $enddate
+licsar_make_frame.sh -S -f $extra $frame 1 $autodown $startdate $enddate
 

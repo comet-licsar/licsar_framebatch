@@ -1,12 +1,18 @@
 #!/usr/bin/env python
-from batchDBLib import get_master
+from batchDBLib import get_user
 import sys
 
 frame=sys.argv[1]
 
-master = get_master(frame)
+userid = get_user(frame)
 
-if master:
-    print('active')
+if userid:
+    #if second parameter, print the username rather than 'active'
+    if len(sys.argv)>2:
+        print(userid)
+    else:
+        print('active')
 else:
     print('inactive')
+
+

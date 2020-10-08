@@ -9,6 +9,7 @@ bsubncores=1
 geocode=0
 waiting=0
 store=0
+ADD36M=1
 
 if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_looks] [azimuth_looks]";
                    echo "NBATCH.... number of interferograms to generate per job (licsar defaults to 5)";
@@ -47,21 +48,33 @@ fi
 #NBATCH=5
 NBATCH=$1
 master=`basename geo/20??????.hgt .hgt`
-SCRATCHDIR=/work/scratch-nompiio/licsar_temp
-#SCRATCHDIR=/work/scratch-nompiio/licsar
+SCRATCHDIR=$LiCSAR_temp/gapfill_temp
+mkdir -p $SCRATCHDIR
+
+
+#SCRATCHDIR=/work/scratch-nopw/licsar
 WORKFRAMEDIR=`pwd`
 frame=`pwd | rev | cut -d '/' -f1 | rev`
+echo "first performing a quality check"
+cd ..
+frame_ifg_quality_check.py -l -d $frame
+cd $frame
+
 echo "Executing gap filling routine (results will be saved in this folder: "$WORKFRAMEDIR" )."
 if [ `echo $frame | cut -c 11` != '_' ]; then echo "ERROR, you are not in FRAME folder. Exiting"; exit; fi
 #if [ -z $BATCH_CACHE_DIR ]; then echo "BATCH_CACHE_DIR not set. Cancelling"; exit; fi
 
 #decide for query based on user rights
-if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
-  bsubquery='cpom-comet'
- else
-  bsubquery='par-single'
-  #bsubquery='short-serial'
-fi
+#if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
+#  bsubquery='cpom-comet'
+# else
+#  bsubquery='par-single'
+#  #bsubquery='short-serial'
+#fi
+
+#let's keeping it only for the cpom-comet group...
+bsubquery='cpom-comet'
+
 rm -r gapfill_job 2>/dev/null
 mkdir gapfill_job
 
@@ -87,6 +100,8 @@ if [ ! -d IFG ]; then mkdir IFG; fi
 ls RSLC/20??????/*rslc.mli | cut -d '/' -f2 > gapfill_job/tmp_rslcs
 ls IFG/20*_20??????/*.cc 2>/dev/null | cut -d '/' -f2 > gapfill_job/tmp_ifg_existing
 #rm gapfill_job/tmp_ifg_all2 2>/dev/null
+
+# prepare the 5 combinations in a row
 for FIRST in `cat gapfill_job/tmp_rslcs`; do  
  SECOND=`grep -A1 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
  THIRD=`grep -A2 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
@@ -98,6 +113,59 @@ for FIRST in `cat gapfill_job/tmp_rslcs`; do
   fi
  done 
 done
+
+if [ $ADD36M -eq 1 ]; then
+    maxconn=5
+    #now, add 3 and 6 months data
+    first=`head -n2 gapfill_job/tmp_rslcs | tail -n1`
+    last=`tail -n2 gapfill_job/tmp_rslcs | head -n1`
+    if [ `datediff $first $last` -gt 89 ]; then
+     sed '/'$master'/d' gapfill_job/tmp_rslcs | grep 0[3,6,9][0-3][0-9] > gapfill_job/long_rslcs
+     if [ `cat gapfill_job/long_rslcs | wc -l` -gt 1 ]; then
+      echo "preparing 3/6 months connections"
+      for year in `cat gapfill_job/long_rslcs | cut -c -4 | sort -u`; do
+       #march connections
+       for secmon in 6 9; do
+           rm gapfill_job/long_ifgs 2>/dev/null
+           for march in `grep $year'03' gapfill_job/long_rslcs`; do
+            #connections with june and sep
+            for LAST in `grep $year'0'$secmon gapfill_job/long_rslcs`; do
+             echo $march'_'$LAST >> gapfill_job/long_ifgs
+            done
+           done
+           #do max connections per episode
+           if [ -f gapfill_job/long_ifgs ]; then
+            shuf gapfill_job/long_ifgs | head -n $maxconn >> gapfill_job/tmp_ifg_all2
+           fi
+       done
+       #june connections with sep
+       rm gapfill_job/long_ifgs 2>/dev/null
+       for june in `grep $year'06' gapfill_job/long_rslcs`; do
+            #connections with june and sep
+            for LAST in `grep $year'09' gapfill_job/long_rslcs`; do
+             echo $june'_'$LAST >> gapfill_job/long_ifgs
+            done
+       done
+       if [ -f gapfill_job/long_ifgs ]; then
+         shuf gapfill_job/long_ifgs | head -n $maxconn >> gapfill_job/tmp_ifg_all2
+       fi
+       
+       #sep connections with march next year
+       rm gapfill_job/long_ifgs 2>/dev/null
+       let year2=$year+1
+       for sep in `grep $year'09' gapfill_job/long_rslcs`; do
+        for LAST in `grep $year2'03' gapfill_job/long_rslcs`; do
+          echo $sep'_'$LAST >> gapfill_job/long_ifgs
+        done
+       done
+       if [ -f gapfill_job/long_ifgs ]; then
+        shuf gapfill_job/long_ifgs | head -n $maxconn >> gapfill_job/tmp_ifg_all2
+       fi
+      done
+     fi
+    fi
+fi
+
 #cat gapfill_job/tmp_ifg_all2 | head -n-5 | sort -u > gapfill_job/tmp_ifg_all
 cat gapfill_job/tmp_ifg_all2 | sort -u > gapfill_job/tmp_ifg_all
 for ifg in `cat gapfill_job/tmp_ifg_existing`; do  sed -i '/'$ifg'/d' gapfill_job/tmp_ifg_all; done
@@ -230,7 +298,8 @@ fi
 if [ `echo $waitTextmosaic | wc -w` -gt 0 ]; then
  waitcmdmosaic="-w \""$waitTextmosaic"\""
  echo "..running for missing mosaics"
- bsub -q $bsubquery -n 1 -W 04:00 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
+ bsub2slurm.sh -q $bsubquery -n 1 -W 04:00 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
+ #bsub -q $bsubquery -n 1 -W 04:00 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
 else
  waitcmdmosaic='';
 fi
@@ -241,14 +310,16 @@ for job in `seq 1 $nojobs`; do
  wait=''
  if [ -f gapfill_job/ifgjob_$job.sh ]; then
   #weird error in 'job not found'.. workaround:
-  echo bsub -q $bsubquery -n $bsubncores -W 05:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
+#  echo bsub -q $bsubquery -n $bsubncores -W 05:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
+  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 05:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
   chmod 777 tmptmp; ./tmptmp #>/dev/null
   #this wait text would work for unwrapping to wait for the previous job:
   wait="-w \"ended('"$frame"_ifg_"$job"')\""
  fi
  if [ -f gapfill_job/unwjob_$job.sh ]; then
   #weird error in 'job not found'.. workaround:
-  echo bsub -q $bsubquery -n $bsubncores -W 08:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
+#  echo bsub -q $bsubquery -n $bsubncores -W 08:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
+  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 08:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
   #echo "debug:"
   #cat tmptmp
   chmod 777 tmptmp
@@ -276,7 +347,8 @@ fi
 echo "rm -rf $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 chmod 770 $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #workaround for 'Empty job. Job not submitted'
-echo bsub -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
+echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
+#echo bsub -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
 #echo "debug last:"
 #cat $WORKFRAMEDIR/gapfill_job/tmptmp
 chmod 777 $WORKFRAMEDIR/gapfill_job/tmptmp; $WORKFRAMEDIR/gapfill_job/tmptmp

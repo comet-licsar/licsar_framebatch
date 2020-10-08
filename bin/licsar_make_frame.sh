@@ -22,13 +22,14 @@ if [ -z $1 ]; then
  echo "-n ............... norun (processing scripts are generated but they will not start automatically)"
  echo "-c ............... perform check if files are in neodc and ingested to licsar database (no download performed)"
  #echo "-S ............... store to lics database - ONLY FOR EARMLA"
+ echo "-f ............... force processing in case the frame is already running in framebatch"
  echo "-E ............... after resampling, move to an area for copying to ARC4 EQR"
  echo "-N ............... check if there are new acquisitions since the last run. If not, will cancel the processing"
 # echo "-k YYYY-MM-DD .... generate kml for the ifg pairs containing given date (e.g. earthquake..)"
  #echo "geocode_to_public_website=0"
  exit;
 fi
-#export BATCH_CACHE_DIR=/work/scratch-nompiio/licsar/earmla
+#export BATCH_CACHE_DIR=/work/scratch-nopw/licsar/earmla
 
 NORUN=0
 neodc_check=0
@@ -38,12 +39,13 @@ STORE=0
 #bsubncores=16
 bsubncores=1
 EQR=0
+force=0
 
 #while [ "$1" != "" ]; do
 #options to be c,n,S
 #option=`echo $1 | rev | cut -d '-' -f1 | rev`
 #case $option in
-while getopts ":cnSEN" option; do
+while getopts ":cnSEfN" option; do
  case "${option}" in
   c) neodc_check=1; echo "performing check if files exist in neodc and are ingested to licsar db";
      ;;
@@ -54,6 +56,8 @@ while getopts ":cnSEN" option; do
      NORUN=0;
      ;;
   E) EQR=1; echo "option to make it ready for Earthquake Responder";
+     ;;
+  f) force=1; echo "bypassing check of existing processing of the frame";
      ;;
   N) only_new_rslc=1; echo "Checking if new images appeared since the last processing";
      ;;
@@ -67,9 +71,10 @@ if [ -z $BATCH_CACHE_DIR ] || [ ! -d $BATCH_CACHE_DIR ]; then
  echo "There is no BATCH_CACHE_DIR existing. Did you define it properly?"
  exit
 fi
-# 03/2019 - we started to use scratch-nompiio disk as a possible solution for constant stuck job problems
+
+# 03/2019 - we started to use scratch-nopw disk as a possible solution for constant stuck job problems
 # after JASMIN update to Phase 4
-if [ ! -d /work/scratch-nompiio/licsar/$USER ]; then mkdir /work/scratch-nompiio/licsar/$USER; fi
+if [ ! -d /work/scratch-nopw/licsar/$USER ]; then mkdir /work/scratch-nopw/licsar/$USER; fi
 #if [ ! -d /work/scratch/licsar/$USER ]; then mkdir /work/scratch/licsar/$USER; fi
 
 basefolder=$BATCH_CACHE_DIR
@@ -82,6 +87,19 @@ track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
 if [ ! -d $LiCSAR_procdir/$track/$frame/geo ]; then echo "This frame has not been initialized. Please contact your LiCSAR admin (Milan)"; exit; fi
 #some older frames would not have this folder
 mkdir $LiCSAR_procdir/$track/$frame/LUT 2>/dev/null
+
+
+#run only if the frame is not in active processing..
+if [ $force -eq 0 ]; then
+  framestatus=`getFrameStatus.py $frame 1`
+  if [ ! $framestatus == 'inactive' ]; then 
+    echo "this frame is already active in framebatch.";
+    echo "you may either contact user "$framestatus
+    echo "or cancel the processing using setFrameInactive.py "$frame
+    exit;
+  fi
+fi
+
 enddate=`date -d '22 days ago' +%Y-%m-%d`
 
 #settings of full_scale and extra_steps - by default 0
@@ -120,13 +138,14 @@ else
 fi
 
 #decide for query based on user rights
-if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
-  bsubquery='cpom-comet'
- else
-  bsubquery='par-single'
+bsubquery='cpom-comet'
+#if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
+#  bsubquery='cpom-comet'
+# else
+#  bsubquery='par-single'
   #this one is for multinode.. let's keep it in one only
   #bsubquery='short-serial'
-fi
+#fi
 #echo "debu 0"
 
 #testing.. but perhaps helps in getting proper num threads in CEMS environment
@@ -178,12 +197,13 @@ function prepare_job_script {
  rm $step.sh 2>/dev/null
  rm $step'_nowait.sh' 2>/dev/null
  rm $step.list 2>/dev/null
- echo "mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/$stepsql.sql | grep $USER | grep $frame | sort -n" > $step.sql
 # mysql command is much faster, but it is not available in every server:
 if [ ! -z `which mysql 2>/dev/null` ]; then
  mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/$stepsql.sql | grep $USER | grep $frame | sort -n > $step.list
+ echo "mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/$stepsql.sql | grep $USER | grep $frame | sort -n" > $step.sql
 else
  cat << EOF > getit.py
+#!/usr/bin/env python
 import pandas as pd
 from batchDBLib import engine
 from configLib import config
@@ -192,19 +212,27 @@ QryFile = open(sqlPath+'/$stepsql.sql','r')
 if QryFile:
     Qry = QryFile.read()
     DatFrm = pd.read_sql_query(Qry,engine)
-    DatFrm.to_csv('$step.list', header=False, index=False, sep='\t', mode='a')
+    DatFrm = DatFrm.query('Frame == "$frame" and User == "$USER"')
+    try:
+        DatFrm.to_csv('$step.list', header=False, index=False, sep='\t', mode='w')
+    except:
+        print('ERROR - the list is probably empty')
+    QryFile.close()
 else:
     print('Could not open SQL query file')
 EOF
- python getit.py
- rm getit.py
+ python ./getit.py
+ mv getit.py $step.sql
  #too quick to write to disk J
  #wow, 5 seconds waiting was not enough!!!!! 
- echo "waiting 30 seconds. Should be enough to synchronize data write from python"
- echo "(what a problem in the age of supercomputers..)"
- sleep 30
- cat $step.list | grep $USER | grep $frame | sort -n > $step.list 
+ #echo "waiting 10 seconds. Should be enough to synchronize data write from python"
+ #echo "(what a problem in the age of supercomputers..)"
+ #sleep 10
+ #wc -l $step.list
+ cat $step.list | grep $USER | grep $frame | sort -n > $step.list2
+ mv $step.list2 $step.list 
 fi
+chmod 777 $step.sql
 
  for jobid in `cat $step.list | gawk {'print $1'} | sort -un`; do
   #get connected images from previous step
@@ -250,9 +278,9 @@ fi
   exptime=`echo $hoursperone*$notoprocess+1.5 | bc | cut -d '.' -f1`
   if [ $exptime -gt 23 ]; then exptime=23; fi
   if [ $exptime -lt 10 ]; then exptime=0$exptime; fi
-  echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
+  echo bsub2slurm.sh -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
      -q $bsubquery -n $bsubncores -W $exptime:59 $extrabsub $waitcmd $stepcmd $jobid >> $step.sh
-  echo bsub -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
+  echo bsub2slurm.sh -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
      -q $bsubquery -n $bsubncores -W $exptime:59 $extrabsub $stepcmd $jobid >> $step'_nowait.sh'
  done
  
@@ -266,14 +294,20 @@ fi
   newrslc=`checkNewRslc.py $frame`
   if [ $newrslc -eq 0 ]; then
    echo "No new image was acquired since last run - exiting"
+   if [ `ls $BATCH_CACHE_DIR/$frame | wc -l` -eq 1 ]; then
+    cd $BATCH_CACHE_DIR
+    rm -rf $frame
+   fi
    exit
   fi
   echo "There are "$newrslc" new images to process since the last run"
  fi
- date
- setFrameInactive.py $frame
- echo "Activating the frame"
- setFrameActive.py $frame
+
+date
+setFrameInactive.py $frame
+echo "Activating the frame"
+setFrameActive.py $frame
+
 if [ $full_scale -eq 0 ]; then
 #if we work only in last 3 months data
  if [ $fillgaps -eq 1 ]; then
@@ -300,6 +334,19 @@ else
  echo "..may take some 15 minutes or (much) more"
  echo "(recommending using tmux or screen here..)"
  createFrameCache.py $frame $no_of_jobs $startdate $enddate > tmp_jobid.txt
+ #ok, let's fix also the stuff already existing...
+ if [ -d $LiCSAR_public/$track/$frame/interferograms ]; then
+  mkdir GEOC 2>/dev/null
+  for ifg in `ls $LiCSAR_public/$track/$frame/interferograms`; do
+    if [ `echo $ifg | cut -d '_' -f1` -ge `echo $startdate | sed 's/-//g'` ]; then
+    if [ `echo $ifg | cut -d '_' -f2` -le `echo $enddate | sed 's/-//g'` ]; then
+      if [ ! -d GEOC/$ifg ]; then 
+       ln -s $LiCSAR_public/$track/$frame/interferograms/$ifg `pwd`/GEOC/$ifg
+      fi
+    fi
+    fi
+  done
+ fi
 fi
  grep first_job_id tmp_jobid.txt | gawk {'print $3'} > $logdir/job_start.txt
  if [ -z `cat $logdir/job_start.txt` ]; then echo "The frame "$frame "is erroneous and cannot be processed"; exit; fi
@@ -342,6 +389,35 @@ fi
   echo "To run this step, use ./"$step".sh"
  fi
 
+
+#~ if [ $NORUN -eq 0 ]; then
+  #~ echo "setting second itera"
+  #~ mkdir tmpbck
+  #~ mv framebatch_02_coreg* tmpbck/.
+
+ #~ step=framebatch_02_coreg
+ #~ stepcmd=ab_LiCSAR_coreg.py
+ #~ stepsql=rslcQry
+ #~ stepprev=framebatch_02_coreg
+
+ #~ prepare_job_script $step $stepcmd $stepsql $stepprev
+ 
+ #~ waiting_str=''
+ #~ for jobid in \`cat tmpbck/framebatch_02_coreg.sh | rev | gawk {'print \$1'} | rev\`; do
+  #~ stringg="framebatch_02_coreg_"\$jobid
+  #~ waiting_str=\$waiting_str" && ended("\$stringg")"
+ #~ done
+ #~ waiting_string=\`echo \$waiting_str | cut -c 4-\`
+ #~ echo "bsub2slurm.sh -w '"\$waiting_string"' -q $bsubquery -W 08:00 -n 1 -J framebatch_02_coreg_$frame -o LOGS/framebatch_02_coreg_2.out -e LOGS/framebatch_02_coreg_2.err ./framebatch_02_coreg_nowait.sh" > framebatch_02_coreg_2.sh
+ #~ chmod 770 framebatch_02_coreg_2.sh
+
+ #~ ./framebatch_02_coreg_2.sh
+  #~ ./$step.sh
+ #~ #else
+ #~ # echo "To run this step, use ./"$step".sh"
+ #~ fi
+#~ rm -r tmpbck
+
 ################################################# in case of EQR=1, prepare it:
 if [ $EQR -eq 1 ]; then
 cat << EOF > framebatch_eqr.sh
@@ -352,7 +428,7 @@ if [ ! -z \$1 ]; then
   waiting_str=\$waiting_str" && ended("\$stringg")"
  done
  waiting_string=\`echo \$waiting_str | cut -c 4-\`
- echo "bsub -w '"\$waiting_string"' -q $bsubquery -W 04:00 -n 1 -J EQR_$frame -o LOGS/EQR.out -e LOGS/EQR.err ./framebatch_eqr.sh" > framebatch_eqr_wait.sh
+ echo "bsub2slurm.sh -w '"\$waiting_string"' -q $bsubquery -W 02:00 -n 1 -J EQR_$frame -o LOGS/EQR.out -e LOGS/EQR.err ./framebatch_eqr.sh" > framebatch_eqr_wait.sh
  chmod 770 framebatch_eqr_wait.sh
  ./framebatch_eqr_wait.sh
 else
@@ -361,8 +437,10 @@ fi
 EOF
 chmod 770 framebatch_eqr.sh
 if [ $NORUN -eq 0 ]; then
- ./framebatch_eqr.sh
+ ./framebatch_eqr.sh -w
 else
+ echo "To run this step, use ./framebatch_eqr.sh"
+fi
 fi
 ###################################################### Make ifgs
  echo "..setting make_ifg job (IFG)"
@@ -416,7 +494,7 @@ if [ ! -z \$1 ]; then
   waiting_str=\$waiting_str" && ended("\$stringg")"
  done
  waiting_string=\`echo \$waiting_str | cut -c 4-\`
- echo "bsub -w '"\$waiting_string"' -q $bsubquery -W 08:00 -n 1 -J framebatch_05_gap_filling_$frame -o LOGS/framebatch_05_gap_filling.out -e LOGS/framebatch_05_gap_filling.err ./framebatch_05_gap_filling.sh" > framebatch_05_gap_filling_wait.sh
+ echo "bsub2slurm.sh -w '"\$waiting_string"' -q $bsubquery -W 08:00 -n 1 -J framebatch_05_gap_filling_$frame -o LOGS/framebatch_05_gap_filling.out -e LOGS/framebatch_05_gap_filling.err ./framebatch_05_gap_filling.sh" > framebatch_05_gap_filling_wait.sh
  chmod 770 framebatch_05_gap_filling_wait.sh
  ./framebatch_05_gap_filling_wait.sh
 else
@@ -427,7 +505,7 @@ chmod 770 framebatch_05_gap_filling.sh
 #if [ $NORUN -eq 0 ] && [ $STORE -lt 1 ]; then
 #this below option means that even in AUTOSTORE, the gapfilling will be performed...
 #in this case, however, it will be sent to bsub together with geotiff generation script
-#so.. more connections now depend on 'luck having to wait for bsub -x'
+#so.. more connections now depend on 'luck having to wait for bsub2slurm.sh -x'
 #this definitely needs improvement, yet better 'than nothing'.. i suppose
 if [ $NORUN -eq 0 ]; then
  ./framebatch_05_gap_filling.sh -w
@@ -454,7 +532,16 @@ if [ \$noimgs -gt 0 ]; then
 fi
 EOF
 cp framebatch_06_geotiffs.sh framebatch_06_geotiffs_nowait.sh
-echo "bsub -q $bsubquery -W 08:00 -J $frame'_geo' -n \$NOPAR -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR" >> framebatch_06_geotiffs_nowait.sh
+
+
+#in case of EQR, do also full size previews - as these will be used for KML
+if [ $EQR -eq 1 ]; then
+ extracmdgeo=1
+else
+ extracmdgeo=''
+fi
+
+echo "bsub2slurm.sh -q $bsubquery -W 08:00 -J $frame'_geo' -n \$NOPAR -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs_nowait.sh
 chmod 770 framebatch_06_geotiffs*.sh
 
 waiting_str=''
@@ -463,14 +550,14 @@ for jobid in `cat framebatch_04_unwrap.sh | rev | gawk {'print $1'} | rev`; do
  waiting_str=$waiting_str" && ended("$stringg")"
 done
 waiting_string=`echo $waiting_str | cut -c 4-`
-echo "bsub -w '"$waiting_string"' -J $frame'_geo' -n \$NOPAR -q $bsubquery -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR" >> framebatch_06_geotiffs.sh
+echo "bsub2slurm.sh -w '"$waiting_string"' -J $frame'_geo' -n \$NOPAR -q $bsubquery -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs.sh
 
 if [ $STORE -eq 1 ]; then
  echo "Making the system automatically store the generated data (for auto update of frames)"
  echo "cd $BATCH_CACHE_DIR" >> framebatch_06_geotiffs_nowait.sh
  echo "echo 'waiting 20 seconds for bjobs to synchronize'" >> framebatch_06_geotiffs_nowait.sh
  echo "sleep 20" >> framebatch_06_geotiffs_nowait.sh
- echo "bsub -w $frame'_geo' -q cpom-comet -n 1 -W 08:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore" >> framebatch_06_geotiffs_nowait.sh #$frame
+ echo "bsub2slurm.sh -w $frame'_geo' -q cpom-comet -n 1 -W 08:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore" >> framebatch_06_geotiffs_nowait.sh #$frame
  #cd -
 fi
 
@@ -484,7 +571,7 @@ fi
 echo "Preparing script for generating baseline plot"
 #cat << EOF > framebatch_07_baseline_plot.sh
 #queue=cpom-comet;t=12:00
-#bsub -q $queue -W $t -o pix.out -e pix.err -J pix.txt 
+#bsub2slurm.sh -q $queue -W $t -o pix.out -e pix.err -J pix.txt 
 #Jonathan's approach
 #echo "Computing baselines"
 #make_bperp_4_matlab.sh
@@ -515,13 +602,13 @@ chmod 770 framebatch_07_baseline_plot.sh
 #if [ $STORE -eq 1 ]; then
 # echo "Making the system automatically store the generated data (for auto update of frames)"
 # cd $BATCH_CACHE_DIR
-# bsub -w $frame'_geo' -q cpom-comet -n 1 -W 08:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore #$frame
+# bsub2slurm.sh -w $frame'_geo' -q cpom-comet -n 1 -W 08:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore #$frame
 # cd -
 #fi
 
 
 # I disabled it since it wasn't really starting.. too complicated -w , I guess J
-# bsub -o "$logdir/geotiffs.out" -e "$logdir/geotiffs.out" -J "geotiffs_$frame" \
+# bsub2slurm.sh.sh -o "$logdir/geotiffs.out" -e "$logdir/geotiffs.out" -J "geotiffs_$frame" \
 # -q $bsubquery -n 1 -W 12:00 -w "$step5_wait" ./framebatch_05_geotiffs.sh
 echo ""
 echo ""
@@ -547,13 +634,13 @@ if [ $extra_steps -eq 1 ]; then
 track=`echo $frame | cut -d '_' -f1 | rev | cut -c 2- | rev`
 public=$LiCSAR_public
 for geoifg in `ls $BATCH_CACHE_DIR/$frame/GEOC/2*_2* -d | rev | cut -d '/' -f1 | rev`; do
- if [ ! -d $public/$track/$frame/products/$geoifg ]; then
+ if [ ! -d $public/$track/$frame/interferograms/$geoifg ]; then
  echo "copying geocoded "$geoifg
  for toexp in cc.bmp cc.tif diff.bmp diff_mag.tif diff_pha.tif unw.bmp unw.tif; do #disp.png; do
   if [ -f $BATCH_CACHE_DIR/$frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
-   mkdir -p $public/$track/$frame/products/$geoifg 2>/dev/null
-   if [ ! -f $public/$track/$frame/products/$geoifg/$geoifg.geo.$toexp ]; then
-    cp $BATCH_CACHE_DIR/$frame/GEOC/$geoifg/$geoifg.geo.$toexp $public/$track/$frame/products/$geoifg/.
+   mkdir -p $public/$track/$frame/interferograms/$geoifg 2>/dev/null
+   if [ ! -f $public/$track/$frame/interferograms/$geoifg/$geoifg.geo.$toexp ]; then
+    cp $BATCH_CACHE_DIR/$frame/GEOC/$geoifg/$geoifg.geo.$toexp $public/$track/$frame/interferograms/$geoifg/.
    fi
   fi
  done

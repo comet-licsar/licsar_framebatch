@@ -1,8 +1,9 @@
 [Env]
+#this should not be used anymore... for old CentOS6 VMs
 SourceDir : /gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current
-#CacheDir : /work/scratch-nompiio/greenall/
-#SpdCacheDir : /work/scratch-nompiio/greenall/
-TempDir : /work/scratch-nompiio/licsar
+#CacheDir : /work/scratch-nopw/greenall/
+#SpdCacheDir : /work/scratch-nopw/greenall/
+TempDir : /work/scratch-nopw/licsar
 #TempDir : /work/scratch/licsar
 
 [DB]

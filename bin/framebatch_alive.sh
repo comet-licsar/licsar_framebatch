@@ -25,8 +25,8 @@ for frame in `cat $inputfile`; do
  master=`ls $LiCSAR_procdir/$tr/$frame/SLC | head -n1`
 
  #get last epoch based on public interferograms
- lastepoch=`ls $LiCSAR_public/$tr/$frame/products/2*_2* -d | tail -n1 | rev | cut -d '_' -f1 | rev`
- # start date will include last three images to process..
+ lastepoch=`ls $LiCSAR_public/$tr/$frame/interferograms/2*_2* -d | tail -n1 | rev | cut -d '_' -f1 | rev`
+ # start date will include at least last three images to process..
  startdate=`date -d $lastepoch'-37 days' +%Y-%m-%d`
 
  licsar_make_frame.sh -S -N $frame 0 1 $startdate $enddate #>$BATCH_CACHE_DIR/volc/auto_volc_$frame.log 2>$BATCH_CACHE_DIR/volc/auto_volc_$frame.err

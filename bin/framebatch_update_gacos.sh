@@ -14,6 +14,13 @@ touch pokuspokusgacos_$frame
 if [ ! -f pokuspokusgacos_$frame ]; then echo "you do not have writing rights here, cancelling"; exit; fi
 rm pokuspokusgacos_$frame
 
+if [ ! -d $frame ]; then
+ mkdir $frame 2>/dev/null
+else
+ echo "the frame is already in processing??"
+ echo "check (and delete?)"$work_dir"/"$frame
+ exit
+fi
 #track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
 
 #create input file
@@ -33,7 +40,7 @@ if [ ! -f $frame.tar.gz ]; then
 fi
 
 #now decompress the files
-mkdir $frame
+mkdir $frame 2>/dev/null
 mv $frame.tar.gz $frame/.
 cd $frame
 tar -xzf $frame.tar.gz

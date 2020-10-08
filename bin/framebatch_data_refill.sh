@@ -51,7 +51,9 @@ chmod 770 $BATCH_CACHE_DIR/$frame/$xyfile
 mv $xyfile ${frame}-poly.txt
 make_simple_polygon.sh ${frame}-poly.txt
 
+
 # to get list of files that are missing:
+rm ${frame}_zipfile_names.list ${frame}_scihub.list 2>/dev/null
 ## make list from scihub
  echo "getting scihub data"
  if [ ! -z $enddate ]; then
@@ -64,7 +66,8 @@ make_simple_polygon.sh ${frame}-poly.txt
  echo "identified "`cat ${frame}_zipfile_names.list | wc -l`" images"
  echo "getting their expected CEMS path"
  zips2cemszips.sh ${frame}_zipfile_names.list ${frame}_scihub.list >/dev/null
- sort -o ${frame}_scihub.list ${frame}_scihub.list
+ sort -o ${frame}_scihub2.list ${frame}_scihub.list
+ mv ${frame}_scihub2.list ${frame}_scihub.list
 ## make list from nla
 rm ${frame}_db_query.list 2>/dev/null
 touch ${frame}_db_query.list 2>/dev/null
@@ -78,7 +81,8 @@ touch ${frame}_db_query.list 2>/dev/null
  fi
  echo "*******"
 #fi
- sort -o ${frame}_db_query.list ${frame}_db_query.list
+ sort -o ${frame}_db_query2.list ${frame}_db_query.list
+ mv ${frame}_db_query2.list ${frame}_db_query.list
  diff  ${frame}_scihub.list ${frame}_db_query.list | grep '^<' | cut -c 3- > ${frame}_todown
  echo "There are "`cat ${frame}_todown | wc -l`" extra images, not currently existing on CEMS (neodc) disk"
 # checking if the files from scihub exist in RSLC or SLC folders..
@@ -197,7 +201,7 @@ sshout=$SLCdir
 wgetcmd_scihub=''
 if [ $USE_SSH_DOWN -eq 1 ]; then
  #xferserver=jasmin-xfer1.ceda.ac.uk
- xferserver=jasmin-xfer3.ceda.ac.uk
+ xferserver=xfer1.jasmin.ac.uk
  #testing connection
  #if [ `grep -c licsar@gmail.com ~/.ssh/authorized_keys` -eq 0 ]; then
  # cat $LiCSAR_configpath/.id_rsa_licsar.pub >> ~/.ssh/authorized_keys
@@ -221,7 +225,8 @@ if [ $USE_SSH_DOWN -eq 1 ]; then
    #seems only xfer3 cannot access smf disk..
    #cp `which wget_scihub` ~/.wget_scihub
    #wgetcmd_scihub="~/.wget_scihub"
-   sshserver_scihub=jasmin-xfer2.ceda.ac.uk
+   #sshserver_scihub=jasmin-xfer2.ceda.ac.uk
+   sshserver_scihub=xfer2.jasmin.ac.uk
    wgetcmd_scihub=`which wget_scihub`
   fi
  else
