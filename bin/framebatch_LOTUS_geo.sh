@@ -16,7 +16,7 @@ mkdir GEOC 2>/dev/null
 #getting list of files to geocode:
 rm -f tmp_to_pub 2>/dev/null
 for ifg in `ls IFG/*_* -d | rev | cut -d '/' -f1 | rev`; do
-if [ ! -d GEOC/$ifg ]; then
+if [ ! -f GEOC/$ifg/$ifg.geo.unw.tif ]; then
  if [ -f IFG/$ifg/$ifg.unw ]; then
   echo $ifg >> tmp_to_pub
  fi
@@ -60,9 +60,10 @@ chmod 777 tmp_geocmd_*
 rm framebatch_geocode_script.sh 2>/dev/null
 touch framebatch_geocode_script.sh
 for script in `ls tmp_geocmd_*`; do
- echo "nohup ./"$script" & " >> framebatch_geocode_script.sh
+ echo "./"$script >> framebatch_geocode_script.sh
 done
 chmod 777 framebatch_geocode_script.sh
-./framebatch_geocode_script.sh
+parallel --jobs $NOPAR < framebatch_geocode_script.sh
+#./framebatch_geocode_script.sh
 
 #mv tmp_geocmd.sh framebatch_geocode_script.sh

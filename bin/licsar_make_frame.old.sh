@@ -23,9 +23,8 @@ if [ -z $1 ]; then
  echo "-c ............... perform check if files are in neodc and ingested to licsar database (no download performed)"
  #echo "-S ............... store to lics database - ONLY FOR EARMLA"
  echo "-f ............... force processing in case the frame is already running in framebatch"
- echo "-E ............... after resampling, move to an area for copying to ARC4 EIDP"
+ echo "-E ............... after resampling, move to an area for copying to ARC4 EQR"
  echo "-N ............... check if there are new acquisitions since the last run. If not, will cancel the processing"
- echo "-P ............... prioritise... i.e. run on cpom-comet queue (default: use short-serial where needed)"
 # echo "-k YYYY-MM-DD .... generate kml for the ifg pairs containing given date (e.g. earthquake..)"
  #echo "geocode_to_public_website=0"
  exit;
@@ -42,37 +41,23 @@ bsubncores=1
 EQR=0
 force=0
 
-
-if [ $USER == 'earmla' ] || [ $USER == 'yma' ]; then 
- prioritise=1
-else
- echo "Note: your query will go through a general queue"
- echo "(but you may use -P parameter if you are in desperate AGU rush as we are..)"
- prioritise=0
-fi
-
 #while [ "$1" != "" ]; do
 #options to be c,n,S
 #option=`echo $1 | rev | cut -d '-' -f1 | rev`
 #case $option in
-while getopts ":cnSEfNP" option; do
+while getopts ":cnSEfN" option; do
  case "${option}" in
   c) neodc_check=1; echo "performing check if files exist in neodc and are ingested to licsar db";
      ;;
   n) NORUN=1; echo "No run option. Scripts will be generated but not start automatically";
      ;;
   S) STORE=1; echo "After the processing, data will be stored to db and public dir";
-  if [ $USER == 'yma' ]; then deleteafterstore=0; echo "(not deleting it after store..";
-  else
-     deleteafterstore=1;
-  fi
+     deleteafterstore=0;
      NORUN=0;
      ;;
   E) EQR=1; echo "option to make it ready for Earthquake Responder";
      ;;
   f) force=1; echo "bypassing check of existing processing of the frame";
-     ;;
-  P) prioritise=1; echo "prioritising - using cpom-comet queue in all steps";
      ;;
   N) only_new_rslc=1; echo "Checking if new images appeared since the last processing";
      ;;
@@ -133,36 +118,27 @@ fi
 if [ ! -z $6 ]; then extra_steps=$6; else extra_steps=0; fi
 
 if [ $full_scale -eq 1 ]; then
- datespread=`datediff $startdate $enddate`
- maxepochs=`echo $datespread/6 | bc`
- #assuming this number of epochs per job:
- eperjob=9
- no_of_jobs=`echo 1+$maxepochs/$eperjob | bc`
- #if [ $startdate == "2014-10-01" ]; then
+ if [ $startdate == "2014-10-01" ]; then
   echo "WARNING:"
   echo "You have chosen to process in full scale"
   echo "This makes sense only if you have already done (two days ago) the nla request, i.e."
   echo "LiCSAR_0_getFiles.py -f FRAME etc. -- see documentation"
+  echo "If you didn't, please cancel it now (CTRL-C)"
+  sleep 5
+  echo "..waited 5 sec. Continuing"
   #this number was here before - but had to decrease since we use only 1 processor now, job time limit is 24h and coreg may take up to 2h (actually less) per image
   #no_of_jobs=40
-  #no_of_jobs=20
- #else
- # no_of_jobs=12
- #fi
+  no_of_jobs=20
+ else
+  no_of_jobs=12
+ fi
 else
- no_of_jobs=8 #enough for last 3 months data
+ no_of_jobs=5 #enough for last 3 months data
  startdate=`date -d '91 days ago' +%Y-%m-%d`
 fi
 
 #decide for query based on user rights
-if [ $prioritise -eq 1 ]; then
-  bsubquery='cpom-comet'
-  bsubquery_multi='cpom-comet'
-else
-  bsubncores=1
-  bsubquery='short-serial'
-  bsubquery_multi='par-single'
-fi
+bsubquery='cpom-comet'
 #if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
 #  bsubquery='cpom-comet'
 # else
@@ -284,11 +260,9 @@ chmod 777 $step.sql
   fi
 
   #if [ $bsubquery == "short-serial" ]; then
-  #this is an improvemet for cpom-comet queues - we can request additional RAM within this queue
-  #if [ $bsubquery != "cpom-comet" ]; then
-  #extrabsub='-x'
-  #else
-  if [ $bsubquery == "cpom-comet" ]; then
+  if [ $bsubquery != "cpom-comet" ]; then
+  extrabsub='-x'
+  else
    if [ $step == "framebatch_02_coreg" ] || [ $step == "framebatch_04_unwrap" ]; then
     maxmem=25000
     extrabsub='-R "rusage[mem='$maxmem']" -M '$maxmem
@@ -296,10 +270,10 @@ chmod 777 $step.sql
   fi
   #get expected time
   notoprocess=`grep -c $jobid $step.list`
-  if [ $step == 'framebatch_01_mk_image' ]; then hoursperone=0.9; fi
-  if [ $step == 'framebatch_02_coreg' ]; then hoursperone=1.9; fi
-  if [ $step == 'framebatch_03_mk_ifg' ]; then hoursperone=0.4; fi
-  if [ $step == 'framebatch_04_unwrap' ]; then hoursperone=1.5; fi
+  if [ $step == 'framebatch_01_mk_image' ]; then hoursperone=0.7; fi
+  if [ $step == 'framebatch_02_coreg' ]; then hoursperone=1.7; fi
+  if [ $step == 'framebatch_03_mk_ifg' ]; then hoursperone=0.35; fi
+  if [ $step == 'framebatch_04_unwrap' ]; then hoursperone=1; fi
   #to be included also number of bursts per frame...
   exptime=`echo $hoursperone*$notoprocess+1.5 | bc | cut -d '.' -f1`
   if [ $exptime -gt 23 ]; then exptime=23; fi
@@ -366,11 +340,9 @@ else
   for ifg in `ls $LiCSAR_public/$track/$frame/interferograms`; do
     if [ `echo $ifg | cut -d '_' -f1` -ge `echo $startdate | sed 's/-//g'` ]; then
     if [ `echo $ifg | cut -d '_' -f2` -le `echo $enddate | sed 's/-//g'` ]; then
-     if [ -f $LiCSAR_public/$track/$frame/interferograms/$ifg/$ifg.geo.unw.tif ]; then
       if [ ! -d GEOC/$ifg ]; then 
        ln -s $LiCSAR_public/$track/$frame/interferograms/$ifg `pwd`/GEOC/$ifg
       fi
-     fi
     fi
     fi
   done
@@ -480,12 +452,7 @@ fi
  
  prepare_job_script $step $stepcmd $stepsql $stepprev
  if [ $NORUN -eq 0 ]; then
-   if [ -f $step.sh ]; then
-    ./$step.sh
-   else
-    echo "ERROR: no mk_ifg script exists - perhaps not enough of input data. Exiting (keeping processing, so you may store at least coregistered files and their LUTs)"
-    exit
-   fi
+  ./$step.sh
  else
   echo "To run this step, use ./"$step".sh"
  fi
@@ -510,19 +477,14 @@ fi
 
 ###################################################### Gap Filling
 echo "Preparing script for gap filling"
-NBATCH=4
+NBATCH=2
 gpextra=''
 if [ $NORUN -eq 0 ]; then
  gpextra="-g "
 fi
-if [ $NORUN -eq 0 ] && [ $STORE -eq 1 ]; then
- gpextra=$gpextra"-S "
- touch .processing_it1
-fi
-if [ $prioritise -eq 1 ]; then
- gpextra=$gpextra"-P "
-fi
-
+#if [ $NORUN -eq 0 ] && [ $STORE -eq 1 ]; then
+# gpextra=$gpextra"-S "
+#fi
 cat << EOF > framebatch_05_gap_filling.sh
 echo "The gapfilling will use RSLCs in your work folder and update ifg or unw that were not generated (in background - check bjobs)"
 if [ ! -z \$1 ]; then
@@ -555,14 +517,14 @@ fi
 
 
 ###################################################### Geocoding to tiffs
-echo "Preparing script for geocoding results (will be auto-run by gap_filling routine)"
+echo "Preparing script for geocoding results"
 cat << EOF > framebatch_06_geotiffs.sh
-NOPAR=1
-MAXPAR=10
+NOPAR=4
+MAXPAR=12
 frame=$frame
 
-#let's have 10 epochs per cpu
-imgpercpu=10
+#let's have 50 images per cpu
+imgpercpu=50
 noimgs=\`wc -l framebatch_01_mk_image.list | gawk {'print \$1'}\`
 if [ \$noimgs -gt 0 ]; then
  let NOPAR=1+\$noimgs/\$imgpercpu
@@ -579,25 +541,23 @@ else
  extracmdgeo=''
 fi
 
-echo "bsub2slurm.sh -q $bsubquery_multi -W 07:00 -J $frame'_geo' -n \$NOPAR -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs_nowait.sh
+echo "bsub2slurm.sh -q $bsubquery -W 08:00 -J $frame'_geo' -n \$NOPAR -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs_nowait.sh
 chmod 770 framebatch_06_geotiffs*.sh
 
-
-#ok, but the core script will run only after unwrapping jobs are finished..
 waiting_str=''
 for jobid in `cat framebatch_04_unwrap.sh | rev | gawk {'print $1'} | rev`; do
  stringg="framebatch_04_unwrap_"$jobid
  waiting_str=$waiting_str" && ended("$stringg")"
 done
 waiting_string=`echo $waiting_str | cut -c 4-`
-echo "bsub2slurm.sh -w '"$waiting_string"' -J $frame'_geo' -n \$NOPAR -q $bsubquery_multi -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs.sh
+echo "bsub2slurm.sh -w '"$waiting_string"' -J $frame'_geo' -n \$NOPAR -q $bsubquery -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs.sh
 
 if [ $STORE -eq 1 ]; then
  echo "Making the system automatically store the generated data (for auto update of frames)"
  echo "cd $BATCH_CACHE_DIR" >> framebatch_06_geotiffs_nowait.sh
- echo "echo 'waiting 5 seconds for bjobs to synchronize'" >> framebatch_06_geotiffs_nowait.sh
- echo "sleep 5" >> framebatch_06_geotiffs_nowait.sh
- echo "bsub2slurm.sh -w $frame'_geo' -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore" >> framebatch_06_geotiffs_nowait.sh #$frame
+ echo "echo 'waiting 20 seconds for bjobs to synchronize'" >> framebatch_06_geotiffs_nowait.sh
+ echo "sleep 20" >> framebatch_06_geotiffs_nowait.sh
+ echo "bsub2slurm.sh -w $frame'_geo' -q cpom-comet -n 1 -W 08:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore" >> framebatch_06_geotiffs_nowait.sh #$frame
  #cd -
 fi
 

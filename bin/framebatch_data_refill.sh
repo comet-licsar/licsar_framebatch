@@ -41,6 +41,7 @@ if [ ! -d $BATCH_CACHE_DIR/$frame ]; then echo 'this frame was not started by fr
 tr=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
 dir=`echo $frame | cut -c 4`
 if [ $dir == 'D' ]; then dir='dsc'; else dir='asc'; fi
+if [ `echo $frame | cut -d '_' -f2` == 'SM' ]; then mode='SM'; fi
 
 cd $BATCH_CACHE_DIR/$frame
 chmod -R 770 $BATCH_CACHE_DIR/$frame
@@ -59,9 +60,9 @@ rm ${frame}_zipfile_names.list ${frame}_scihub.list 2>/dev/null
  if [ ! -z $enddate ]; then
    #the way of query_sentinel.sh misses the latest data (so increasing enddate by 1 day to the future)
    enddate_str=`echo $enddate | sed 's/-//g'`
-   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date -d $enddate_str'+1day' +'%Y%m%d'` >/dev/null 2>/dev/null
+   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date -d $enddate_str'+1day' +'%Y%m%d'` $mode >/dev/null 2>/dev/null
   else
-   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date -d 'tomorrow' +'%Y%m%d'` >/dev/null 2>/dev/null
+   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date -d 'tomorrow' +'%Y%m%d'` $mode >/dev/null 2>/dev/null
  fi
  echo "identified "`cat ${frame}_zipfile_names.list | wc -l`" images"
  echo "getting their expected CEMS path"

@@ -35,7 +35,8 @@ DOIFG=1
 GEOC_OVERWRITE=0
 IFG_OVERWRITE=0
 DELETEAFTER=0
-QUALCHECK=1
+DELETESLCS=0
+QUALCHECK=0
 store_logs=1 #for autodelete only
 
 #second parameter - if 1, then delete after storing
@@ -231,7 +232,7 @@ if [ $DOGEOC -eq 1 ]; then
   track=$tr
   for geoifg in `ls $frame/GEOC/2*_2* -d | rev | cut -d '/' -f1 | rev`; do
    if [ -f $frame/GEOC/$geoifg/$geoifg.geo.unw.tif ]; then
-    if [ -d $pubDir_ifgs/$geoifg ]; then 
+    if [ -f $pubDir_ifgs/$geoifg/$geoifg.geo.unw.tif ]; then 
       if [ $GEOC_OVERWRITE == 1 ]; then
        echo "warning, geoifg "$geoifg" already exists. Data will be overwritten";
       else
@@ -325,8 +326,9 @@ update_bperp_file.sh
 echo "regenerating baseline plot and gaps.txt file"
 plot_network.py $pubDir $pubDir_meta/network.png $pubDir_meta/gaps.txt
 
-echo "Deactivating the frame after its storing to db"
-setFrameInactive.py $frame
+#echo "WARNING - we do not deactivate the frame now..."
+#echo "Deactivating the frame after its storing to db"
+#setFrameInactive.py $frame
 
 
 ##
@@ -339,6 +341,9 @@ setFrameInactive.py $frame
 if [ $DELETEAFTER -eq 1 ];
 then
  cd $thisDir
+ echo "Deactivating the frame after its storing to db"
+ setFrameInactive.py $frame
+ if [ $DELETESLCS -eq 1 ]; then
  echo "Deleting downloaded files (if any)"
  if [ -f $frame/$frame'_todown' ]; then
   for zipf in `cat $frame/$frame'_todown' | rev | cut -d '/' -f1 | rev`; do
@@ -346,6 +351,7 @@ then
     rm -f /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/SLC/$zipf
    fi
   done
+ fi
  fi
  if [ $store_logs -eq 1 ]; then
   echo "storing log files"

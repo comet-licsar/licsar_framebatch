@@ -25,8 +25,8 @@ if [ $code == 'weekly' ] || [ $code == 'monthly' ]; then
   done
   onlyPOD=0;
  else
+  #means... if it is monthly updates..
   onlyPOD=1;
- elif [ $code == 'monthly' ]; then
   updatefile=$batchesdir/alive/$code.txt
   echo "fixing for volc frames that should be included as well"
   for monthlyvolc in `cat $batchesdir/alive/monthly.volc`; do

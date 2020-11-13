@@ -5,7 +5,20 @@ PROCESSING=1
 DAYSTOLERANCE=61
 #DAYSTOLERANCE=961
 #STORE_AND_DELETE=1
-if [ -z $2 ]; then echo "parameters are frame and code (code is either upfill or backfill.. or gapfill)"; exit; fi
+if [ -z $2 ]; then echo "parameters are frame and code (code is either upfill or backfill.. or gapfill)"; 
+    echo "running with parameter -k means Keep the frame in BATCH_CACHE_DIR (not delete it)";
+    exit; fi
+
+storeparam='-S'
+while getopts ":k" option; do
+ case "${option}" in
+  k) storeparam=' ';
+     ;;
+ esac
+done
+#shift
+shift $((OPTIND -1))
+
 frame=$1
 code=$2
 #if [ ! -z $2 ]; then PROCESSING=0; fi
@@ -141,6 +154,6 @@ else
    autodown=1
 fi
 
-echo licsar_make_frame.sh -S $extra $frame 1 $autodown $startdate $enddate
-licsar_make_frame.sh -S -f $extra $frame 1 $autodown $startdate $enddate
+echo licsar_make_frame.sh $storeparam $extra $frame 1 $autodown $startdate $enddate
+licsar_make_frame.sh $storeparam -f $extra $frame 1 $autodown $startdate $enddate
 

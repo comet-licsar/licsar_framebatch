@@ -10,12 +10,6 @@ geocode=0
 waiting=0
 store=0
 ADD36M=1
-prioritise=1
-checkrslc=1
-#quality checker here is the basic one. but still it does problems! e.g. Iceland earthquake - took long to process due to tech complications
-#and just after this was done, this auto-checker detected it as problematic and deleted those wonderful ifgs!!
-#it is all the no-ESD test that is performed over whole image, and not only at the edges of bursts. so rather keep =0
-qualcheck=0
 
 if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_looks] [azimuth_looks]";
                    echo "NBATCH.... number of interferograms to generate per job (licsar defaults to 5)";
@@ -23,11 +17,10 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "range_looks and azimuth_looks - defaults are range_looks="$orig_rlks" and azimuth_looks="$orig_azlks;
 #                  echo "parameter -w ... will wait for the unwrapping jobs to end (useful only if unwrap is running, see licsar_make_frame)";
                    echo "parameter -g ... will run further framebatch step, i.e. geocoding"
-                   echo "parameter -S ... will run store and delete after geocoding.."
-                   echo "parameter -P ... prioritise (run through cpom-comet)"
+#                   echo "parameter -S ... will run store and delete after geocoding.."
                    exit; fi
 
-while getopts ":wgSaP" option; do
+while getopts ":wgSa" option; do
  case "${option}" in
   w ) waiting=1; echo "parameter -w set: will wait for standard unwrapping before ifg gap filling";
 #      shift
@@ -38,28 +31,9 @@ while getopts ":wgSaP" option; do
   S ) store=1; echo "parameter -S set: will store after geocoding";
 #      shift
       ;;
-  P ) prioritise=1; echo "parameter -P set: prioritising through cpom-comet";
-#      shift
-      ;;
   esac
 done
 shift $((OPTIND-1))
-
-if [ $checkrslc -eq 1 ]; then
- if [ -f .processing_it1 ]; then
-  echo "performing check of SLCs"
-  #removing the marker
-  rm .processing_it1
-  numslc=`ls SLC | wc -l` 
-  if [ $numslc -gt 1 ]; then
-   echo "there are "$numslc" SLCs to be coregistered. trying second iteration"
-   ./framebatch_02_coreg_nowait.sh; ./framebatch_03_mk_ifg.sh; ./framebatch_04_unwrap.sh; ./framebatch_05_gap_filling_wait.sh
-   exit
-  else
-   echo "great - all data are coregistered, continuing"
-  fi
- fi
-fi
 
 
 if [ -z $2 ]; then echo "using default value of MAXBtemp="$MAXBTEMP; else MAXBTEMP=$2; fi
@@ -81,12 +55,10 @@ mkdir -p $SCRATCHDIR
 #SCRATCHDIR=/work/scratch-nopw/licsar
 WORKFRAMEDIR=`pwd`
 frame=`pwd | rev | cut -d '/' -f1 | rev`
-if [ $qualcheck -eq 1 ]; then
- echo "first performing a quality check"
- cd ..
- frame_ifg_quality_check.py -l -d $frame
- cd $frame
-fi
+echo "first performing a quality check"
+cd ..
+frame_ifg_quality_check.py -l -d $frame
+cd $frame
 
 echo "Executing gap filling routine (results will be saved in this folder: "$WORKFRAMEDIR" )."
 if [ `echo $frame | cut -c 11` != '_' ]; then echo "ERROR, you are not in FRAME folder. Exiting"; exit; fi
@@ -100,17 +72,8 @@ if [ `echo $frame | cut -c 11` != '_' ]; then echo "ERROR, you are not in FRAME 
 #  #bsubquery='short-serial'
 #fi
 
-if [ $prioritise -eq 1 ]; then
-  bsubquery='cpom-comet'
-  #bsubquery_multi='cpom-comet'
-else
-  bsubncores=1
-  bsubquery='short-serial'
-  #bsubquery_multi='par-single'
-fi
-
 #let's keeping it only for the cpom-comet group...
-#bsubquery='cpom-comet'
+bsubquery='cpom-comet'
 
 rm -r gapfill_job 2>/dev/null
 mkdir gapfill_job
@@ -230,24 +193,12 @@ if [ $nojobs10 -gt 0 ]; then let nojobs=$nojobs+1; fi
 nifgmax=0; waitText=""; waitTextmosaic="";
 if [ -f gapfill_job/tmp_rslcs2mosaic ]; then
  rm gapfill_job/mosaic.sh 2>/dev/null
- mkdir tab  2>/dev/null
- iws=""
- for s in `ls SLC/$master/$master.IW?.slc | cut -d '.' -f2`; do 
-   iws=$iws"'"$s"',";
- done
- if [ ! -f tab/$master'R_tab' ]; then
-   echo "python3 -c \"from gamma_functions import make_SLC_tab; make_SLC_tab('tab/${master}R_tab','RSLC/$master/$master.rslc',[$iws])\"" >> gapfill_job/mosaic.sh
-   echo "python3 -c \"from gamma_functions import make_SLC_tab; make_SLC_tab('tab/${master}_tab','SLC/$master/$master.slc',[$iws])\"" >> gapfill_job/mosaic.sh
-  fi
  for image in `sort -u gapfill_job/tmp_rslcs2mosaic`; do
   #fix nonexisting tabs:
   if [ ! -f tab/$image'R_tab' ]; then
    for f in `ls RSLC/$image/$image.IW?.rslc`; do
     echo "./"$f" ./"$f".par ./"$f".TOPS_par" >> tab/$image'R_tab'
    done
-  fi
-  if [ ! -f tab/$image'R_tab' ]; then
-   echo "python3 -c \"from gamma_functions import make_SLC_tab; make_SLC_tab('tab/${image}R_tab','RSLC/$image/$image.rslc',[$iws])\"" >> gapfill_job/mosaic.sh
   fi
   echo "SLC_mosaic_S1_TOPS tab/$image'R_tab' RSLC/$image/$image.rslc RSLC/$image/$image.rslc.par $rlks $azlks 0 tab/$master'R_tab'" >> gapfill_job/mosaic.sh
  done
@@ -292,12 +243,6 @@ if [ `wc -l gapfill_job/tmp_ifg_todo | gawk {'print $1'}` == 0 ] && [ `wc -l gap
  rm -r gapfill_job
  exit
 fi
-
-
-
-
-
-
  #move it for processing in SCRATCHDIR
  echo "There are "`wc -l gapfill_job/tmp_ifg_todo | gawk {'print $1'}`" interferograms to process and "`wc -l gapfill_job/tmp_unw_todo | gawk {'print $1'}`" to unwrap."
  echo "Preparation phase: copying data to SCRATCH disk (may take long)"
@@ -366,7 +311,7 @@ for job in `seq 1 $nojobs`; do
  if [ -f gapfill_job/ifgjob_$job.sh ]; then
   #weird error in 'job not found'.. workaround:
 #  echo bsub -q $bsubquery -n $bsubncores -W 05:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
-  echo bsub2slurm.sh -q $bsubquery -n 1 -W 05:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
+  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 05:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
   chmod 777 tmptmp; ./tmptmp #>/dev/null
   #this wait text would work for unwrapping to wait for the previous job:
   wait="-w \"ended('"$frame"_ifg_"$job"')\""
@@ -374,7 +319,7 @@ for job in `seq 1 $nojobs`; do
  if [ -f gapfill_job/unwjob_$job.sh ]; then
   #weird error in 'job not found'.. workaround:
 #  echo bsub -q $bsubquery -n $bsubncores -W 08:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
-  echo bsub2slurm.sh -q $bsubquery -n 1 -W 08:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
+  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 08:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
   #echo "debug:"
   #cat tmptmp
   chmod 777 tmptmp
