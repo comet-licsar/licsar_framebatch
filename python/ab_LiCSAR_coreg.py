@@ -153,7 +153,11 @@ def main(argv):
                 #    os.remove(rslc)
 
                 #Finally set rslc status to return code
-                lq.set_rslc_status(row['rslc_id'],rc)
+                try:
+                    lq.set_rslc_status(row['rslc_id'],rc)
+                except:
+                    print('debug 1: error in mysql connection - common after Sep 2020 change in mysql db by JASMIN..')
+                    print('but continuing')
 
                 if rc!=0:
                     shutil.rmtree('./RSLC')
@@ -161,7 +165,11 @@ def main(argv):
             else: # otherwise set status to missing slc
                 lq.set_rslc_status(row['rslc_id'],MISSING_SLC)
 
-            set_lotus_job_status('Cleaning {:%y-%m-%d}'.format(date))
+            try:
+                set_lotus_job_status('Cleaning {:%y-%m-%d}'.format(date))
+            except:
+                print('debug 2: error in mysql connection - common after Sep 2020 change in mysql db by JASMIN..')
+                print('but continuing')
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
         polyID = lq.get_polyid(frameName)
         slc = lq.get_unreq_slc_on_date(polyID,date)

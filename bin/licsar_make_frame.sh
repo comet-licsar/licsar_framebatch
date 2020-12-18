@@ -90,6 +90,9 @@ fi
 # 03/2019 - we started to use scratch-nopw disk as a possible solution for constant stuck job problems
 # after JASMIN update to Phase 4
 if [ ! -d /work/scratch-nopw/licsar/$USER ]; then mkdir /work/scratch-nopw/licsar/$USER; fi
+if [ ! -d /work/scratch-pw/licsar/$USER ]; then mkdir /work/scratch-pw/licsar/$USER; fi
+if [ ! -d $LiCSAR_temp ]; then mkdir -p $LiCSAR_temp; fi
+
 #if [ ! -d /work/scratch/licsar/$USER ]; then mkdir /work/scratch/licsar/$USER; fi
 
 basefolder=$BATCH_CACHE_DIR
@@ -510,7 +513,7 @@ fi
 
 ###################################################### Gap Filling
 echo "Preparing script for gap filling"
-NBATCH=4
+NBATCH=2  #max number of ifgs per job. it was 4 originally..
 gpextra=''
 if [ $NORUN -eq 0 ]; then
  gpextra="-g "
@@ -532,7 +535,7 @@ if [ ! -z \$1 ]; then
   waiting_str=\$waiting_str" && ended("\$stringg")"
  done
  waiting_string=\`echo \$waiting_str | cut -c 4-\`
- echo "bsub2slurm.sh -w '"\$waiting_string"' -q $bsubquery -W 08:00 -n 1 -J framebatch_05_gap_filling_$frame -o LOGS/framebatch_05_gap_filling.out -e LOGS/framebatch_05_gap_filling.err ./framebatch_05_gap_filling.sh" > framebatch_05_gap_filling_wait.sh
+ echo "bsub2slurm.sh -w '"\$waiting_string"' -q $bsubquery -W 10:00 -n 1 -J framebatch_05_gap_filling_$frame -o LOGS/framebatch_05_gap_filling.out -e LOGS/framebatch_05_gap_filling.err ./framebatch_05_gap_filling.sh" > framebatch_05_gap_filling_wait.sh
  chmod 770 framebatch_05_gap_filling_wait.sh
  ./framebatch_05_gap_filling_wait.sh
 else
@@ -664,6 +667,15 @@ pwd
 ls framebatch*.sh
 echo ""
 echo ""
+
+
+
+#some additional rather debug thingz
+mkdir log tab
+master=`ls geo/*.hgt | cut -d '/' -f2 | cut -d '.' -f1`
+if [ ! -f tab/$master'_tab' ]; then
+ cp $LiCSAR_procdir/$track/$frame/tab/$master'_tab' tab/.
+fi
 
 
 

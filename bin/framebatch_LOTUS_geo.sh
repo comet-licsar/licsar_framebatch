@@ -25,6 +25,11 @@ done
 
 #now i need to distribute the list of files to process to $NOPAR files:
 total=`wc -l tmp_to_pub | gawk {'print $1'}`
+if [ -z $total ]; then
+ echo "no new interferograms finished their unwrapping, cancelling now"
+ exit
+fi
+
 #this simple way we get full number of ifgs per job and the rest will be filled afterwards
 let ifgperjob=$total/$NOPAR
 for i in `seq $NOPAR`; do
@@ -43,12 +48,14 @@ fi
 for i in `seq 1 $NOPAR`; do
 cat << EOF > tmp_geocmd_$i'.sh'
 for ifg in \`cat tmp_to_pub_$i\`; do
- create_geoctiffs_to_pub.sh $extracmd -u \`pwd\` \$ifg
+ create_geoctiffs_to_pub.sh $extracmd -a -u \`pwd\` \$ifg
 done
 EOF
 done
 
-chmod 777 tmp_geocmd_*
+
+
+chmod 777 tmp_geocmd*
 
 #echo bsub -q cpom-comet -n $NOPAR blaunch ./tmp_geocmd.sh
 #echo -n $NOPAR blaunch ./tmp_geocmd.sh
@@ -65,5 +72,12 @@ done
 chmod 777 framebatch_geocode_script.sh
 parallel --jobs $NOPAR < framebatch_geocode_script.sh
 #./framebatch_geocode_script.sh
+
+#additionally process MLIs - without parallelisation
+
+for ifg in `cat tmp_to_pub_*`; do
+ create_geoctiffs_to_pub.sh $extracmd -M `pwd` $ifg
+done
+
 
 #mv tmp_geocmd.sh framebatch_geocode_script.sh

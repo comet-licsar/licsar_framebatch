@@ -73,14 +73,23 @@ if [ $rlks != $orig_rlks ] || [ $azlks != $orig_azlks ]; then
 fi
 #NBATCH=5
 NBATCH=$1
+WORKFRAMEDIR=`pwd`
+frame=`pwd | rev | cut -d '/' -f1 | rev`
 master=`basename geo/20??????.hgt .hgt`
 SCRATCHDIR=$LiCSAR_temp/gapfill_temp
-mkdir -p $SCRATCHDIR
+rmdir $SCRATCHDIR/$frame 2>/dev/null
+
+if [ -d $SCRATCHDIR/$frame ]; then
+ echo "ERROR: the gapfill directory already exists:"
+ echo $SCRATCHDIR/$frame
+ echo "please check it yourself and delete manually"
+ exit
+fi
+mkdir -p $SCRATCHDIR/$frame
 
 
 #SCRATCHDIR=/work/scratch-nopw/licsar
-WORKFRAMEDIR=`pwd`
-frame=`pwd | rev | cut -d '/' -f1 | rev`
+
 if [ $qualcheck -eq 1 ]; then
  echo "first performing a quality check"
  cd ..
@@ -258,8 +267,8 @@ if [ ! -f tab/$master'R_tab' ]; then cp tab/$master'_tab' tab/$master'R_tab'; fi
 for job in `seq 1 $nojobs`; do
  let nifg=$nifgmax+1
  let nifgmax=$nifgmax+$NBATCH
- sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_unw_todo > gapfill_job/unwjob_$job
- sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_ifg_todo > gapfill_job/ifgjob_$job
+ sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_unw_todo | sort -u > gapfill_job/unwjob_$job
+ sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_ifg_todo | sort -u > gapfill_job/ifgjob_$job
  if [ `wc -l gapfill_job/ifgjob_$job | gawk {'print $1'}` -eq 0 ]; then rm gapfill_job/ifgjob_$job; else
   #rm gapfill_job/ifgjob_$job.sh 2>/dev/null #just to clean..
   #deal with mosaics here..
@@ -353,7 +362,7 @@ fi
 if [ `echo $waitTextmosaic | wc -w` -gt 0 ]; then
  waitcmdmosaic="-w \""$waitTextmosaic"\""
  echo "..running for missing mosaics"
- bsub2slurm.sh -q $bsubquery -n 1 -W 04:00 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
+ bsub2slurm.sh -q $bsubquery -n 1 -W 06:00 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
  #bsub -q $bsubquery -n 1 -W 04:00 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
 else
  waitcmdmosaic='';
@@ -374,7 +383,7 @@ for job in `seq 1 $nojobs`; do
  if [ -f gapfill_job/unwjob_$job.sh ]; then
   #weird error in 'job not found'.. workaround:
 #  echo bsub -q $bsubquery -n $bsubncores -W 08:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
-  echo bsub2slurm.sh -q $bsubquery -n 1 -W 08:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
+  echo bsub2slurm.sh -q $bsubquery -n 1 -W 12:00 -M 25000 -R "rusage[mem=25000]" -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
   #echo "debug:"
   #cat tmptmp
   chmod 777 tmptmp
