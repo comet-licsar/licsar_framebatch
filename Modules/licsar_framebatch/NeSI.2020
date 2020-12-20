@@ -1,0 +1,35 @@
+#%Module -*- tcl -*-
+## LiCSAR Frame Batch Processor
+
+proc ModulesHelp { } {
+    puts stderr "licsar_framebatch"
+}
+    
+module-whatis "licsar_framebatch"
+    
+    
+if { [module-info mode load] || [module-info mode switch2] } {
+    if { ![is-loaded licsar_proc/NeSI.2020] } {
+        module load licsar_proc/NeSI.2020
+        }
+    }
+prereq licsar_proc
+                
+set gwsSoftwarePath "/nesi/project/gns03165/software"
+
+set LiCSFBpath "$gwsSoftwarePath/licsar_framebatch"
+set configpath "$LiCSFBpath/config"
+ 
+if { [exec hostname -d] == "comet-cpom-S.jasmin.ac.uk" } {
+      set FRAME_BATCH_CONFIG "$configpath/batch.S.cnf"
+      set framebatch_config "$configpath/batch.S.cnf"
+      setenv FRAME_BATCH_CONFIG "$configpath/batch.S.cnf"
+      setenv framebatch_config "$configpath/batch.S.cnf" 
+    } else {
+      setenv FRAME_BATCH_CONFIG "$configpath/batch.cnf"
+      setenv framebatch_config "$configpath/batch.cnf"
+   }
+            
+prepend-path PATH "$LiCSFBpath/bin:$LiCSFBpath/python"
+prepend-path PYTHONPATH "$LiCSFBpath/python"
+
