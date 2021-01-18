@@ -671,11 +671,11 @@ echo ""
 
 
 #some additional rather debug thingz
-mkdir log tab
+mkdir log tab 2>/dev/null
 master=`ls geo/*.hgt | cut -d '/' -f2 | cut -d '.' -f1`
-if [ ! -f tab/$master'_tab' ]; then
- cp $LiCSAR_procdir/$track/$frame/tab/$master'_tab' tab/.
-fi
+#if [ ! -f tab/$master'_tab' ]; then
+cp $LiCSAR_procdir/$track/$frame/tab/$master'_tab' tab/.
+#fi
 
 
 

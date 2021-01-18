@@ -10,6 +10,7 @@ geocode=0
 waiting=0
 store=0
 ADD36M=1
+CHECKSCRATCH=1
 prioritise=1
 checkrslc=1
 #quality checker here is the basic one. but still it does problems! e.g. Iceland earthquake - took long to process due to tech complications
@@ -27,7 +28,7 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -P ... prioritise (run through cpom-comet)"
                    exit; fi
 
-while getopts ":wgSaP" option; do
+while getopts ":wgSaPo" option; do
  case "${option}" in
   w ) waiting=1; echo "parameter -w set: will wait for standard unwrapping before ifg gap filling";
 #      shift
@@ -40,6 +41,8 @@ while getopts ":wgSaP" option; do
       ;;
   P ) prioritise=1; echo "parameter -P set: prioritising through cpom-comet";
 #      shift
+      ;;
+  o ) CHECKSCRATCH=0; echo "skipping check for existing frame on LiCSAR_temp";
       ;;
   esac
 done
@@ -79,11 +82,13 @@ master=`basename geo/20??????.hgt .hgt`
 SCRATCHDIR=$LiCSAR_temp/gapfill_temp
 rmdir $SCRATCHDIR/$frame 2>/dev/null
 
-if [ -d $SCRATCHDIR/$frame ]; then
- echo "ERROR: the gapfill directory already exists:"
- echo $SCRATCHDIR/$frame
- echo "please check it yourself and delete manually"
- exit
+if [ $CHECKSCRATCH -eq 1 ]; then
+ if [ -d $SCRATCHDIR/$frame ]; then
+  echo "ERROR: the gapfill directory already exists:"
+  echo $SCRATCHDIR/$frame
+  echo "please check it yourself and delete manually"
+  exit
+ fi
 fi
 mkdir -p $SCRATCHDIR/$frame
 

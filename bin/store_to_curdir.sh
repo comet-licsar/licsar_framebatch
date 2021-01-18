@@ -230,7 +230,7 @@ if [ $DOGEOC -eq 1 ]; then
  if [ -d $frame/GEOC ]; then
   echo "Moving geoifgs to public folder for frame "$frame
   track=$tr
-  for geoifg in `ls $frame/GEOC/2*_2* -d | rev | cut -d '/' -f1 | rev`; do
+  for geoifg in `ls $frame/GEOC/20??????_20?????? -d | rev | cut -d '/' -f1 | rev`; do
    if [ -f $frame/GEOC/$geoifg/$geoifg.geo.unw.tif ]; then
     if [ -f $pubDir_ifgs/$geoifg/$geoifg.geo.unw.tif ]; then 
       if [ $GEOC_OVERWRITE == 1 ]; then
