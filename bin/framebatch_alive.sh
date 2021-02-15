@@ -21,16 +21,21 @@ for frame in `cat $inputfile`; do
   enddate=`date +%Y-%m-%d`
  fi
 
- tr=`echo $frame | cut -d '_' -f1 | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
- master=`ls $LiCSAR_procdir/$tr/$frame/SLC | head -n1`
+ #debug - delete gapfilling and temp folders
+ rm -rf $LiCSAR_temp/$frame 2>/dev/null
+ rm -rf $LiCSAR_temp/gapfill_temp/$frame 2>/dev/null
 
- #get last epoch based on public interferograms
- lastepoch=`ls $LiCSAR_public/$tr/$frame/interferograms/2*_2* -d | tail -n1 | rev | cut -d '_' -f1 | rev`
- # start date will include at least last three images to process..
- startdate=`date -d $lastepoch'-37 days' +%Y-%m-%d`
-
- licsar_make_frame.sh -S -N $frame 0 1 $startdate $enddate #>$BATCH_CACHE_DIR/volc/auto_volc_$frame.log 2>$BATCH_CACHE_DIR/volc/auto_volc_$frame.err
-
+ if [ $onlyPOD == 1 ]; then
+  framebatch_update_frame.sh $frame upfill
+ else
+  tr=`echo $frame | cut -d '_' -f1 | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
+  master=`ls $LiCSAR_procdir/$tr/$frame/SLC | head -n1`
+  #get last epoch based on public interferograms
+  lastepoch=`ls $LiCSAR_public/$tr/$frame/interferograms/2*_2* -d | tail -n1 | rev | cut -d '_' -f1 | rev`
+  # start date will include at least last three images to process..
+  startdate=`date -d $lastepoch'-37 days' +%Y-%m-%d`
+  licsar_make_frame.sh -S -N $frame 0 1 $startdate $enddate #>$BATCH_CACHE_DIR/volc/auto_volc_$frame.log 2>$BATCH_CACHE_DIR/volc/auto_volc_$frame.err
+ fi
 done
 
 rm $inputfile.lock 2>/dev/null

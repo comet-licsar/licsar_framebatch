@@ -23,6 +23,11 @@ if [ ! -f GEOC/$ifg/$ifg.geo.unw.tif ]; then
 fi
 done
 
+if [ ! -f tmp_to_pub ]; then
+ echo "no (new) ifgs to geocode, cancelling"
+ exit
+fi
+
 #now i need to distribute the list of files to process to $NOPAR files:
 total=`wc -l tmp_to_pub | gawk {'print $1'}`
 if [ -z $total ]; then
