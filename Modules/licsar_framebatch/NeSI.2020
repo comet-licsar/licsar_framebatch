@@ -18,7 +18,8 @@ prereq licsar_proc
 set gwsSoftwarePath "/nesi/project/gns03165/software"
 
 set LiCSFBpath "$gwsSoftwarePath/licsar_framebatch"
-set configpath "$LiCSFBpath/config"
+#set configpath "$LiCSFBpath/config"
+set configpath "/nesi/project/gns03165/geohazards/config/licsar_framebatch"
  
 if { [exec hostname -d] == "comet-cpom-S.jasmin.ac.uk" } {
       set FRAME_BATCH_CONFIG "$configpath/batch.S.cnf"

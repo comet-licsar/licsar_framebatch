@@ -43,7 +43,7 @@ EQR=0
 force=0
 
 
-if [ $USER == 'earmla' ] || [ $USER == 'yma' ]; then 
+if [ $USER == 'earmla' ] || [ $USER == 'yma' ]; then
  prioritise=1
 else
  echo "Note: your query will go through a general queue"
@@ -89,8 +89,7 @@ fi
 
 # 03/2019 - we started to use scratch-nopw disk as a possible solution for constant stuck job problems
 # after JASMIN update to Phase 4
-if [ ! -d /work/scratch-nopw/licsar/$USER ]; then mkdir /work/scratch-nopw/licsar/$USER; fi
-if [ ! -d /work/scratch-pw/licsar/$USER ]; then mkdir /work/scratch-pw/licsar/$USER; fi
+if [ ! -d /nesi/nobackup/gns03165/licsar-tmp/$USER ]; then mkdir /nesi/nobackup/gns03165/licsar-tmp/$USER; fi
 if [ ! -d $LiCSAR_temp ]; then mkdir -p $LiCSAR_temp; fi
 
 #if [ ! -d /work/scratch/licsar/$USER ]; then mkdir /work/scratch/licsar/$USER; fi
@@ -110,7 +109,7 @@ mkdir $LiCSAR_procdir/$track/$frame/LUT 2>/dev/null
 #run only if the frame is not in active processing..
 if [ $force -eq 0 ]; then
   framestatus=`getFrameStatus.py $frame 1`
-  if [ ! $framestatus == 'inactive' ]; then 
+  if [ ! $framestatus == 'inactive' ]; then
     echo "this frame is already active in framebatch.";
     echo "you may either contact user "$framestatus
     echo "or cancel the processing using setFrameInactive.py "$frame
@@ -124,7 +123,7 @@ enddate=`date -d '22 days ago' +%Y-%m-%d`
 #these extra_steps are now just 'export to comet website'
 if [ ! -z $2 ]; then full_scale=$2; else full_scale=0; fi
 if [ ! -z $3 ]; then fillgaps=$3; else fillgaps=$full_scale; fi #ye, if only last 3 months then we should not need fillgaps
-if [ ! -z $4 ]; then 
+if [ ! -z $4 ]; then
  startdate=$4; full_scale=1;
  if [ `echo $startdate | cut -c8` != '-' ]; then echo "You provided wrong startdate: "$startdate; exit; fi
  else startdate="2014-10-01";
@@ -220,7 +219,7 @@ function prepare_job_script {
  stepcmd=$2
  stepsql=$3
  stepprev=$4
- 
+
  rm $step.sh 2>/dev/null
  rm $step'_nowait.sh' 2>/dev/null
  rm $step.list 2>/dev/null
@@ -251,13 +250,13 @@ EOF
  python ./getit.py
  mv getit.py $step.sql
  #too quick to write to disk J
- #wow, 5 seconds waiting was not enough!!!!! 
+ #wow, 5 seconds waiting was not enough!!!!!
  #echo "waiting 10 seconds. Should be enough to synchronize data write from python"
  #echo "(what a problem in the age of supercomputers..)"
  #sleep 10
  #wc -l $step.list
  cat $step.list | grep $USER | grep $frame | sort -n > $step.list2
- mv $step.list2 $step.list 
+ mv $step.list2 $step.list
 fi
 chmod 777 $step.sql
 
@@ -312,13 +311,13 @@ chmod 777 $step.sql
   echo bsub2slurm.sh -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
      -q $bsubquery -n $bsubncores -W $exptime:59 $extrabsub $stepcmd $jobid >> $step'_nowait.sh'
  done
- 
+
  rm tmpText 2>/dev/null
  chmod 770 $step.sh $step'_nowait.sh'
 }
 
 ## MAIN CODE
-############### 
+###############
  if [ $only_new_rslc -eq 1 ]; then
   newrslc=`checkNewRslc.py $frame`
   if [ $newrslc -eq 0 ]; then
@@ -370,7 +369,7 @@ else
     if [ `echo $ifg | cut -d '_' -f1` -ge `echo $startdate | sed 's/-//g'` ]; then
     if [ `echo $ifg | cut -d '_' -f2` -le `echo $enddate | sed 's/-//g'` ]; then
      if [ -f $LiCSAR_public/$track/$frame/interferograms/$ifg/$ifg.geo.unw.tif ]; then
-      if [ ! -d GEOC/$ifg ]; then 
+      if [ ! -d GEOC/$ifg ]; then
        ln -s $LiCSAR_public/$track/$frame/interferograms/$ifg `pwd`/GEOC/$ifg
       fi
      fi
@@ -385,12 +384,12 @@ fi
 #################
  date
  echo "Done. Making the processing queries"
- 
+
 ###################################################### Making images
 ## #to restart, begin here
- 
+
  echo "..preparing the input images using existing data (SLC)"
- 
+
  #getting jobIDs for mk_image:
  step=framebatch_01_mk_image
  stepcmd=ab_LiCSAR_mk_image.py
@@ -402,7 +401,7 @@ fi
  else
   echo "To run this step, use ./"$step".sh"
  fi
- 
+
  realjobno=`cat framebatch_01_mk_image.list | wc -l`
 
 ###################################################### Coregistering
@@ -432,7 +431,7 @@ fi
  #~ stepprev=framebatch_02_coreg
 
  #~ prepare_job_script $step $stepcmd $stepsql $stepprev
- 
+
  #~ waiting_str=''
  #~ for jobid in \`cat tmpbck/framebatch_02_coreg.sh | rev | gawk {'print \$1'} | rev\`; do
   #~ stringg="framebatch_02_coreg_"\$jobid
@@ -475,12 +474,12 @@ fi
 fi
 ###################################################### Make ifgs
  echo "..setting make_ifg job (IFG)"
- 
+
  step=framebatch_03_mk_ifg
  stepcmd=ab_LiCSAR_mk_ifg.py
  stepsql=ifgQry
  stepprev=framebatch_02_coreg
- 
+
  prepare_job_script $step $stepcmd $stepsql $stepprev
  if [ $NORUN -eq 0 ]; then
    if [ -f $step.sh ]; then
@@ -500,7 +499,7 @@ fi
  stepcmd=ab_LiCSAR_unwrap.py
  stepsql=unwQry
  stepprev=framebatch_03_mk_ifg
- 
+
  prepare_job_script $step $stepcmd $stepsql $stepprev
  if [ $NORUN -eq 0 ]; then
   ./$step.sh
@@ -614,7 +613,7 @@ fi
 echo "Preparing script for generating baseline plot"
 #cat << EOF > framebatch_07_baseline_plot.sh
 #queue=cpom-comet;t=12:00
-#bsub2slurm.sh -q $queue -W $t -o pix.out -e pix.err -J pix.txt 
+#bsub2slurm.sh -q $queue -W $t -o pix.out -e pix.err -J pix.txt
 #Jonathan's approach
 #echo "Computing baselines"
 #make_bperp_4_matlab.sh
@@ -624,7 +623,7 @@ echo "Preparing script for generating baseline plot"
 #paste ${frame}_bp.list unwrapped_pixel_percent.list > ${frame}_bp_unw.list
 #echo "Generating baseline plot (takes time..)"
 #parse_list.sh ${frame}_db_query.list > ${frame}_db.list
-#baseline_qc_plot.sh ${frame}_bp_unw.list ${frame} 
+#baseline_qc_plot.sh ${frame}_bp_unw.list ${frame}
 
 cat << EOF > framebatch_07_baseline_plot.sh
 make_bperp_4_matlab.sh
