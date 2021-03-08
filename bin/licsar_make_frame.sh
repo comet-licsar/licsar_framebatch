@@ -89,7 +89,7 @@ fi
 
 # 03/2019 - we started to use scratch-nopw disk as a possible solution for constant stuck job problems
 # after JASMIN update to Phase 4
-if [ ! -d /nesi/nobackup/gns03165/licsar-tmp/$USER ]; then mkdir /nesi/nobackup/gns03165/licsar-tmp/$USER; fi
+if [ ! -d /nesi/nobackup/gns03165/licsar/$USER ]; then mkdir /nesi/nobackup/gns03165/licsar/$USER; fi
 if [ ! -d $LiCSAR_temp ]; then mkdir -p $LiCSAR_temp; fi
 
 #if [ ! -d /work/scratch/licsar/$USER ]; then mkdir /work/scratch/licsar/$USER; fi
