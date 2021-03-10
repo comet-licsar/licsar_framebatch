@@ -290,12 +290,20 @@ chmod 777 $step.sql
   #if [ $bsubquery != "cpom-comet" ]; then
   #extrabsub='-x'
   #else
-  if [ $bsubquery == "cpom-comet" ]; then
+  # on NeSI default memory if none specified is 512MB which doesn't seem to be enough for some steps
+  # here we default to 2GB for all jobs unless overidden below
+  maxmem=4000
+  #if [ $bsubquery == "cpom-comet" ]; then
    if [ $step == "framebatch_02_coreg" ] || [ $step == "framebatch_04_unwrap" ]; then
     maxmem=25000
-    extrabsub='-R "rusage[mem='$maxmem']" -M '$maxmem
+    #extrabsub='-R "rusage[mem='$maxmem']" -M '$maxmem
    fi
+  #fi
+  if [ $step == "framebatch_03_mk_ifg" ]; then
+    maxmem=5000
   fi
+  echo "DEBUG: $step : mem = $maxmem"
+  extrabsub='-R "rusage[mem='$maxmem']" -M '$maxmem
   #get expected time
   notoprocess=`grep -c $jobid $step.list`
   if [ $step == 'framebatch_01_mk_image' ]; then hoursperone=0.9; fi
@@ -458,7 +466,7 @@ if [ ! -z \$1 ]; then
   waiting_str=\$waiting_str" && ended("\$stringg")"
  done
  waiting_string=\`echo \$waiting_str | cut -c 4-\`
- echo "bsub2slurm.sh -w '"\$waiting_string"' -q $bsubquery -W 02:00 -n 1 -J EQR_$frame -o LOGS/EQR.out -e LOGS/EQR.err ./framebatch_eqr.sh" > framebatch_eqr_wait.sh
+ echo "bsub2slurm.sh -w '"\$waiting_string"' -q $bsubquery -W 02:00 -n 1 -M 4000 -J EQR_$frame -o LOGS/EQR.out -e LOGS/EQR.err ./framebatch_eqr.sh" > framebatch_eqr_wait.sh
  chmod 770 framebatch_eqr_wait.sh
  ./framebatch_eqr_wait.sh
 else
@@ -534,7 +542,7 @@ if [ ! -z \$1 ]; then
   waiting_str=\$waiting_str" && ended("\$stringg")"
  done
  waiting_string=\`echo \$waiting_str | cut -c 4-\`
- echo "bsub2slurm.sh -w '"\$waiting_string"' -q $bsubquery -W 10:00 -n 1 -J framebatch_05_gap_filling_$frame -o LOGS/framebatch_05_gap_filling.out -e LOGS/framebatch_05_gap_filling.err ./framebatch_05_gap_filling.sh" > framebatch_05_gap_filling_wait.sh
+ echo "bsub2slurm.sh -w '"\$waiting_string"' -q $bsubquery -W 10:00 -n 1 -M 4000 -J framebatch_05_gap_filling_$frame -o LOGS/framebatch_05_gap_filling.out -e LOGS/framebatch_05_gap_filling.err ./framebatch_05_gap_filling.sh" > framebatch_05_gap_filling_wait.sh
  chmod 770 framebatch_05_gap_filling_wait.sh
  ./framebatch_05_gap_filling_wait.sh
 else
@@ -581,7 +589,7 @@ else
  extracmdgeo=''
 fi
 
-echo "bsub2slurm.sh -q $bsubquery_multi -W 07:00 -J $frame'_geo' -n \$NOPAR -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs_nowait.sh
+echo "bsub2slurm.sh -q $bsubquery_multi -W 07:00 -M 4000 -J $frame'_geo' -n \$NOPAR -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs_nowait.sh
 chmod 770 framebatch_06_geotiffs*.sh
 
 
@@ -592,14 +600,14 @@ for jobid in `cat framebatch_04_unwrap.sh | rev | gawk {'print $1'} | rev`; do
  waiting_str=$waiting_str" && ended("$stringg")"
 done
 waiting_string=`echo $waiting_str | cut -c 4-`
-echo "bsub2slurm.sh -w '"$waiting_string"' -J $frame'_geo' -n \$NOPAR -q $bsubquery_multi -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs.sh
+echo "bsub2slurm.sh -w '"$waiting_string"' -J $frame'_geo' -n \$NOPAR -q $bsubquery_multi -W 08:00 -M 4000 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs.sh
 
 if [ $STORE -eq 1 ]; then
  echo "Making the system automatically store the generated data (for auto update of frames)"
  echo "cd $BATCH_CACHE_DIR" >> framebatch_06_geotiffs_nowait.sh
  echo "echo 'waiting 5 seconds for bjobs to synchronize'" >> framebatch_06_geotiffs_nowait.sh
  echo "sleep 5" >> framebatch_06_geotiffs_nowait.sh
- echo "bsub2slurm.sh -w $frame'_geo' -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore" >> framebatch_06_geotiffs_nowait.sh #$frame
+ echo "bsub2slurm.sh -w $frame'_geo' -q $bsubquery -n 1 -W 06:00 -M 4000 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore" >> framebatch_06_geotiffs_nowait.sh #$frame
  #cd -
 fi
 

@@ -53,7 +53,7 @@ if [ $checkrslc -eq 1 ]; then
   echo "performing check of SLCs"
   #removing the marker
   rm .processing_it1
-  numslc=`ls SLC | wc -l` 
+  numslc=`ls SLC | wc -l`
   if [ $numslc -gt 1 ]; then
    echo "there are "$numslc" SLCs to be coregistered. trying second iteration"
    ./framebatch_02_coreg_nowait.sh; ./framebatch_03_mk_ifg.sh; ./framebatch_04_unwrap.sh; ./framebatch_05_gap_filling_wait.sh
@@ -153,7 +153,7 @@ ls IFG/20*_20??????/*.cc 2>/dev/null | cut -d '/' -f2 > gapfill_job/tmp_ifg_exis
 #rm gapfill_job/tmp_ifg_all2 2>/dev/null
 
 # prepare the 5 combinations in a row
-for FIRST in `cat gapfill_job/tmp_rslcs`; do  
+for FIRST in `cat gapfill_job/tmp_rslcs`; do
  SECOND=`grep -A1 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
  THIRD=`grep -A2 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
  FOURTH=`grep -A3 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
@@ -162,7 +162,7 @@ for FIRST in `cat gapfill_job/tmp_rslcs`; do
   if [ `datediff $FIRST $LAST` -lt $MAXBTEMP ] && [ ! $FIRST == $LAST ]; then
    echo $FIRST'_'$LAST >> gapfill_job/tmp_ifg_all2;
   fi
- done 
+ done
 done
 
 if [ $ADD36M -eq 1 ]; then
@@ -200,7 +200,7 @@ if [ $ADD36M -eq 1 ]; then
        if [ -f gapfill_job/long_ifgs ]; then
          shuf gapfill_job/long_ifgs | head -n $maxconn >> gapfill_job/tmp_ifg_all2
        fi
-       
+
        #sep connections with march next year
        rm gapfill_job/long_ifgs 2>/dev/null
        let year2=$year+1
@@ -246,7 +246,7 @@ if [ -f gapfill_job/tmp_rslcs2mosaic ]; then
  rm gapfill_job/mosaic.sh 2>/dev/null
  mkdir tab  2>/dev/null
  iws=""
- for s in `ls SLC/$master/$master.IW?.slc | cut -d '.' -f2`; do 
+ for s in `ls SLC/$master/$master.IW?.slc | cut -d '.' -f2`; do
    iws=$iws"'"$s"',";
  done
  if [ ! -f tab/$master'R_tab' ]; then
@@ -278,7 +278,7 @@ for job in `seq 1 $nojobs`; do
   #rm gapfill_job/ifgjob_$job.sh 2>/dev/null #just to clean..
   #deal with mosaics here..
   #if [ ! -f tab/$master'R_tab' ]; then cp tab/$master'_tab' tab/$master'R_tab'; fi
-  #for image in `cat gapfill_job/ifgjob_$job`; do 
+  #for image in `cat gapfill_job/ifgjob_$job`; do
   # if [ `grep -c $image gapfill_job/tmp_rslcs2mosaic` -gt 0 ]; then
   #  sed -i '/'$image'/d' gapfill_job/tmp_rslcs2mosaic
   #  echo "SLC_mosaic_S1_TOPS tab/$image'R_tab' RSLC/$image/$image.rslc RSLC/$image/$image.rslc.par $rlks $azlks 0 tab/$master'R_tab'" >> gapfill_job/ifgjob_$job.sh
@@ -334,7 +334,7 @@ fi
  #sed 's/ /_/' gapfill_job/tmp_ifg_todo > gapfill_job/tmp_ifg_copy
  cat gapfill_job/tmp_unw_todo >> gapfill_job/tmp_ifg_copy
  echo "..copying ifgs to unwrap only"
- for ifg in `cat gapfill_job/tmp_unw_todo`; do 
+ for ifg in `cat gapfill_job/tmp_unw_todo`; do
   if [ -d IFG/$ifg ]; then cp -r IFG/$ifg $SCRATCHDIR/$frame/IFG/.; fi;
  done
  if [ $rlks != $orig_rlks ] || [ $azlks != $orig_azlks ]; then
@@ -367,7 +367,7 @@ fi
 if [ `echo $waitTextmosaic | wc -w` -gt 0 ]; then
  waitcmdmosaic="-w \""$waitTextmosaic"\""
  echo "..running for missing mosaics"
- bsub2slurm.sh -q $bsubquery -n 1 -W 06:00 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
+ bsub2slurm.sh -q $bsubquery -n 1 -W 06:00 -M 4000 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
  #bsub -q $bsubquery -n 1 -W 04:00 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
 else
  waitcmdmosaic='';
@@ -380,7 +380,7 @@ for job in `seq 1 $nojobs`; do
  if [ -f gapfill_job/ifgjob_$job.sh ]; then
   #weird error in 'job not found'.. workaround:
 #  echo bsub -q $bsubquery -n $bsubncores -W 05:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
-  echo bsub2slurm.sh -q $bsubquery -n 1 -W 05:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
+  echo bsub2slurm.sh -q $bsubquery -n 1 -W 05:00 -M 4000 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
   chmod 777 tmptmp; ./tmptmp #>/dev/null
   #this wait text would work for unwrapping to wait for the previous job:
   wait="-w \"ended('"$frame"_ifg_"$job"')\""
@@ -416,7 +416,7 @@ fi
 echo "rm -rf $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 chmod 770 $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #workaround for 'Empty job. Job not submitted'
-echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
+echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmd -W 08:00 -M 4000 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
 #echo bsub -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
 #echo "debug last:"
 #cat $WORKFRAMEDIR/gapfill_job/tmptmp
