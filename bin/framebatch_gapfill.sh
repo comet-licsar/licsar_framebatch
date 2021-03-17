@@ -367,7 +367,7 @@ fi
 if [ `echo $waitTextmosaic | wc -w` -gt 0 ]; then
  waitcmdmosaic="-w \""$waitTextmosaic"\""
  echo "..running for missing mosaics"
- bsub2slurm.sh -q $bsubquery -n 1 -W 06:00 -M 4000 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
+ bsub2slurm.sh -q $bsubquery -n 1 -W 06:00 -M 8000 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
  #bsub -q $bsubquery -n 1 -W 04:00 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
 else
  waitcmdmosaic='';
@@ -380,7 +380,7 @@ for job in `seq 1 $nojobs`; do
  if [ -f gapfill_job/ifgjob_$job.sh ]; then
   #weird error in 'job not found'.. workaround:
 #  echo bsub -q $bsubquery -n $bsubncores -W 05:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
-  echo bsub2slurm.sh -q $bsubquery -n 1 -W 05:00 -M 4000 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
+  echo bsub2slurm.sh -q $bsubquery -n 1 -W 05:00 -M 8000 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
   chmod 777 tmptmp; ./tmptmp #>/dev/null
   #this wait text would work for unwrapping to wait for the previous job:
   wait="-w \"ended('"$frame"_ifg_"$job"')\""
@@ -416,7 +416,7 @@ fi
 echo "rm -rf $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 chmod 770 $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #workaround for 'Empty job. Job not submitted'
-echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmd -W 08:00 -M 4000 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
+echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmd -W 08:00 -M 8000 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
 #echo bsub -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
 #echo "debug last:"
 #cat $WORKFRAMEDIR/gapfill_job/tmptmp

@@ -4,9 +4,9 @@ module load LiCSBAS
 
 curdir=$LiCSAR_procdir
 public=$LiCSAR_public
-if [ -z $1 ]; then 
+if [ -z $1 ]; then
  echo "Parameter: *_*_* frame folder.. MUST BE IN THIS FOLDER";
- echo "full parameters are:"; 
+ echo "full parameters are:";
  echo "store_to_curdir.sh FRAME [DELETEAFTER] [OVERWRITE]";
  echo "defaults are 0 0"
  exit;
@@ -15,7 +15,7 @@ if [ -z $1 ]; then
 if [ ! -d $frame ]; then echo "framedir does not exist - are you be in the \$BATCH_CACHE_DIR \?"; exit; fi
 
 #check for changed frame IDs
-framechanges=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/frameid_changes.txt
+framechanges=/nesi/project/gns03165/geohazards/public/LiCSAR_products/frameid_changes.txt
 if [ `grep -c ^$frame $framechanges` -gt 0 ]; then
  echo "the frame ID has changed:"
  grep $frame $framechanges
@@ -232,7 +232,7 @@ if [ $DOGEOC -eq 1 ]; then
   track=$tr
   for geoifg in `ls $frame/GEOC/20??????_20?????? -d | rev | cut -d '/' -f1 | rev`; do
    if [ -f $frame/GEOC/$geoifg/$geoifg.geo.unw.tif ]; then
-    if [ -f $pubDir_ifgs/$geoifg/$geoifg.geo.unw.tif ]; then 
+    if [ -f $pubDir_ifgs/$geoifg/$geoifg.geo.unw.tif ]; then
       if [ $GEOC_OVERWRITE == 1 ]; then
        echo "warning, geoifg "$geoifg" already exists. Data will be overwritten";
       else
@@ -244,7 +244,7 @@ if [ $DOGEOC -eq 1 ]; then
     mkdir -p $pubDir_ifgs/$geoifg 2>/dev/null
     chmod 774 $pubDir_ifgs/$geoifg 2>/dev/null
     #chgrp gws_lics_admin $pubDir_ifgs/$geoifg 2>/dev/null
-    
+
     # update this for unfiltered ones..
     for toexp in cc.png cc.tif cc.full.png diff.png diff.full.png diff_unfiltered.png diff_unfiltered.full.png diff_unfiltered_pha.tif diff_pha.tif unw.png unw.full.png unw.tif disp_blk.png; do
        if [ -f $frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
@@ -255,7 +255,7 @@ if [ $DOGEOC -eq 1 ]; then
          if [ $GOON == 1 ]; then
          #this condition is to NOT TO OVERWRITE the GEOC results. But it makes sense to overwrite them 'always'
          #if [ ! -f $public/$tr/$frame/products/$geoifg/$geoifg.geo.$toexp ]; then
-          if [ $MOVE -eq 1 ]; then 
+          if [ $MOVE -eq 1 ]; then
            mv $frame/GEOC/$geoifg/$geoifg.geo.$toexp $pubDir_ifgs/$geoifg/.
           else
            cp $frame/GEOC/$geoifg/$geoifg.geo.$toexp $pubDir_ifgs/$geoifg/.
@@ -347,8 +347,11 @@ then
  echo "Deleting downloaded files (if any)"
  if [ -f $frame/$frame'_todown' ]; then
   for zipf in `cat $frame/$frame'_todown' | rev | cut -d '/' -f1 | rev`; do
-   if [ -f /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/SLC/$zipf ]; then
-    rm -f /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/SLC/$zipf
+#   if [ -f /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/SLC/$zipf ]; then
+#    rm -f /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/SLC/$zipf
+#   fi
+   if [ -f /nesi/nobackup/gns03165/LiCS/temp/SLC/$zipf ]; then
+    rm -f /nesi/nobackup/gns03165/LiCS/temp/SLC/$zipf
    fi
   done
  fi
