@@ -300,7 +300,7 @@ chmod 777 $step.sql
    fi
   #fi
   if [ $step == "framebatch_03_mk_ifg" ]; then
-    maxmem=5000
+    maxmem=8000
   fi
   echo "DEBUG: $step : mem = $maxmem"
   extrabsub='-R "rusage[mem='$maxmem']" -M '$maxmem
