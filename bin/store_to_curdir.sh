@@ -1,14 +1,16 @@
 #!/bin/bash
 #curdir=/gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current
 module load LiCSBAS
+source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 
+today=`date +%Y%m%d`
 curdir=$LiCSAR_procdir
 public=$LiCSAR_public
 if [ -z $1 ]; then 
  echo "Parameter: *_*_* frame folder.. MUST BE IN THIS FOLDER";
  echo "full parameters are:"; 
- echo "store_to_curdir.sh FRAME [DELETEAFTER] [OVERWRITE]";
- echo "defaults are 0 0"
+ echo "store_to_curdir.sh FRAME [DELETEAFTER] [OVERWRITE] [DOGACOS]";
+ echo "defaults are 0 0 0"
  exit;
  else frame=`basename $1`; fi
 
@@ -16,6 +18,10 @@ if [ ! -d $frame ]; then echo "framedir does not exist - are you be in the \$BAT
 
 #check for changed frame IDs
 framechanges=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/frameid_changes.txt
+list_added=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/updates/`date +'%Y%m%d'`.added
+
+if [ ! -f $list_added ]; then touch $list_added; chmod 777 $list_added; fi
+
 if [ `grep -c ^$frame $framechanges` -gt 0 ]; then
  echo "the frame ID has changed:"
  grep $frame $framechanges
@@ -31,6 +37,8 @@ DORSLC=1
 KEEPRSLC=1
 DOGEOC=1
 DOIFG=1
+#let's request gacos data if we do DELETEAFTER..
+DOGACOS=0
 #previously the default was to overwrite...
 GEOC_OVERWRITE=0
 IFG_OVERWRITE=0
@@ -41,8 +49,9 @@ store_logs=1 #for autodelete only
 
 #second parameter - if 1, then delete after storing
 #third parameter - if 0, then disable overwriting of GEOC and IFG files
-if [ ! -z $2 ]; then if [ $2 -eq 1 ]; then DELETEAFTER=1; store_logs=1; MOVE=1; echo "setting to delete"; fi; fi
+if [ ! -z $2 ]; then if [ $2 -eq 1 ]; then DELETEAFTER=1; store_logs=1; MOVE=1; DOGACOS=1; echo "setting to delete (and to perform GACOS)"; fi; fi
 if [ ! -z $3 ]; then if [ $3 -eq 0 ] || [ $3 -eq 1 ]; then GEOC_OVERWRITE=$3; IFG_OVERWRITE=$3; echo "overwrite switched to "$3; fi; fi
+if [ ! -z $4 ]; then if [ $4 -eq 0 ] || [ $4 -eq 1 ]; then DOGACOS=$4; echo "DOGACOS switched to "$4; fi; fi
 #have to remove this line ASAP:
 #DELETEAFTER=0
 
@@ -78,7 +87,7 @@ if [ $DORSLC -eq 1 ]; then
   #first of all check and move last three RSLCs - if they are full-bursted
   if [ $KEEPRSLC -eq 1 ]; then
     #check only last 10 rslcs
-    ls $frame/RSLC/20?????? -d | cut -d '/' -f3 | head -n 10 > temp_$frame'_keeprslc'
+    ls $frame/RSLC/20?????? -d | cut -d '/' -f3 | tail -n 10 > temp_$frame'_keeprslc'
     master=`ls $frame/geo/20??????.hgt | cut -d '.' -f1 | cut -d '/' -f3`
     mastersize=`grep azimuth_lines $frame/SLC/$master/$master.slc.par | gawk {'print $2'}`
     sed -i '/'$master'/d' temp_$frame'_keeprslc'
@@ -88,8 +97,8 @@ if [ $DORSLC -eq 1 ]; then
       fi
     done
     for date in `sort -r temp_$frame'_keeprslc' | head -n2`; do
-     #let's keep only newer 2 ones
-     if [ $date -gt $master ]; then
+     #let's keep only newer 2 ones - and if the datediff is at least 21 days... (precise orbits)
+     if [ $date -gt $master ] && [ `datediff $date $today` -ge 21 ]; then
       #these should be kept in RSLC folder!
       out7z=$frameDir/RSLC/$date.7z
       if [ ! -f $out7z ]; then
@@ -123,7 +132,7 @@ if [ $DORSLC -eq 1 ]; then
      if [ ! -d $frameDir/RSLC/$date ] && [ ! -f $frameDir/RSLC/$date.7z ]; then
       cd $frame/RSLC
       #cleaning the folder
-      if [ `ls $date/*.lt 2>/dev/null | wc -w` -gt 0 ]; then
+      if [ `ls $date/*.lt 2>/dev/null | wc -w` -gt 0 ] && [ `datediff $date $today` -ge 21 ]; then
        mkdir -p $frameDir/LUT
        chmod 774 $frameDir/LUT 2>/dev/null
        chgrp gws_lics_admin $frameDir/LUT 2>/dev/null
@@ -261,8 +270,9 @@ if [ $DOGEOC -eq 1 ]; then
            cp $frame/GEOC/$geoifg/$geoifg.geo.$toexp $pubDir_ifgs/$geoifg/.
           fi
          #fi
+          echo $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp >> $list_added 2>/dev/null
           chmod 664 $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp 2>/dev/null
-          #chgrp gws_lics_admin $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp 2>/dev/null
+          chgrp gws_lics_admin $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp 2>/dev/null
          fi
        fi
     done
@@ -291,6 +301,7 @@ if [ $DOGEOC -eq 1 ]; then
       else
        cp $frame/GEOC.MLI/$img/$img.geo.$toexp $pubDir_epochs/$img/.
       fi
+      echo $pubDir_epochs/$img/$img.geo.$toexp >> $list_added 2>/dev/null
       chmod 664 $pubDir_epochs/$img/$img.geo.$toexp 2>/dev/null
       #chgrp gws_lics_admin $pubDir_epochs/$img/$img.geo.$toexp 2>/dev/null
      fi
@@ -367,6 +378,12 @@ then
 # nla.py expire $nlareqid
 #done
 
+fi
+
+
+if [ $DOGACOS -eq 1 ]; then
+ echo "requesting GACOS data - in the background, please run in tmux or keep session alive for HOURS"
+ framebatch_update_gacos.sh $frame >/dev/null 2>/dev/null &
 fi
 
 echo "done"

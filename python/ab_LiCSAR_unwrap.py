@@ -30,23 +30,42 @@ BUILT=0
 MISSING_IFG=-2
 EXCEPTION=-3
 BUILDING=-5
+
+############### 2021 - adding geo unwrapping
+#if false, keep the old way - may be bit more precise, but may take ages to finish...
+
+unwrap_in_geo = True
+
 ################################################################################
 #SLC env class
 ################################################################################
-class UnwrapEnv(LicsEnv):
-    def __init__(self,jobID,frame,mstrDate,dateA,dateB,cacheDir,tempDir):
-        LicsEnv.__init__(self,jobID,frame,cacheDir,tempDir)
-        self.srcPats = ['IFG/{0:%Y%m%d}_{1:%Y%m%d}.*'.format(dateA,dateB), 
-                'SLC/{:%Y%m%d}.*'.format(mstrDate),
-                'geo','DEM','log/snaphu.conf','local_config.py']
+if unwrap_in_geo:
+    class UnwrapEnv(LicsEnv):
+        def __init__(self,jobID,frame,mstrDate,dateA,dateB,cacheDir,tempDir):
+            LicsEnv.__init__(self,jobID,frame,cacheDir,tempDir)
+            self.srcPats = ['GEOC/{0:%Y%m%d}_{1:%Y%m%d}.*'.format(dateA,dateB), 
+                    'SLC/{:%Y%m%d}.*'.format(mstrDate),
+                    'geo','log/snaphu.conf','local_config.py']
+            self.outPats = ['GEOC.*', # Patterns to output
+                            'log.*',
+                            'tab.*']
+            self.srcIFGPath = 'GEOC/{0:%Y%m%d}_{1:%Y%m%d}'.format(dateA,dateB)
+            self.newDirs = ['tab','log'] # empty directories to create
+            self.cleanDirs = ['./GEOC','./tab'] # Directories to clean on failure
+else:
+    class UnwrapEnv(LicsEnv):
+        def __init__(self,jobID,frame,mstrDate,dateA,dateB,cacheDir,tempDir):
+            LicsEnv.__init__(self,jobID,frame,cacheDir,tempDir)
+            self.srcPats = ['IFG/{0:%Y%m%d}_{1:%Y%m%d}.*'.format(dateA,dateB), 
+                    'SLC/{:%Y%m%d}.*'.format(mstrDate),
+                    'geo','DEM','log/snaphu.conf','local_config.py']
+            self.outPats = ['IFG.*', # Patterns to output
+                            'log.*',
+                            'tab.*']
+            self.srcIFGPath = 'IFG/{0:%Y%m%d}_{1:%Y%m%d}'.format(dateA,dateB)
+            self.newDirs = ['tab','log'] # empty directories to create
+            self.cleanDirs = ['./IFG','./tab'] # Directories to clean on failure
 
-        self.outPats = ['IFG.*', # Patterns to output
-                        'log.*',
-                        'tab.*']
-
-        self.srcIFGPath = 'IFG/{0:%Y%m%d}_{1:%Y%m%d}'.format(dateA,dateB)
-        self.newDirs = ['tab','log'] # empty directories to create
-        self.cleanDirs = ['./IFG','./tab'] # Directories to clean on failure
 
 ################################################################################
 #Main
@@ -97,7 +116,16 @@ def main(argv):
                 ifgName = '{0:%Y%m%d}_{1:%Y%m%d}'.format(dateA,dateB)
                 lq.set_unw_status(row['unw_id'],BUILDING) #building status
                 set_lotus_job_status('Building {:%y-%m-%d}->{:%y-%m-%d}'.format(dateA, dateB))
-                rc = do_unwrapping(mstrDate.strftime('%Y%m%d'),ifgName,'./IFG','.',lq,-1)
+                if not unwrap_in_geo:
+                    rc = do_unwrapping(mstrDate.strftime('%Y%m%d'),ifgName,'./IFG','.',lq,-1)
+                    if rc == 0:
+                        ifgPerc = get_ifg_perc_unwrapd(dateA,dateB)
+                        lq.set_unw_perc_unwrpd(row['unw_id'],ifgPerc)
+                else:
+                    rc = unwrap_geo(os.getcwd(), frameName, ifgName)
+                    #if rc == 0:
+                    #    ifgPerc = get_ifg_perc_unwrapd(dateA,dateB)
+                    #    lq.set_unw_perc_unwrpd(row['unw_id'],ifgPerc)
                 #Finally set ifg status to return code
                 lq.set_unw_status(row['unw_id'],rc)
 

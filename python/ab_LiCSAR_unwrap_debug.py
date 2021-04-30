@@ -23,6 +23,10 @@ from LiCSAR_lib.unwrp_lib import *
 #os.environ['OMP_NUM_THREADS'] = str(cpu_count())
 os.environ['OMP_NUM_THREADS'] = str(1)
 
+
+unwrap_in_geo = True
+
+
 ################################################################################
 #Status Codes
 ################################################################################
@@ -83,13 +87,17 @@ def main(argv):
         ifgName = '{0:%Y%m%d}_{1:%Y%m%d}'.format(dateA,dateB)
         lq.set_unw_status(row['unw_id'],BUILDING) #building status
                 #set_lotus_job_status('Building {:%y-%m-%d}->{:%y-%m-%d}'.format(dateA, dateB))
-        rc = do_unwrapping(mstrDate.strftime('%Y%m%d'),ifgName,'./IFG','.',lq,-1)
+        if not unwrap_in_geo:
+            rc = do_unwrapping(mstrDate.strftime('%Y%m%d'),ifgName,'./IFG','.',lq,-1)
+            if rc == 0:
+                ifgPerc = get_ifg_perc_unwrapd(dateA,dateB)
+                lq.set_unw_perc_unwrpd(row['unw_id'],ifgPerc)
+        else:
+            rc = unwrap_geo('.', frameName, ifgName)
                 #Finally set ifg status to return code
         lq.set_unw_status(row['unw_id'],rc)
 
-        if rc == 0:
-            ifgPerc = get_ifg_perc_unwrapd(dateA,dateB)
-            lq.set_unw_perc_unwrpd(row['unw_id'],ifgPerc)
+
         #else: # otherwise set status to missing rslc
         #    lq.set_unw_status(row['unw_id'],MISSING_IFG)
                 

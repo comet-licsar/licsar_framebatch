@@ -21,11 +21,13 @@ if [ -z $1 ]; then
  echo "Additional parameters (must be put DIRECTLY AFTER the command, before other/main parameters):"
  echo "-n ............... norun (processing scripts are generated but they will not start automatically)"
  echo "-c ............... perform check if files are in neodc and ingested to licsar database (no download performed)"
- #echo "-S ............... store to lics database - ONLY FOR EARMLA"
+ echo "-S ............... store to lics database - CAREFUL WITH THIS (only for admins)"
+ #echo "-G ............... update GACOS data after store to lics database"
  echo "-f ............... force processing in case the frame is already running in framebatch"
  echo "-E ............... after resampling, move to an area for copying to ARC4 EIDP"
  echo "-N ............... check if there are new acquisitions since the last run. If not, will cancel the processing"
- echo "-P ............... prioritise... i.e. run on cpom-comet queue (default: use short-serial where needed)"
+ echo "-P ............... prioritise... i.e. run on comet queue (default: use short-serial where needed)"
+ #echo "-R ............... prioritise through comet_responder queue"
 # echo "-k YYYY-MM-DD .... generate kml for the ifg pairs containing given date (e.g. earthquake..)"
  #echo "geocode_to_public_website=0"
  exit;
@@ -39,15 +41,17 @@ STORE=0
 #according to CEDA, it should be ncores=16, i.e. one process per core. I do not believe it though. So keeping ncores=1.
 #bsubncores=16
 bsubncores=1
+prioritise_nrt=0
 EQR=0
 force=0
-
+#this switch is only working together with auto-store
+dogacos=0
 
 if [ $USER == 'earmla' ] || [ $USER == 'yma' ]; then 
  prioritise=1
 else
  echo "Note: your query will go through a general queue"
- echo "(but you may use -P parameter if you are in desperate AGU rush as we are..)"
+ echo "(but you may use -P parameter to run through comet queue..)"
  prioritise=0
 fi
 
@@ -55,7 +59,7 @@ fi
 #options to be c,n,S
 #option=`echo $1 | rev | cut -d '-' -f1 | rev`
 #case $option in
-while getopts ":cnSEfNP" option; do
+while getopts ":cnSEfNPRG" option; do
  case "${option}" in
   c) neodc_check=1; echo "performing check if files exist in neodc and are ingested to licsar db";
      ;;
@@ -68,11 +72,16 @@ while getopts ":cnSEfNP" option; do
   fi
      NORUN=0;
      ;;
+  G) dogacos=1; echo "after store-to-curdir, we will also update GACOS data";
+     ;;
   E) EQR=1; echo "option to make it ready for Earthquake Responder";
+     prioritise_nrt=1; #make it through comet_responder
      ;;
   f) force=1; echo "bypassing check of existing processing of the frame";
      ;;
-  P) prioritise=1; echo "prioritising - using cpom-comet queue in all steps";
+  P) prioritise=1; echo "prioritising - using comet queue in all steps";
+     ;;
+  R) prioritise_nrt=1; echo "prioritising through comet_responder";
      ;;
   N) only_new_rslc=1; echo "Checking if new images appeared since the last processing";
      ;;
@@ -86,6 +95,40 @@ if [ -z $BATCH_CACHE_DIR ] || [ ! -d $BATCH_CACHE_DIR ]; then
  echo "There is no BATCH_CACHE_DIR existing. Did you define it properly?"
  exit
 fi
+
+#2021/02 - fix to have batchdir at LiCSAR_temp
+if [ -z $LiCSAR_temp ]; then
+ echo "LiCSAR_temp not set - did you do module load licsar_framebatch?"
+ exit
+fi
+
+#while [ -f $BATCH_CACHE_DIR'.lock' ]; do
+# echo "batchdir locked by other sync process, wait"
+# echo "or just do: rm "$BATCH_CACHE_DIR'.lock'
+# sleep 1000
+#done
+#if [ ! -d $LiCSAR_temp/batchdir ] || [ ! -L $BATCH_CACHE_DIR ]; then
+#if [ ! -d $LiCSAR_temp/batchdir ]; then
+# echo "update 02/2021: moving your batchdir automatically to LiCSAR_temp - and linking so it would not do a change to you."
+# echo "please wait - depending on the size, this operation can take 10s minutes"
+# echo "(you can of course cancel anytime, but it will start again with licsar_make_frame.sh)"
+# echo "... but also note that data in BATCH_CACHE_DIR will now be deleted in 3 (?) months"
+# touch $BATCH_CACHE_DIR'.lock' 2>/dev/null
+# mkdir $LiCSAR_temp/batchdir 2>/dev/null
+# rsync -r -l $BATCH_CACHE_DIR/* $LiCSAR_temp/batchdir 2>/dev/null
+# echo "data sync finished, updating the BATCH_CACHE_DIR now"
+# mv $BATCH_CACHE_DIR $BATCH_CACHE_DIR'.temp'
+# ln -s $LiCSAR_temp/batchdir $BATCH_CACHE_DIR
+# rm $BATCH_CACHE_DIR'.lock' 2>/dev/null
+#fi
+#if [ -d $BATCH_CACHE_DIR'.temp' ]; then
+# echo "rsyncing once again"
+# rsync -r -l $BATCH_CACHE_DIR'.temp'/* $LiCSAR_temp/batchdir 2>/dev/null
+# rm -rf $BATCH_CACHE_DIR'.temp'
+# rm $BATCH_CACHE_DIR'.lock' 2>/dev/null
+#fi
+
+#export BATCH_CACHE_DIR=$LiCSAR_temp/batchdir
 
 # 03/2019 - we started to use scratch-nopw disk as a possible solution for constant stuck job problems
 # after JASMIN update to Phase 4
@@ -159,13 +202,19 @@ fi
 
 #decide for query based on user rights
 if [ $prioritise -eq 1 ]; then
-  bsubquery='cpom-comet'
-  bsubquery_multi='cpom-comet'
+  bsubquery='comet'
+  bsubquery_multi='comet'
 else
   bsubncores=1
   bsubquery='short-serial'
   bsubquery_multi='par-single'
 fi
+#but actually if this is for earthquake responder, put it to comet_responder:
+if [ $prioritise_nrt -eq 1 ]; then
+ bsubquery='comet_responder'
+ bsubquery_multi='comet_responder'
+fi
+
 #if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
 #  bsubquery='cpom-comet'
 # else
@@ -515,9 +564,12 @@ fi
 echo "Preparing script for gap filling"
 NBATCH=2  #max number of ifgs per job. it was 4 originally..
 gpextra=''
-if [ $NORUN -eq 0 ]; then
- gpextra="-g "
-fi
+#added skipping of check for existing scratchdir/frame for gapfilling - just automatically delete it...
+gpextra='-o '
+#if [ $NORUN -eq 0 ]; then
+ #update 04/2021 - use of geocoded products
+# gpextra=$gpextra"-g "
+#fi
 if [ $NORUN -eq 0 ] && [ $STORE -eq 1 ]; then
  gpextra=$gpextra"-S "
  touch .processing_it1
@@ -593,14 +645,17 @@ for jobid in `cat framebatch_04_unwrap.sh | rev | gawk {'print $1'} | rev`; do
  waiting_str=$waiting_str" && ended("$stringg")"
 done
 waiting_string=`echo $waiting_str | cut -c 4-`
-echo "bsub2slurm.sh -w '"$waiting_string"' -J $frame'_geo' -n \$NOPAR -q $bsubquery_multi -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs.sh
+#echo "bsub2slurm.sh -w '"$waiting_string"' -J $frame'_geo' -n \$NOPAR -q $bsubquery_multi -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs.sh
+#echo "bsub2slurm.sh -w '"$waiting_string"' -J $frame'_geo' -n \$NOPAR -q $bsubquery_multi -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs.sh
 
 if [ $STORE -eq 1 ]; then
  echo "Making the system automatically store the generated data (for auto update of frames)"
  echo "cd $BATCH_CACHE_DIR" >> framebatch_06_geotiffs_nowait.sh
- echo "echo 'waiting 5 seconds for bjobs to synchronize'" >> framebatch_06_geotiffs_nowait.sh
- echo "sleep 5" >> framebatch_06_geotiffs_nowait.sh
- echo "bsub2slurm.sh -w $frame'_geo' -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore" >> framebatch_06_geotiffs_nowait.sh #$frame
+ #echo "echo 'waiting 60 seconds for jobs to synchronize'" >> framebatch_06_geotiffs_nowait.sh
+ #echo "sleep 60" >> framebatch_06_geotiffs_nowait.sh
+ echo "bsub2slurm.sh -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore 0 $dogacos" >> framebatch_06_geotiffs_nowait.sh #$frame
+ echo "bsub2slurm.sh -w '"$waiting_string"' -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore 0 $dogacos" >> framebatch_06_geotiffs.sh #$frame
+ #echo "bsub2slurm.sh -w $frame'_geo' -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore" >> framebatch_06_geotiffs_nowait.sh #$frame
  #cd -
 fi
 

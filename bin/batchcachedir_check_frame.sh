@@ -2,8 +2,6 @@
 PROC=0
 if [ -z $1 ]; then echo "set parameter - frame"; exit; fi
 frame=$1
-master=`ls $frame/geo/*.hgt 2>/dev/null | cut -d '.' -f1 | cut -d '/' -f3`
-if [ ! -f $frame/geo/$master.hgt ]; then master=''; fi
 if [ ! -z $2 ]; then PROC=$2; fi
 #cd $BATCH_CACHE_DIR
 todel=0
@@ -13,9 +11,6 @@ todel=0
   else
    slcdates=`ls $frame/SLC | wc -l`
    rslcdates=`ls $frame/RSLC | wc -l`
-   if [ $slcdates -gt 1 ] && [ $rslcdates -gt 1 ] && [ ! -z $master ]; then 
-    for x in `ls $frame/RSLC`; do if [ -d $frame/SLC/$x ]; then if [ ! $x == $master ] && [ ! -f $frame/RSLC/$x/$x.lock ]; then rm -rf $frame/SLC/$x; fi; fi; done
-   fi
    if [ $slcdates -gt 1 ]; then echo "this frame has SLCs to process: "$frame;
          if [ $PROC == 1 ]; then
            batchcachedir_reprocess_from_slcs.sh $frame
@@ -48,7 +43,7 @@ todel=0
         fi
        else
         geocdates=`ls $frame/GEOC | wc -l`
-        if [ ! $ifgdates==$geocdates ]; then
+        if [ ! $ifgdates == $geocdates ]; then
          echo "this frame should be geocoded: "$frame
          if [ $PROC == 1 ]; then
            batchcachedir_reprocess_ifgs.sh $frame

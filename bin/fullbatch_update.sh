@@ -76,7 +76,7 @@ elif [ $code == 'gapfill' ]; then
  batchfile=$batchesdir/gapfill/gapfill.txt
  for frame in `cat $batchfile`; do
   echo "gapfilling - only the first identified gap"
-  nohup framebatch_update_frame_dogap.sh $frame $batchesdir/$code/$todayymd'_'$frame'.gaps' 1 $batchfile > $batchesdir/$code/$todayymd'_'$frame'.log' &
+  nohup framebatch_update_frame_dogap.sh $frame $batchesdir/$code/$todayymd'_'$frame'.gaps' 0 $batchfile > $batchesdir/$code/$todayymd'_'$frame'.log' &
   sleep 900
  done
 else

@@ -13,6 +13,9 @@ ADD36M=1
 CHECKSCRATCH=1
 prioritise=1
 checkrslc=1
+ifg_combinations=4
+
+
 #quality checker here is the basic one. but still it does problems! e.g. Iceland earthquake - took long to process due to tech complications
 #and just after this was done, this auto-checker detected it as problematic and deleted those wonderful ifgs!!
 #it is all the no-ESD test that is performed over whole image, and not only at the edges of bursts. so rather keep =0
@@ -26,6 +29,7 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -g ... will run further framebatch step, i.e. geocoding"
                    echo "parameter -S ... will run store and delete after geocoding.."
                    echo "parameter -P ... prioritise (run through cpom-comet)"
+                   echo "parameter -o ... no check if gapfill dir exists - DO NOT USE IF NOT SURE WHETHER ANOTHER GAPFILL IN PROGRESS"
                    exit; fi
 
 while getopts ":wgSaPo" option; do
@@ -49,6 +53,16 @@ done
 shift $((OPTIND-1))
 
 if [ $checkrslc -eq 1 ]; then
+ #to fix situation when RSLCs already exist...
+ master=`ls geo/????????.hgt | cut -d '/' -f2 | cut -d '.' -f1`
+ for slc in `ls SLC`; do
+  if [ ! $master == $slc ]; then
+    if [ -d RSLC/$slc ]; then
+      #echo "to remove: "$slc
+      rm -rf SLC/$slc
+    fi
+  fi
+ done
  if [ -f .processing_it1 ]; then
   echo "performing check of SLCs"
   #removing the marker
@@ -77,6 +91,15 @@ fi
 #NBATCH=5
 NBATCH=$1
 WORKFRAMEDIR=`pwd`
+if [ -f local_config.py ]; then
+ noifg=`grep '^ifg_connections' local_config.py | cut -d '=' -f2`
+ if [ ! -z $noifg ]; then
+  ifg_combinations=$noifg
+  echo "setting custom ifg combination number to "$ifg_combinations
+ fi
+fi
+# ifg_combinations=
+#fi
 frame=`pwd | rev | cut -d '/' -f1 | rev`
 master=`basename geo/20??????.hgt .hgt`
 SCRATCHDIR=$LiCSAR_temp/gapfill_temp
@@ -90,6 +113,8 @@ if [ $CHECKSCRATCH -eq 1 ]; then
   exit
  fi
 fi
+
+rm -rf $SCRATCHDIR/$frame 2>/dev/null
 mkdir -p $SCRATCHDIR/$frame
 
 
@@ -148,19 +173,17 @@ mkdir gapfill_job
 #fi
 echo "getting list of ifg to fill"
 if [ ! -d IFG ]; then mkdir IFG; fi
+if [ ! -d GEOC ]; then mkdir GEOC; fi
 ls RSLC/20??????/*rslc.mli | cut -d '/' -f2 > gapfill_job/tmp_rslcs
 ls IFG/20*_20??????/*.cc 2>/dev/null | cut -d '/' -f2 > gapfill_job/tmp_ifg_existing
 #rm gapfill_job/tmp_ifg_all2 2>/dev/null
 
 # prepare the 5 combinations in a row
-for FIRST in `cat gapfill_job/tmp_rslcs`; do  
- SECOND=`grep -A1 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
- THIRD=`grep -A2 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
- FOURTH=`grep -A3 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
- FIFTH=`grep -A4 $FIRST gapfill_job/tmp_rslcs | tail -n1`;
- for LAST in $SECOND $THIRD $FOURTH $FIFTH; do
-  if [ `datediff $FIRST $LAST` -lt $MAXBTEMP ] && [ ! $FIRST == $LAST ]; then
-   echo $FIRST'_'$LAST >> gapfill_job/tmp_ifg_all2;
+for FIRST in `cat gapfill_job/tmp_rslcs`; do 
+ for i in `seq 1 $ifg_combinations`; do
+  last=`grep -A$i $FIRST gapfill_job/tmp_rslcs | tail -n1`;
+  if [ `datediff $FIRST $last` -lt $MAXBTEMP ] && [ ! $FIRST == $last ]; then
+   echo $FIRST'_'$last >> gapfill_job/tmp_ifg_all2;
   fi
  done 
 done
@@ -225,7 +248,8 @@ sed 's/_/ /' gapfill_job/tmp_ifg_all > gapfill_job/tmp_ifg_todo
 for x in `cat gapfill_job/tmp_ifg_todo`; do echo $x >> gapfill_job/tmp_rslcs2copy; done
 sort -u gapfill_job/tmp_rslcs2copy -o gapfill_job/tmp_rslcs2copy 2>/dev/null
 mv gapfill_job/tmp_ifg_all gapfill_job/tmp_unw_todo
-for x in `ls IFG/*/*.cc 2>/dev/null | cut -d '/' -f2`; do if [ ! -f IFG/$x/$x.unw ]; then echo $x >> gapfill_job/tmp_unw_todo; fi; done
+#for x in `ls IFG/*/*.cc 2>/dev/null | cut -d '/' -f2`; do if [ ! -f IFG/$x/$x.unw ]; then echo $x >> gapfill_job/tmp_unw_todo; fi; done
+for x in `ls IFG/*/*.cc 2>/dev/null | cut -d '/' -f2`; do if [ ! -f GEOC/$x/$x.geo.unw.tif ]; then echo $x >> gapfill_job/tmp_unw_todo; fi; done
 
 #check rslc mosaics
 #rm gapfill_job/tmp_rslcs2mosaic 2>/dev/null
@@ -289,7 +313,10 @@ for job in `seq 1 $nojobs`; do
  fi
  #need to edit the unwrap script below to also accept range/azi looks!
  #hmm... actually it seems that unwrap will work anyway...
- echo "LiCSAR_04_unwrap.py -d . -f $frame -T gapfill_job/unwjob_$job.log -l gapfill_job/unwjob_$job" > gapfill_job/unwjob_$job.sh
+ #echo "LiCSAR_04_unwrap.py -d . -f $frame -T gapfill_job/unwjob_$job.log -l gapfill_job/unwjob_$job" > gapfill_job/unwjob_$job.sh
+ echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -I . " > gapfill_job/unwjob_$job.sh
+ echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -C . " >> gapfill_job/unwjob_$job.sh
+ echo "cat gapfill_job/unwjob_$job | parallel -j 1 unwrap_geo.sh $frame" >> gapfill_job/unwjob_$job.sh
  waitText=$waitText" && ended("$frame"_unw_"$job")"
  chmod 770 gapfill_job/unwjob_$job.sh
 done
@@ -299,8 +326,9 @@ if [ `wc -l gapfill_job/tmp_ifg_todo | gawk {'print $1'}` == 0 ] && [ `wc -l gap
  echo "there is nothing else to process - gapfilling done"
  if [ $geocode == 1 ]; then
   echo "starting geocoding job now"
-  cd $WORKFRAMEDIR
-  ./framebatch_06_geotiffs_nowait.sh
+  echo "this is 04/2021 update - we use geocoded products already for gapfilling"
+  #cd $WORKFRAMEDIR
+  #./framebatch_06_geotiffs_nowait.sh
  fi
  #cleaning
  rm -r gapfill_job
@@ -313,29 +341,52 @@ fi
 
 
  #move it for processing in SCRATCHDIR
+ if [ `echo $BATCH_CACHE_DIR | grep -c scratch` -eq 1 ]; then 
+  echo "BATCH_CACHE_DIR is in scratch - making only links (faster)"
+  links=1
+ else
+  links=0
+  echo "Preparation phase: copying data to SCRATCH disk (may take long)"
+ fi
  echo "There are "`wc -l gapfill_job/tmp_ifg_todo | gawk {'print $1'}`" interferograms to process and "`wc -l gapfill_job/tmp_unw_todo | gawk {'print $1'}`" to unwrap."
- echo "Preparation phase: copying data to SCRATCH disk (may take long)"
+ 
  #if [ -d $SCRATCHDIR/$frame ]; then echo "..cleaning scratchdir"; rm -rf $SCRATCHDIR/$frame; fi
  mkdir -p $SCRATCHDIR/$frame/RSLC
  chmod -R 777 $SCRATCHDIR/$frame
  mkdir $SCRATCHDIR/$frame/IFG 2>/dev/null
+ mkdir $SCRATCHDIR/$frame/GEOC 2>/dev/null
  mkdir $SCRATCHDIR/$frame/SLC $SCRATCHDIR/$frame/LOGS  2>/dev/null
  if [ -f gapfill_job/tmp_rslcs2copy ]; then
-  echo "..copying "`wc -l gapfill_job/tmp_rslcs2copy | gawk {'print $1'}`" needed rslcs"
-  for rslc in `cat gapfill_job/tmp_rslcs2copy`; do if [ ! -d $SCRATCHDIR/$frame/RSLC/$rslc ]; then echo "copying "$rslc; cp -r RSLC/$rslc $SCRATCHDIR/$frame/RSLC/.; fi; done
+  if [ $links == 1 ]; then
+   for rslc in `cat gapfill_job/tmp_rslcs2copy`; do
+    if [ ! -d $SCRATCHDIR/$frame/RSLC/$rslc ]; then ln -s `pwd`/RSLC/$rslc $SCRATCHDIR/$frame/RSLC/$rslc; fi;
+   done
+  else
+   echo "..copying "`wc -l gapfill_job/tmp_rslcs2copy | gawk {'print $1'}`" needed rslcs"
+   for rslc in `cat gapfill_job/tmp_rslcs2copy`; do
+    if [ ! -d $SCRATCHDIR/$frame/RSLC/$rslc ]; then echo "copying "$rslc; cp -r RSLC/$rslc $SCRATCHDIR/$frame/RSLC/.; fi;
+   done
+  fi
  fi
  echo "..copying master slc"
  cp -r SLC/$master $SCRATCHDIR/$frame/SLC/.
  rm -r $SCRATCHDIR/$frame/RSLC/$master 2>/dev/null
  mkdir $SCRATCHDIR/$frame/RSLC/$master
  for x in `ls $SCRATCHDIR/$frame/SLC/$master/*`; do ln -s $x $SCRATCHDIR/$frame/RSLC/$master/`basename $x | sed 's/slc/rslc/'`; done
- echo "..copying geo and other files"
- cp -r tab geo log gapfill_job $SCRATCHDIR/$frame/.
+ if [ $links == 1 ]; then
+  for aa in tab geo log ; do ln -s `pwd`/$aa $SCRATCHDIR/$frame/$aa; done
+ else
+  echo "..copying geo and other files"
+  cp -r tab geo log $SCRATCHDIR/$frame/.
+ fi
+ 
+ cp -r gapfill_job $SCRATCHDIR/$frame/.
  #sed 's/ /_/' gapfill_job/tmp_ifg_todo > gapfill_job/tmp_ifg_copy
  cat gapfill_job/tmp_unw_todo >> gapfill_job/tmp_ifg_copy
  echo "..copying ifgs to unwrap only"
  for ifg in `cat gapfill_job/tmp_unw_todo`; do 
   if [ -d IFG/$ifg ]; then cp -r IFG/$ifg $SCRATCHDIR/$frame/IFG/.; fi;
+  if [ -d GEOC/$ifg ]; then cp -r GEOC/$ifg $SCRATCHDIR/$frame/GEOC/.; fi;
  done
  if [ $rlks != $orig_rlks ] || [ $azlks != $orig_azlks ]; then
   echo "preparing MLI and DEM for the custom multilooking"
@@ -404,7 +455,8 @@ if [ `echo $waitText | wc -w` -gt 0 ]; then
   waitcmd='-w "'$waitText'"'
 fi
 echo "chmod -R 777 $SCRATCHDIR/$frame" > $WORKFRAMEDIR/gapfill_job/copyjob.sh
-echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+#echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+echo "rsync -r $SCRATCHDIR/$frame/GEOC $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "echo 'sync done, deleting TEMP folder'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "cd $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh

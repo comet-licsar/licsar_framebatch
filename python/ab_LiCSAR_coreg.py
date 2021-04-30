@@ -42,7 +42,7 @@ class CoregEnv(LicsEnv):
                 'LUT/{:%Y%m%d}.*'.format(date),
                 'RSLC/{:%Y%m%d}.*'.format(mstrDate),
                 'SLC/{:%Y%m%d}.*'.format(mstrDate),
-                'geo','DEM','local_config.py']
+                'geo','local_config.py']
         if auxDate:
             self.srcPats += ['RSLC/{:%Y%m%d}.*'.format(auxDate)]
         self.outPats = ['RSLC/{0:%Y%m%d}/{0:%Y%m%d}\.IW[1-3]\.rslc.*'.format(date), # Patterns to output
@@ -51,12 +51,13 @@ class CoregEnv(LicsEnv):
                         'RSLC/{0:%Y%m%d}/{0:%Y%m%d}.*mli.*'.format(date), # Patterns to output
                         'RSLC/{0:%Y%m%d}/{1:%Y%m%d}_{0:%Y%m%d}.slc.mli.lt'.format(date,mstrDate),
                         'RSLC/{0:%Y%m%d}/{1:%Y%m%d}_{0:%Y%m%d}.off'.format(date,mstrDate),
+                        'GEOC.*',
                         'log.*',
                         'tab.*']
         self.srcSlcPath = 'SLC/{:%Y%m%d}'.format(date) #used to check source slc
         self.srcLutPath = 'LUT/{:%Y%m%d}'.format(date) #used to check source slc
         self.newDirs = ['tab','log'] # empty directories to create
-        self.cleanDirs = ['./RSLC','./tab'] # Directories to clean on failure
+        self.cleanDirs = ['./RSLC','./GEOC.*','./tab'] # Directories to clean on failure
 
 ################################################################################
 #Main
@@ -154,6 +155,7 @@ def main(argv):
 
                 #Finally set rslc status to return code
                 try:
+                    reconn_pom = lq.connection_established()
                     lq.set_rslc_status(row['rslc_id'],rc)
                 except:
                     print('debug 1: error in mysql connection - common after Sep 2020 change in mysql db by JASMIN..')

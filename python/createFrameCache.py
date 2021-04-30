@@ -73,7 +73,12 @@ if len(acq_imgs)<2:
     print('No acquisitions registered for this frame in this time period. Try framebatch_data_refill.sh first?')
     exit()
 masterset = set_master(polyid,mstrDate)
+
+acq_imgs = acq_imgs.sort_values('acq_date').reset_index(drop=True)
 mstrline = acq_imgs[acq_imgs['acq_date']==mstrDate]
+acq_imgs['btemp'] = acq_imgs.acq_date.apply(lambda x: abs(x - mstrline['acq_date']))
+acq_imgs = acq_imgs.sort_values('btemp')
+
 acq_imgs = acq_imgs[acq_imgs['acq_date']!=mstrDate]
 #start from startingdate
 #if startdate:
@@ -146,6 +151,9 @@ for ifg in existing_ifgs:
 
 batch_link_slcs_to_new_jobs(polyid,user,slcs,batchN)
 #the rslcs job linking should be improved, but it is ok this way..
+#ok, first sort rslcs w.r.t. master:
+aa = acq_imgs.join(rslcs.set_index('img_id'), on='img_id')
+rslcs = aa[['rslc_id']].reset_index(drop=True)
 batch_link_rslcs_to_new_jobs(polyid,user,rslcs,batchN)
 batch_link_ifgs_to_new_jobs(polyid,user,ifgs,batchN)
 batch_link_unws_to_new_jobs(polyid,user,unws,batchN)
