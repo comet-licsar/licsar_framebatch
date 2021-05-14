@@ -59,6 +59,22 @@ class CoregEnv(LicsEnv):
         self.newDirs = ['tab','log'] # empty directories to create
         self.cleanDirs = ['./RSLC','./GEOC.*','./tab'] # Directories to clean on failure
 
+def get_nomissing_rslcs(rslcCache, mstrDate, builtRslcs):
+    builtRslcs_nomissing = pd.DataFrame()
+    masterstr = mstrDate.strftime('%Y%m%d')
+    master_rslc = os.path.join(rslcCache, masterstr, masterstr+'.rslc')
+    if os.path.exists(master_rslc):
+        size_master = os.path.getsize(master_rslc)
+        for i,rslcdate in builtRslcs.iterrows():
+            rslcdate_str = pd.Timestamp(rslcdate.values[0]).strftime('%Y%m%d')
+            rslcfile = os.path.join(rslcCache, rslcdate_str, rslcdate_str+'.rslc')
+            if os.path.exists(rslcfile):
+                size_rslc = os.path.getsize(rslcfile)
+                if size_rslc == size_master:
+                    builtRslcs_nomissing = builtRslcs_nomissing.append(rslcdate)
+    else:
+        print('ERROR - master RSLC mosaic does not exist!')
+    return builtRslcs_nomissing
 ################################################################################
 #Main
 ################################################################################
@@ -98,6 +114,11 @@ def main(argv):
         #builtRslcDates = pd.to_datetime(os.listdir(rslcCache))
         builtRslcDates = pd.to_datetime(fnmatch.filter(os.listdir(rslcCache), '20??????'))
         builtRslcs = pd.DataFrame({'acq_date': builtRslcDates})
+        builtRslcs_nomissing = get_nomissing_rslcs(rslcCache, mstrDate, builtRslcs)
+        if not builtRslcs_nomissing.empty:
+            builtRslcs = builtRslcs_nomissing.reset_index(drop=True)
+        else:
+            print('missing bursts check failed - probably no full RSLC available to be used as aux, but trying anyway')
         builtRslcs['date_diff'] = builtRslcs['acq_date'].apply(
                 lambda x: abs(x-date)
                 )
