@@ -4,6 +4,9 @@ from quality_check import *
 from getopt import getopt
 import glob
 import shutil, os
+import warnings
+warnings.filterwarnings('ignore')
+
 """
 This is a tool to check quality of interferograms. it will 
 
@@ -153,6 +156,9 @@ def main(argv=None):
                     shutil.rmtree(os.path.join(framedir,'RSLC',badepoch))
                 except:
                     print('warning, cannot delete epoch '+badepoch)
+        print('regenerating the network plot')
+        cmd = 'plot_network.py {0} {1} {2}'.format(framedir, os.path.join(framedir, 'metadata', 'network.png'), os.path.join(framedir, 'metadata', 'gaps.txt'))
+        os.system(cmd)
 
 
 if __name__ == "__main__":
