@@ -1,18 +1,26 @@
 #!/bin/bash
 #this variable will be used to choose whether to download from ASF or use NLA..
 PROCESSING=1
+#should we process till now or use safe 21 days delay ?
+tillnow=0
 #tolerance of days to either only autodownload or use nla + waiting
 DAYSTOLERANCE=61
 #DAYSTOLERANCE=961
 #STORE_AND_DELETE=1
 if [ -z $2 ]; then echo "parameters are frame and code (code is either upfill or backfill.. or gapfill)"; 
     echo "running with parameter -k means Keep the frame in BATCH_CACHE_DIR (not delete it)";
+    echo "parameter -u would process upfilling till today"
     exit; fi
 
-storeparam='-S'
-while getopts ":k" option; do
+storeparam='-S -G'
+while getopts ":kEu" option; do
  case "${option}" in
   k) storeparam=' ';
+     ;;
+  E) tillnow=1;
+     storeparam='-S -E -G';
+     ;;
+  u) tillnow=1;
      ;;
  esac
 done
@@ -37,7 +45,7 @@ firstepoch=`ls $LiCSAR_public/$track/$frame/interferograms/2*_2* -d 2>/dev/null 
 
 if [ -z $lastepoch ]; then
  echo "you are using script for updating frames for a new frame"
- echo "well.. trying to satisfy your needs, good luck anyway"
+# echo "well.. trying to satisfy your needs, good luck anyway"
  lastepoch=`ls $LiCSAR_procdir/$track/$frame/SLC`
  firstepoch=$lastepoch
 fi
@@ -49,7 +57,11 @@ fi
 
 if [ $code == "upfill" ]; then
  startdate=`date -d $lastepoch"-25 days" +%Y-%m-%d`
- enddate=`date -d "-21 days" +%Y-%m-%d`
+ if [ $tillnow -eq 1 ]; then
+  enddate=`date -d "+1 days" +%Y-%m-%d`
+ else
+  enddate=`date -d "-21 days" +%Y-%m-%d`
+ fi
  
 elif [ $code == "backfill" ]; then
  startdate='2014-10-01'
@@ -117,7 +129,7 @@ if [ $nla_start == 1 ]; then
    if [ $PROCESSING -eq 0 ]; then
      echo "indicated NLA only - exiting";
      echo "you may start the processing itself manually using: "
-     echo licsar_make_frame.sh -S -f $extra $frame 1 1 $startdate $enddate
+     echo licsar_make_frame.sh -S -G -f $extra $frame 1 1 $startdate $enddate
      exit;
    fi
    #hourly checking of NLA requests status...
@@ -154,6 +166,6 @@ else
    autodown=1
 fi
 
-echo licsar_make_frame.sh $storeparam $extra $frame 1 $autodown $startdate $enddate
+echo licsar_make_frame.sh $storeparam -f $extra $frame 1 $autodown $startdate $enddate
 licsar_make_frame.sh $storeparam -f $extra $frame 1 $autodown $startdate $enddate
 

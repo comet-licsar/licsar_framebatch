@@ -37,3 +37,6 @@ if { [exec hostname -d] == "comet-cpom-S.jasmin.ac.uk" } {
 prepend-path PATH "$LiCSFBpath/bin:$LiCSFBpath/python"
 prepend-path PYTHONPATH "$LiCSFBpath/python"
 
+#set USER $::env(USER)
+
+#setenv BATCH_CACHE_DIR "/work/scratch-pw/$USER/LiCSAR_temp/batchdir"

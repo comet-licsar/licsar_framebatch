@@ -4,12 +4,15 @@ from quality_check import *
 from getopt import getopt
 import glob
 import shutil, os
+import warnings
+warnings.filterwarnings('ignore')
+
 """
 This is a tool to check quality of interferograms. it will 
 
 Usage:
 
-    quality_check.py [-d] <frame>
+    frame_ifg_quality_check.py [-d] <frame>
 
     -d : also removes the identified bad files
     -n : does not keep coherence_stats.txt in the frame 
@@ -67,19 +70,26 @@ def main(argv=None):
     badifgs = []
     for ifg in os.listdir(ifgdir):
         #check the lines in wrapped imgs
-        #check only wrapped imgs:
-        wrap = os.path.join(ifgdir,ifg,ifg+'.geo.diff.png')
-        unwrap = os.path.join(ifgdir,ifg,ifg+'.geo.unw.png')
-        unwraptif = os.path.join(ifgdir,ifg,ifg+'.geo.unw.tif')
+        #check only wrapped imgs -- obsolete way..:
+        #wrap = os.path.join(ifgdir,ifg,ifg+'.geo.diff.png')
+        #unwrap = os.path.join(ifgdir,ifg,ifg+'.geo.unw.png')
+        # rather use geotiffs:
+        wrap = os.path.join(ifgdir,ifg,ifg+'.geo.diff_pha.tif')
+        unwrap = os.path.join(ifgdir,ifg,ifg+'.geo.unw.tif')
+        #unwraptif = os.path.join(ifgdir,ifg,ifg+'.geo.unw.tif')
         cctif = os.path.join(ifgdir,ifg,ifg+'.geo.cc.tif')
         #do the basic file check
         if not basic_check(os.path.join(ifgdir,ifg)):
             flag = 1
         else:
-            flag = check_lines(wrap)
+            # orig approach - use only wrapped png files:
+            #flag = check_lines(wrap)
+            #update 2021/01 - use geotiffs
+            flag = check_lines_ifg_and_unw(wrap, unwrap)
         #check the dimensions - just of one file
         if flag == 0:
-            flag = check_dimensions(unwraptif, hgttif)
+            flag = check_dimensions(unwrap, hgttif)
+            #flag = check_dimensions(unwraptif, hgttif)
         if (flag == 0) and (not do_local):
             #check with temporal stats
             stats = get_stats(os.path.join(ifgdir,ifg), ifg) 
@@ -92,7 +102,7 @@ def main(argv=None):
         if flag == 1:
             badifgs.append(ifg)
     #just print the bad ifgs now
-    print('bad interferograms by lines detection: ')
+    print('bad interferograms detected: ')
     for ifg in badifgs:
         print(ifg)
     if not do_local:
@@ -146,6 +156,9 @@ def main(argv=None):
                     shutil.rmtree(os.path.join(framedir,'RSLC',badepoch))
                 except:
                     print('warning, cannot delete epoch '+badepoch)
+        print('regenerating the network plot')
+        cmd = 'plot_network.py {0} {1} {2}'.format(framedir, os.path.join(framedir, 'metadata', 'network.png'), os.path.join(framedir, 'metadata', 'gaps.txt'))
+        os.system(cmd)
 
 
 if __name__ == "__main__":

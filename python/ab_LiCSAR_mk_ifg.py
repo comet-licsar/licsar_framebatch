@@ -40,17 +40,18 @@ class MkIfgEnv(LicsEnv):
                 'RSLC/{:%Y%m%d}.*'.format(dateB), 
                 'RSLC/{:%Y%m%d}.*'.format(mstrDate),
                 'SLC/{:%Y%m%d}.*'.format(mstrDate),
+                'IFG/{0:%Y%m%d}_{1:%Y%m%d}.*'.format(dateA,dateB),
                 'geo','DEM','local_config.py']
 
         self.outPats = ['IFG.*', # Patterns to output
                         'log.*',
                         'tab.*',
-                        'log/.*qualit.*']
-
+                        'log/.*qualit.*',
+                        'GEOC.*']
         self.srcRSLCAPath = 'RSLC/{:%Y%m%d}'.format(dateA)
         self.srcRSLCBPath = 'RSLC/{:%Y%m%d}'.format(dateB)
         self.newDirs = ['tab','log'] # empty directories to create
-        self.cleanDirs = ['./IFG','./tab'] # Directories to clean on failure
+        self.cleanDirs = ['./IFG','./tab','./GEOC'] # Directories to clean on failure
 
 ################################################################################
 #Main

@@ -12,7 +12,7 @@ gapfile=$2
 if [ ! -z $3 ]; then
  qualcheck=$3
 else
- qualcheck=1
+ qualcheck=0
 fi
 
 #fourth parameter is for input txt file

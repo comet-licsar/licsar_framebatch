@@ -10,6 +10,7 @@ from sqlalchemy.engine.reflection import Inspector
 import sys
 import datetime as dt
 from configLib import config
+import numpy as np
 
 #this is a residual to trick batch processing - must be kept
 from LiCSAR_db.LiCSquery import get_ipf
@@ -68,6 +69,7 @@ def get_acq_dates(polyid):
                 ).where(polygs2bursts.c.polyid==polyid)
     acqDats = pd.read_sql_query(acqDtSel,engine)
     acqDats.columns = ['acq_date']
+    acqDats = acqDats.sort_values(by='acq_date')
     return acqDats
 
 ################################################################################
@@ -261,7 +263,7 @@ def create_rslcs(polyid,imgDtFrm):
     statSrs = pd.Series(-1,index=imgDtFrm.index,name='rslc_status')
     rslcDtFrm = pd.concat([polyidSrs,statSrs,imgDtFrm['img_id']],axis=1)
     rslcDtFrm.to_sql('rslc',engine,index=False,if_exists='append')
-    rslcQry = select([rslc.c.rslc_id]).where(rslc.c.polyid==polyid)
+    rslcQry = select([rslc.c.rslc_id, rslc.c.img_id]).where(rslc.c.polyid==polyid)
 
     return pd.read_sql_query(rslcQry,engine)
 
@@ -355,7 +357,15 @@ def link_rslc_to_job(rslcId,jobId):
     conn.execute(rslcUpd)
 
 def batch_link_rslcs_to_new_jobs(polyid,user,rslcIds,batchN):
-    rslcIds['bin'] = pd.cut(rslcIds['rslc_id'],batchN,labels=False)
+    maxperjob=15
+    if len(rslcIds)/batchN > maxperjob:
+        print('increasing number of jobs to fit the maxperjob limit')
+        batchN = int(len(rslcIds)/maxperjob)
+    numrep = int(len(rslcIds)/batchN) + 1
+    bins = list(np.arange(batchN))*numrep
+    bins = bins[:len(rslcIds)]
+    rslcIds['bin'] = bins
+    #rslcIds['bin'] = pd.cut(rslcIds['rslc_id'],batchN,labels=False)
     rslcGrouped = rslcIds.groupby('bin')
     for label,rslcGroup in rslcGrouped:
         jid = create_job(polyid,user,'coreg')
