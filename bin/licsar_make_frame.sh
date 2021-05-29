@@ -470,6 +470,21 @@ fi
  fi
 
 
+#add second iteration for coreg....
+#cat << EOF > framebatch_x_second_iteration.sh
+waiting_str=''
+for jobid in `cat framebatch_02_coreg.sh | rev | gawk {'print $1'} | rev`; do
+  stringg="framebatch_02_coreg_"$jobid
+  waiting_str=$waiting_str" && ended("$stringg")"
+done
+waiting_string=`echo $waiting_str | cut -c 4-`
+echo "./framebatch_02_coreg_nowait.sh; ./framebatch_03_mk_ifg.sh; ./framebatch_04_unwrap.sh" > ./framebatch_x_second_iteration.sh
+echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:30 -n 1 -J it2_"$frame" -o LOGS/it2.out -e LOGS/it2.err ./framebatch_x_second_iteration.sh" > framebatch_x_second_iteration_wait.sh
+chmod 770 framebatch_x_second_iteration_wait.sh framebatch_x_second_iteration.sh
+if [ $NORUN -eq 0 ]; then
+ ./framebatch_x_second_iteration_wait.sh
+fi
+
 #~ if [ $NORUN -eq 0 ]; then
   #~ echo "setting second itera"
   #~ mkdir tmpbck
@@ -517,7 +532,8 @@ fi
 EOF
 chmod 770 framebatch_eqr.sh
 if [ $NORUN -eq 0 ]; then
- ./framebatch_eqr.sh -w
+ #./framebatch_eqr.sh -w
+ echo "./framebatch_eqr.sh -w" >> framebatch_x_second_iteration.sh
 else
  echo "To run this step, use ./framebatch_eqr.sh"
 fi

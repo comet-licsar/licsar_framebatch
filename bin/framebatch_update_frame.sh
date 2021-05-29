@@ -40,8 +40,15 @@ if [ ! -f pokuspokus_$frame ]; then echo "you do not have writing rights here, c
 rm pokuspokus_$frame
 
 track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
-lastepoch=`ls $LiCSAR_public/$track/$frame/interferograms/2*_2* -d 2>/dev/null | tail -n1 | rev | cut -d '_' -f1 | rev`
-firstepoch=`ls $LiCSAR_public/$track/$frame/interferograms/2*_2* -d 2>/dev/null | head -n1 | rev | cut -d '_' -f1 | rev`
+#lastepoch=`ls $LiCSAR_public/$track/$frame/interferograms/2*_2* -d 2>/dev/null | tail -n1 | rev | cut -d '_' -f1 | rev`
+lastepoch=`ls $LiCSAR_procdir/$track/$frame/RSLC 2>/dev/null | tail -n1 | cut -d '.' -f1`
+lastepoch2=`ls $LiCSAR_procdir/$track/$frame/LUT 2>/dev/null | tail -n1 | cut -d '.' -f1`
+if [ $lastepoch2 -gt $lastepoch 2>/dev/null ]; then lastepoch=$lastepoch2; fi
+
+#firstepoch=`ls $LiCSAR_public/$track/$frame/interferograms/2*_2* -d 2>/dev/null | head -n1 | rev | cut -d '_' -f1 | rev`
+firstepoch=`ls $LiCSAR_procdir/$track/$frame/RSLC 2>/dev/null | head -n1 | cut -d '.' -f1`
+firstepoch2=`ls $LiCSAR_procdir/$track/$frame/LUT 2>/dev/null | head -n1 | cut -d '.' -f1`
+if [ $firstepoch2 -lt $firstepoch 2>/dev/null ]; then firstepoch=$firstepoch2; fi
 
 if [ -z $lastepoch ]; then
  echo "you are using script for updating frames for a new frame"
