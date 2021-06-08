@@ -7,6 +7,7 @@ import batchDBLib as lq
 from configLib import config
 from batchEnvLib import LicsEnv
 import os
+from glob import glob
 import shutil
 import sys
 import global_config as gc
@@ -65,12 +66,24 @@ def get_nomissing_rslcs(rslcCache, mstrDate, builtRslcs):
     master_rslc = os.path.join(rslcCache, masterstr, masterstr+'.rslc')
     if os.path.exists(master_rslc):
         size_master = os.path.getsize(master_rslc)
+        size_master_rslcs = 0
+        for iwrslc in glob(os.path.join(rslcCache, masterstr, masterstr+'.IW?.rslc')):
+            size_iwrslc = os.path.getsize(iwrslc)
+            size_master_rslcs = size_master_rslcs + size_iwrslc
         for i,rslcdate in builtRslcs.iterrows():
             rslcdate_str = pd.Timestamp(rslcdate.values[0]).strftime('%Y%m%d')
             rslcfile = os.path.join(rslcCache, rslcdate_str, rslcdate_str+'.rslc')
             if os.path.exists(rslcfile):
                 size_rslc = os.path.getsize(rslcfile)
                 if size_rslc == size_master:
+                    builtRslcs_nomissing = builtRslcs_nomissing.append(rslcdate)
+            else:
+                size_rslcs = 0
+                # let's check sizes if there is no mosaic - e.g. if we unzipped the file from LiCSAR_procdir
+                for iwrslc in glob(os.path.join(rslcCache, rslcdate_str, rslcdate_str+'.IW?.rslc')):
+                    size_iwrslc = os.path.getsize(iwrslc)
+                    size_rslcs = size_rslcs + size_iwrslc
+                if size_rslcs == size_master_rslcs:
                     builtRslcs_nomissing = builtRslcs_nomissing.append(rslcdate)
     else:
         print('ERROR - master RSLC mosaic does not exist!')

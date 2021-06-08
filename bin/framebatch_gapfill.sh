@@ -175,7 +175,8 @@ echo "getting list of ifg to fill"
 if [ ! -d IFG ]; then mkdir IFG; fi
 if [ ! -d GEOC ]; then mkdir GEOC; fi
 ls RSLC/20??????/*rslc.mli | cut -d '/' -f2 > gapfill_job/tmp_rslcs
-ls IFG/20*_20??????/*.cc 2>/dev/null | cut -d '/' -f2 > gapfill_job/tmp_ifg_existing
+#ls IFG/20*_20??????/*.cc 2>/dev/null | cut -d '/' -f2 > gapfill_job/tmp_ifg_existing
+ls GEOC/20*_20??????/*.cc.tif 2>/dev/null | cut -d '/' -f2 > gapfill_job/tmp_ifg_existing
 #rm gapfill_job/tmp_ifg_all2 2>/dev/null
 
 # prepare the 5 combinations in a row
@@ -249,7 +250,7 @@ for x in `cat gapfill_job/tmp_ifg_todo`; do echo $x >> gapfill_job/tmp_rslcs2cop
 sort -u gapfill_job/tmp_rslcs2copy -o gapfill_job/tmp_rslcs2copy 2>/dev/null
 mv gapfill_job/tmp_ifg_all gapfill_job/tmp_unw_todo
 #for x in `ls IFG/*/*.cc 2>/dev/null | cut -d '/' -f2`; do if [ ! -f IFG/$x/$x.unw ]; then echo $x >> gapfill_job/tmp_unw_todo; fi; done
-for x in `ls IFG/*/*.cc 2>/dev/null | cut -d '/' -f2`; do if [ ! -f GEOC/$x/$x.geo.unw.tif ]; then echo $x >> gapfill_job/tmp_unw_todo; fi; done
+for x in `ls GEOC/*/*.cc.tif 2>/dev/null | cut -d '/' -f2`; do if [ ! -f GEOC/$x/$x.geo.unw.tif ]; then echo $x >> gapfill_job/tmp_unw_todo; fi; done
 
 #check rslc mosaics
 #rm gapfill_job/tmp_rslcs2mosaic 2>/dev/null
