@@ -19,7 +19,7 @@ def get_ifg_perc_unwrapd(dateA,dateB):
     unwrpdIfg = np.fromfile(unwrpdPath,dtype=np.float32).byteswap()
     notNanCount = np.sum(~np.isnan(unwrpdIfg))
     ifgSize = unwrpdIfg.shape[0]
-
+    
     return float(notNanCount)/float(ifgSize)
 
 ################################################################################

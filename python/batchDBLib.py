@@ -24,7 +24,8 @@ engine = create_engine(
         psswd=config.get('DB','Password'),
         hst=config.get('DB','Host'),
         dbname=config.get('DB','DBName'),
-        )
+        ),
+    pool_pre_ping=True
     )
 
 ################################################################################
