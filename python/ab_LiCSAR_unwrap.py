@@ -129,9 +129,10 @@ def main(argv):
                 #Finally set ifg status to return code
                 lq.set_unw_status(row['unw_id'],rc)
 
-                if rc == 0:
-                    ifgPerc = get_ifg_perc_unwrapd(dateA,dateB)
-                    lq.set_unw_perc_unwrpd(row['unw_id'],ifgPerc)
+                if not unwrap_in_geo:
+                    if rc == 0:
+                        ifgPerc = get_ifg_perc_unwrapd(dateA,dateB)
+                        lq.set_unw_perc_unwrpd(row['unw_id'],ifgPerc)
 
             else: # otherwise set status to missing rslc
                 lq.set_unw_status(row['unw_id'],MISSING_IFG)

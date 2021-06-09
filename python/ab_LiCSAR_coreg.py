@@ -189,6 +189,7 @@ def main(argv):
 
                 #Finally set rslc status to return code
                 try:
+                    #lq.conn.ping(reconnect=True)
                     reconn_pom = lq.connection_established()
                     lq.set_rslc_status(row['rslc_id'],rc)
                 except:
@@ -199,14 +200,20 @@ def main(argv):
                     shutil.rmtree('./RSLC')
 
             else: # otherwise set status to missing slc
+                #lq.conn.ping(reconnect=True)
                 lq.set_rslc_status(row['rslc_id'],MISSING_SLC)
 
             try:
+                #lq.conn.ping(reconnect=True)
                 set_lotus_job_status('Cleaning {:%y-%m-%d}'.format(date))
             except:
                 print('debug 2: error in mysql connection - common after Sep 2020 change in mysql db by JASMIN..')
                 print('but continuing')
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+       # try:
+       #     lq.conn.ping(reconnect=True)
+       # except:
+       #     print('no reconnection to db')
         polyID = lq.get_polyid(frameName)
         slc = lq.get_unreq_slc_on_date(polyID,date)
         if rc == 0 and not slc.empty:
@@ -216,7 +223,11 @@ def main(argv):
             lq.set_slc_status(int(slc.loc[0,'slc_id']),-6)
                 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-    lq.set_job_finished(jobID,3)
+    try:
+        #lq.conn.ping(reconnect=True)
+        lq.set_job_finished(jobID,3)
+    except:
+        print('error in db access')
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
