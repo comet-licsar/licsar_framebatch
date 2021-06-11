@@ -342,7 +342,8 @@ chmod 777 $step.sql
   #else
   if [ $bsubquery == "cpom-comet" ]; then
    if [ $step == "framebatch_02_coreg" ] || [ $step == "framebatch_04_unwrap" ]; then
-    maxmem=25000
+    #maxmem=25000
+    maxmem=16000
     extrabsub='-R "rusage[mem='$maxmem']" -M '$maxmem
    fi
   fi

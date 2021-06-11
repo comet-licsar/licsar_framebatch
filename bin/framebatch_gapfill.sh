@@ -40,7 +40,7 @@ while getopts ":wgSaPo" option; do
   g ) geocode=1; echo "parameter -g set: will do post-processing step - geocoding after the finish";
 #      shift
       ;;
-  S ) store=1; echo "parameter -S set: will store after geocoding";
+  S ) store=1; geocode=1; echo "parameter -S set: will store after geocoding";
 #      shift
       ;;
   P ) prioritise=1; echo "parameter -P set: prioritising through cpom-comet";
@@ -440,7 +440,8 @@ for job in `seq 1 $nojobs`; do
  if [ -f gapfill_job/unwjob_$job.sh ]; then
   #weird error in 'job not found'.. workaround:
 #  echo bsub -q $bsubquery -n $bsubncores -W 08:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
-  echo bsub2slurm.sh -q $bsubquery -n 1 -W 12:00 -M 25000 -R "rusage[mem=25000]" -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
+  #echo bsub2slurm.sh -q $bsubquery -n 1 -W 12:00 -M 25000 -R "rusage[mem=25000]" -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
+  echo bsub2slurm.sh -q $bsubquery -n 1 -W 12:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
   #echo "debug:"
   #cat tmptmp
   chmod 777 tmptmp

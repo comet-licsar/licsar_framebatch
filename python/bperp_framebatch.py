@@ -50,9 +50,9 @@ if __name__ == '__main__':
         return times
 
     # to be run in frame processing directory
-    cc_type = '.filt.cc'
-    cc_ifgs = np.array(glob.glob('IFG/*/*'+cc_type))
-    unw_ifgs = np.array(glob.glob('IFG/*/*.unw'))
+    cc_type = '.cc'
+    cc_ifgs = np.array(glob.glob('GEOC/*/*'+cc_type+'.tif'))
+    unw_ifgs = np.array(glob.glob('GEOC/*/*.unw.tif'))
 
     if unw_ifgs.shape != cc_ifgs.shape:
         print("Warning: number of unwrapped ifgs does not match number of coherence files.")
