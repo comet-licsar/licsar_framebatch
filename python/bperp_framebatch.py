@@ -60,7 +60,8 @@ if __name__ == '__main__':
     # extract list of ifgs from names of unw ifgs in dir
     ifg_list = []
     for l in range(len(unw_ifgs)):
-        ifg_list.append(os.path.splitext(os.path.basename(unw_ifgs[l]))[0])
+        ifg_list.append(os.path.basename(unw_ifgs[l]).split('.')[0])
+        #ifg_list.append(os.path.splitext(os.path.basename(unw_ifgs[l]))[0])
 
     # convert to ifg acq dt objects  
     ifg_pairs = np.asarray([elem.strip().split('_') for elem in ifg_list])
@@ -97,10 +98,11 @@ if __name__ == '__main__':
 
     # currently using unfiltered coherence, can change to .filt.cc
     for idx,ifg in enumerate(ifg_list):
-        cc = np.fromfile('IFG/'+ifg+'/'+ifg+cc_type, dtype='>f4')
-        cc[np.where(np.logical_or(cc==0,cc<=float(inps.coh)))] = np.nan
-        unw_pix_perc[idx] = (np.nansum(cc)/np.nansum(mstr_rslc))*100
-        print('Unwrapped pixel percentage for '+ifg+': '+str(unw_pix_perc[idx]))
+        #cc = np.fromfile('IFG/'+ifg+'/'+ifg+cc_type, dtype='>f4')
+        #cc[np.where(np.logical_or(cc==0,cc<=float(inps.coh)))] = np.nan
+        #unw_pix_perc[idx] = (np.nansum(cc)/np.nansum(mstr_rslc))*100
+        unw_pix_perc[idx] = 1
+        print('TODO: Unwrapped pixel percentage for '+ifg+': '+str(unw_pix_perc[idx]))
 
     # plotting routines
     print('Plotting Bperp/Bt+Coherence.')

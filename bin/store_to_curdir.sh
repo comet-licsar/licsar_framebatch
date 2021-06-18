@@ -223,7 +223,7 @@ fi
  if [ -d $frame/log ]; then
   echo "copying logs"
   echo "only *quality* logs will be saved"
-  for log in `ls $frame/log/*quality*`; do
+  for log in `ls $frame/log/*quality* $frame/log/getValidO*`; do
    #if [ ! -f $frameDir/log/`basename $log` ]; then
     cp $log $frameDir/log/.
     chmod 774 $frameDir/log/$log 2>/dev/null
@@ -382,8 +382,8 @@ fi
 
 
 if [ $DOGACOS -eq 1 ]; then
- echo "requesting GACOS data - in the background, please run in tmux or keep session alive for HOURS"
- framebatch_update_gacos.sh $frame >/dev/null 2>/dev/null &
+ echo "requesting GACOS data " #"- in the background, please run in tmux or keep session alive for HOURS"
+ framebatch_update_gacos.sh $frame # >/dev/null 2>/dev/null &
 fi
 
 echo "done"

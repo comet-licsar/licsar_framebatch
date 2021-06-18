@@ -11,7 +11,7 @@ waiting=0
 store=0
 ADD36M=1
 CHECKSCRATCH=1
-prioritise=1
+prioritise=0
 checkrslc=1
 ifg_combinations=4
 
@@ -70,7 +70,7 @@ if [ $checkrslc -eq 1 ]; then
   numslc=`ls SLC | wc -l` 
   if [ $numslc -gt 1 ]; then
    echo "there are "$numslc" SLCs to be coregistered. trying second iteration"
-   ./framebatch_02_coreg_nowait.sh; ./framebatch_03_mk_ifg.sh; ./framebatch_04_unwrap.sh; ./framebatch_05_gap_filling_wait.sh
+   ./framebatch_02_coreg.nowait.sh; ./framebatch_03_mk_ifg.wait.sh; ./framebatch_04_unwrap.wait.sh; ./framebatch_05_gap_filling.wait.sh
    exit
   else
    echo "great - all data are coregistered, continuing"
@@ -464,7 +464,7 @@ echo "echo 'sync done, deleting TEMP folder'" >> $WORKFRAMEDIR/gapfill_job/copyj
 echo "cd $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 if [ $geocode == 1 ]; then
  echo "echo 'starting geocoding job'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
- echo $WORKFRAMEDIR/framebatch_06_geotiffs_nowait.sh >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+ echo $WORKFRAMEDIR/framebatch_06_geotiffs.nowait.sh >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
  echo "sleep 60" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 fi
 echo "rm -rf $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh

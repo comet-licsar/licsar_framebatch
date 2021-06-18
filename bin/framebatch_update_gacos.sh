@@ -17,9 +17,9 @@ rm pokuspokusgacos_$frame
 if [ ! -d $frame ]; then
  mkdir $frame 2>/dev/null
 else
- echo "the frame is already in processing??"
- echo "check (and delete?)"$work_dir"/"$frame
- exit
+ echo "the frame is already in processing?? trying to continue anyway"
+ #echo "check (and delete?)"$work_dir"/"$frame
+ #exit
 fi
 #track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
 

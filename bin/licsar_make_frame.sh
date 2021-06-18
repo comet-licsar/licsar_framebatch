@@ -270,8 +270,8 @@ function prepare_job_script {
  stepsql=$3
  stepprev=$4
  
- rm $step.sh 2>/dev/null
- rm $step'_nowait.sh' 2>/dev/null
+ rm $step.sh $step.wait.sh 2>/dev/null
+ rm $step'.nowait.sh' 2>/dev/null
  rm $step.list 2>/dev/null
 # mysql command is much faster, but it is not available in every server:
 if [ ! -z `which mysql 2>/dev/null` ]; then
@@ -358,13 +358,13 @@ chmod 777 $step.sql
   if [ $exptime -gt 23 ]; then exptime=23; fi
   if [ $exptime -lt 10 ]; then exptime=0$exptime; fi
   echo bsub2slurm.sh -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
-     -q $bsubquery -n $bsubncores -W $exptime:59 $extrabsub $waitcmd $stepcmd $jobid >> $step.sh
+     -q $bsubquery -n $bsubncores -W $exptime:59 $extrabsub $waitcmd $stepcmd $jobid >> $step.wait.sh
   echo bsub2slurm.sh -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
-     -q $bsubquery -n $bsubncores -W $exptime:59 $extrabsub $stepcmd $jobid >> $step'_nowait.sh'
+     -q $bsubquery -n $bsubncores -W $exptime:59 $extrabsub $stepcmd $jobid >> $step'.nowait.sh'
  done
  
  rm tmpText 2>/dev/null
- chmod 770 $step.sh $step'_nowait.sh'
+ chmod 770 $step.wait.sh $step'.nowait.sh'
 }
 
 ## MAIN CODE
@@ -447,10 +447,11 @@ fi
  stepsql=slcQry
  stepprev=''
  prepare_job_script $step $stepcmd $stepsql $stepprev
+ rm $step.wait.sh
  if [ $NORUN -eq 0 ]; then
-  ./$step.sh
+  ./$step.nowait.sh
  else
-  echo "To run this step, use ./"$step".sh"
+  echo "To run this step, use ./"$step".nowait.sh"
  fi
  
  realjobno=`cat framebatch_01_mk_image.list | wc -l`
@@ -465,25 +466,25 @@ fi
 
  prepare_job_script $step $stepcmd $stepsql $stepprev
  if [ $NORUN -eq 0 ]; then
-  ./$step.sh
+  ./$step.wait.sh
  else
-  echo "To run this step, use ./"$step".sh"
+  echo "To run this step, use ./"$step".nowait.sh"
  fi
 
 
 #add second iteration for coreg....
 #cat << EOF > framebatch_x_second_iteration.sh
 waiting_str=''
-for jobid in `cat framebatch_02_coreg.sh | rev | gawk {'print $1'} | rev`; do
+for jobid in `cat framebatch_02_coreg.wait.sh | rev | gawk {'print $1'} | rev`; do
   stringg="framebatch_02_coreg_"$jobid
   waiting_str=$waiting_str" && ended("$stringg")"
 done
 waiting_string=`echo $waiting_str | cut -c 4-`
-echo "./framebatch_02_coreg_nowait.sh; ./framebatch_03_mk_ifg.sh; ./framebatch_04_unwrap.sh" > ./framebatch_x_second_iteration.sh
-echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:30 -n 1 -J it2_"$frame" -o LOGS/it2.out -e LOGS/it2.err ./framebatch_x_second_iteration.sh" > framebatch_x_second_iteration_wait.sh
-chmod 770 framebatch_x_second_iteration_wait.sh framebatch_x_second_iteration.sh
+echo "./framebatch_02_coreg.nowait.sh; ./framebatch_03_mk_ifg.wait.sh; ./framebatch_04_unwrap.wait.sh" > ./framebatch_x_second_iteration.nowait.sh
+echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:30 -n 1 -J it2_"$frame" -o LOGS/it2.out -e LOGS/it2.err ./framebatch_x_second_iteration.nowait.sh" > framebatch_x_second_iteration.wait.sh
+chmod 770 framebatch_x_second_iteration.wait.sh framebatch_x_second_iteration.nowait.sh
 if [ $NORUN -eq 0 ]; then
- ./framebatch_x_second_iteration_wait.sh
+ ./framebatch_x_second_iteration.wait.sh
 fi
 
 #~ if [ $NORUN -eq 0 ]; then
@@ -516,27 +517,27 @@ fi
 
 ################################################# in case of EQR=1, prepare it:
 if [ $EQR -eq 1 ]; then
-cat << EOF > framebatch_eqr.sh
+cat << EOF > framebatch_eqr.nowait.sh
 if [ ! -z \$1 ]; then
  waiting_str=''
- for jobid in \`cat framebatch_02_coreg.sh | rev | gawk {'print \$1'} | rev\`; do
+ for jobid in \`cat framebatch_02_coreg.wait.sh | rev | gawk {'print \$1'} | rev\`; do
   stringg="framebatch_02_coreg_"\$jobid
   waiting_str=\$waiting_str" && ended("\$stringg")"
  done
  waiting_string=\`echo \$waiting_str | cut -c 4-\`
- echo "bsub2slurm.sh -w '"\$waiting_string"' -q $bsubquery -W 02:00 -n 1 -J EQR_$frame -o LOGS/EQR.out -e LOGS/EQR.err ./framebatch_eqr.sh" > framebatch_eqr_wait.sh
- chmod 770 framebatch_eqr_wait.sh
- ./framebatch_eqr_wait.sh
+ echo "bsub2slurm.sh -w '"\$waiting_string"' -q $bsubquery -W 02:00 -n 1 -J EQR_$frame -o LOGS/EQR.out -e LOGS/EQR.err ./framebatch_eqr.nowait.sh" > framebatch_eqr.wait.sh
+ chmod 770 framebatch_eqr.wait.sh
+ ./framebatch_eqr.wait.sh
 else
  framebatch_eqr.sh $NBATCH
 fi
 EOF
-chmod 770 framebatch_eqr.sh
+chmod 770 framebatch_eqr.nowait.sh
 if [ $NORUN -eq 0 ]; then
  #./framebatch_eqr.sh -w
- echo "./framebatch_eqr.sh -w" >> framebatch_x_second_iteration.sh
+ echo "./framebatch_eqr.nowait.sh -w" >> framebatch_x_second_iteration.wait.sh
 else
- echo "To run this step, use ./framebatch_eqr.sh"
+ echo "To run this step, use ./framebatch_eqr.nowait.sh"
 fi
 fi
 ###################################################### Make ifgs
@@ -549,14 +550,14 @@ fi
  
  prepare_job_script $step $stepcmd $stepsql $stepprev
  if [ $NORUN -eq 0 ]; then
-   if [ -f $step.sh ]; then
-    ./$step.sh
+   if [ -f $step.wait.sh ]; then
+    ./$step.wait.sh
    else
     echo "ERROR: no mk_ifg script exists - perhaps not enough of input data. Exiting (keeping processing, so you may store at least coregistered files and their LUTs)"
     exit
    fi
  else
-  echo "To run this step, use ./"$step".sh"
+  echo "To run this step, use ./"$step".x.sh"
  fi
 
 ###################################################### Unwrapping
@@ -569,10 +570,10 @@ fi
  
  prepare_job_script $step $stepcmd $stepsql $stepprev
  if [ $NORUN -eq 0 ]; then
-  ./$step.sh
+  ./$step.wait.sh
  echo "All bsub jobs are sent for processing."
  else
-  echo "To run this step, use ./"$step".sh"
+  echo "To run this step, use ./"$step".x.sh, where x=nowait would start immediately while wait will start after finishing the previous stage"
  fi
 
 
@@ -595,30 +596,30 @@ if [ $prioritise -eq 1 ]; then
  gpextra=$gpextra"-P "
 fi
 
-cat << EOF > framebatch_05_gap_filling.sh
+cat << EOF > framebatch_05_gap_filling.nowait.sh
 echo "The gapfilling will use RSLCs in your work folder and update ifg or unw that were not generated (in background - check bjobs)"
 if [ ! -z \$1 ]; then
  waiting_str=''
- for jobid in \`cat framebatch_04_unwrap.sh | rev | gawk {'print \$1'} | rev\`; do
+ for jobid in \`cat framebatch_04_unwrap.wait.sh | rev | gawk {'print \$1'} | rev\`; do
   stringg="framebatch_04_unwrap_"\$jobid
   waiting_str=\$waiting_str" && ended("\$stringg")"
  done
  waiting_string=\`echo \$waiting_str | cut -c 4-\`
- echo "bsub2slurm.sh -w '"\$waiting_string"' -q $bsubquery -W 10:00 -n 1 -J framebatch_05_gap_filling_$frame -o LOGS/framebatch_05_gap_filling.out -e LOGS/framebatch_05_gap_filling.err ./framebatch_05_gap_filling.sh" > framebatch_05_gap_filling_wait.sh
- chmod 770 framebatch_05_gap_filling_wait.sh
- ./framebatch_05_gap_filling_wait.sh
+ echo "bsub2slurm.sh -w '"\$waiting_string"' -q $bsubquery -W 10:00 -n 1 -J framebatch_05_gap_filling_$frame -o LOGS/framebatch_05_gap_filling.out -e LOGS/framebatch_05_gap_filling.err ./framebatch_05_gap_filling.nowait.sh" > framebatch_05_gap_filling.wait.sh
+ chmod 770 framebatch_05_gap_filling.wait.sh
+ ./framebatch_05_gap_filling.wait.sh
 else
  framebatch_gapfill.sh $gpextra $NBATCH
 fi
 EOF
-chmod 770 framebatch_05_gap_filling.sh
+chmod 770 framebatch_05_gap_filling.nowait.sh
 #if [ $NORUN -eq 0 ] && [ $STORE -lt 1 ]; then
 #this below option means that even in AUTOSTORE, the gapfilling will be performed...
 #in this case, however, it will be sent to bsub together with geotiff generation script
 #so.. more connections now depend on 'luck having to wait for bsub2slurm.sh -x'
 #this definitely needs improvement, yet better 'than nothing'.. i suppose
 if [ $NORUN -eq 0 ]; then
- ./framebatch_05_gap_filling.sh -w
+ ./framebatch_05_gap_filling.nowait.sh -w
 else
  echo "To run gapfilling afterwards, use ./framebatch_gapfill.sh"
 fi
@@ -628,7 +629,7 @@ fi
 
 ###################################################### Geocoding to tiffs
 echo "Preparing script for geocoding results (will be auto-run by gap_filling routine)"
-cat << EOF > framebatch_06_geotiffs.sh
+cat << EOF > framebatch_06_geotiffs.wait.sh
 NOPAR=1
 MAXPAR=10
 frame=$frame
@@ -641,7 +642,7 @@ if [ \$noimgs -gt 0 ]; then
  if [ \$NOPAR -gt \$MAXPAR ]; then NOPAR=\$MAXPAR; fi
 fi
 EOF
-cp framebatch_06_geotiffs.sh framebatch_06_geotiffs_nowait.sh
+cp framebatch_06_geotiffs.wait.sh framebatch_06_geotiffs.nowait.sh
 
 
 #in case of EQR, do also full size previews - as these will be used for KML
@@ -651,13 +652,13 @@ else
  extracmdgeo=''
 fi
 
-echo "bsub2slurm.sh -q $bsubquery_multi -W 07:00 -J $frame'_geo' -n \$NOPAR -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs_nowait.sh
+echo "bsub2slurm.sh -q $bsubquery_multi -W 07:00 -J $frame'_geo' -n \$NOPAR -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs.nowait.sh
 chmod 770 framebatch_06_geotiffs*.sh
 
 
 #ok, but the core script will run only after unwrapping jobs are finished..
 waiting_str=''
-for jobid in `cat framebatch_04_unwrap.sh | rev | gawk {'print $1'} | rev`; do
+for jobid in `cat framebatch_04_unwrap.wait.sh | rev | gawk {'print $1'} | rev`; do
  stringg="framebatch_04_unwrap_"$jobid
  waiting_str=$waiting_str" && ended("$stringg")"
 done
@@ -667,11 +668,11 @@ waiting_string=`echo $waiting_str | cut -c 4-`
 
 if [ $STORE -eq 1 ]; then
  echo "Making the system automatically store the generated data (for auto update of frames)"
- echo "cd $BATCH_CACHE_DIR" >> framebatch_06_geotiffs_nowait.sh
+ echo "cd $BATCH_CACHE_DIR" >> framebatch_06_geotiffs.nowait.sh
  #echo "echo 'waiting 60 seconds for jobs to synchronize'" >> framebatch_06_geotiffs_nowait.sh
  #echo "sleep 60" >> framebatch_06_geotiffs_nowait.sh
- echo "bsub2slurm.sh -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore 0 $dogacos" >> framebatch_06_geotiffs_nowait.sh #$frame
- echo "bsub2slurm.sh -w '"$waiting_string"' -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore 0 $dogacos" >> framebatch_06_geotiffs.sh #$frame
+ echo "bsub2slurm.sh -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore 0 $dogacos" >> framebatch_06_geotiffs.nowait.sh #$frame
+ echo "bsub2slurm.sh -w '"$waiting_string"' -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore 0 $dogacos" >> framebatch_06_geotiffs.wait.sh #$frame
  #echo "bsub2slurm.sh -w $frame'_geo' -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore" >> framebatch_06_geotiffs_nowait.sh #$frame
  #cd -
 fi

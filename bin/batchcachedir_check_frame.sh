@@ -33,7 +33,7 @@ todel=0
          fi
       else
        if [ ! -d $frame/GEOC ]; then
-        if [ ! -f $frame/framebatch_06_geotiffs_nowait.sh ]; then
+        if [ ! -f $frame/framebatch_06_geotiffs.nowait.sh ]; then
          echo "this frame has geocoding script missing: "$frame;
         else
          echo "this frame needs geocoding: "$frame;
