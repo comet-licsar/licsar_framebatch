@@ -121,9 +121,10 @@ if [ $DORSLC -eq 1 ]; then
     rm -f temp_$frame'_keeprslc' temp_$frame'_keeprslc2' 2>/dev/null
   fi
   #now do the routine export
+  master=`ls $frame/geo/20??????.hgt | cut -d '.' -f1 | cut -d '/' -f3`
   for date in `ls $frame/RSLC/20?????? -d | cut -d '/' -f3`; do
    # if it is not master
-   if [ ! -d $frameDir/SLC/$date ]; then
+   if [ ! $date == $master ]; then
     #if [ $MOVE -eq 1 ]; then rm $frame/RSLC/$date/$date.rslc 2>/dev/null; fi
     # if there are 'some' rslc files
     if [ `ls $frame/RSLC/$date/$date.IW?.rslc 2>/dev/null | wc -l` -gt 0 ]; then
@@ -152,6 +153,10 @@ if [ $DORSLC -eq 1 ]; then
       #time 7za a -mx=1 '-xr!*.lt' $frameDir/RSLC/$date.7z $date >/dev/null 2>/dev/null
       #if [ $MOVE -eq 1 ]; then rm -r $date; fi
       cd $thisDir
+      if [ -f $frame/log/coreg_quality_$master'_'$date.log ]; then
+       echo "exporting ESD value"
+       store_ESD.py $frame $frame/log/coreg_quality_$master'_'$date.log
+      fi
      fi
     fi
    fi

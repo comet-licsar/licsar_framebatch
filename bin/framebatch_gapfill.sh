@@ -22,20 +22,24 @@ ifg_combinations=4
 qualcheck=0
 
 if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_looks] [azimuth_looks]";
-                   echo "NBATCH.... number of interferograms to generate per job (licsar defaults to 5)";
+                   echo "NBATCH.... number of interferograms to generate per computing job (licsar defaults to 5)";
                    echo "MAXBTEMP.. max temporal baseline in days. Default is "$MAXBTEMP" [days]";
                    echo "range_looks and azimuth_looks - defaults are range_looks="$orig_rlks" and azimuth_looks="$orig_azlks;
 #                  echo "parameter -w ... will wait for the unwrapping jobs to end (useful only if unwrap is running, see licsar_make_frame)";
+                   echo "parameter -n ... set custom number of max ifg combinations. default is -n 4"
                    echo "parameter -g ... will run further framebatch step, i.e. geocoding"
                    echo "parameter -S ... will run store and delete after geocoding.."
                    echo "parameter -P ... prioritise (run through cpom-comet)"
                    echo "parameter -o ... no check if gapfill dir exists - DO NOT USE IF NOT SURE WHETHER ANOTHER GAPFILL IN PROGRESS"
                    exit; fi
 
-while getopts ":wgSaPo" option; do
+while getopts ":wngSaPo" option; do
  case "${option}" in
   w ) waiting=1; echo "parameter -w set: will wait for standard unwrapping before ifg gap filling";
 #      shift
+      ;;
+  n ) ifg_combinations=$2; echo "setting number of ifg combinations per epoch to "$2;
+      shift
       ;;
   g ) geocode=1; echo "parameter -g set: will do post-processing step - geocoding after the finish";
 #      shift

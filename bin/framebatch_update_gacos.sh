@@ -34,12 +34,13 @@ fi
 #use input file to request gacos data
 gacosapi.sh $frame.inp
 
-if [ ! -f $frame.tar.gz ]; then
+if [ ! -f $work_dir/$frame.tar.gz ]; then
  echo "some error in getting GACOS corrections"
  exit
 fi
 
 #now decompress the files
+cd $work_dir
 mkdir $frame 2>/dev/null
 mv $frame.tar.gz $frame/.
 cd $frame

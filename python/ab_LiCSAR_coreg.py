@@ -52,9 +52,8 @@ class CoregEnv(LicsEnv):
                         'RSLC/{0:%Y%m%d}/{0:%Y%m%d}.*mli.*'.format(date), # Patterns to output
                         'RSLC/{0:%Y%m%d}/{1:%Y%m%d}_{0:%Y%m%d}.slc.mli.lt'.format(date,mstrDate),
                         'RSLC/{0:%Y%m%d}/{1:%Y%m%d}_{0:%Y%m%d}.off'.format(date,mstrDate),
-                        'GEOC.*',
-                        'log.*',
-                        'tab.*']
+                        'GEOC\.MLI.*',
+                        'log.*']
         self.srcSlcPath = 'SLC/{:%Y%m%d}'.format(date) #used to check source slc
         self.srcLutPath = 'LUT/{:%Y%m%d}'.format(date) #used to check source slc
         self.newDirs = ['tab','log'] # empty directories to create
@@ -183,6 +182,8 @@ def main(argv):
 
                 rslc = os.path.join(env.actEnv,'RSLC',date.strftime('%Y%m%d'),
                                     date.strftime('%Y%m%d.rslc'))
+                rslc_epochdir = os.path.join(env.actEnv,'RSLC',date.strftime('%Y%m%d'))
+                
                 #if os.path.exists(rslc):
                 #    print("Removing mosaiced image {0}".format(rslc))
                 #    os.remove(rslc)
@@ -195,10 +196,13 @@ def main(argv):
                 except:
                     print('debug 1: error in mysql connection - common after Sep 2020 change in mysql db by JASMIN..')
                     print('but continuing')
-
-                if rc!=0:
-                    shutil.rmtree('./RSLC')
-
+                if os.path.exists(rslc_epochdir):
+                    if rc!=0:
+                        shutil.rmtree(rslc_epochdir)
+                    else:
+                        cmd = 'create_geoctiffs_to_pub.sh -M {0} {1}'.format(rslc_epochdir, date.strftime('%Y%m%d'))
+                        rcc = os.system(cmd)
+                
             else: # otherwise set status to missing slc
                 #lq.conn.ping(reconnect=True)
                 lq.set_rslc_status(row['rslc_id'],MISSING_SLC)

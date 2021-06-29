@@ -278,7 +278,7 @@ class LicsEnv():
         return self
     def __exit__(self, *args):
         if args[0]:
-            print("Recieved exception {}".format(args[1]))
+            print("Received exception {}".format(args[1]))
             if self.cleanHook:
                 self.cleanHook()
             for cleanDir in self.cleanDirs:
