@@ -329,7 +329,7 @@ chmod 777 $step.sql
     done
    fi
    for jobid_prev in `cat tmpText | sort -nu`; do
-    waitText=$waitText" && ended("$stepprev"_"$jobid_prev")"
+    waitText=$waitText" && ended("$jobid_prev"_"$stepprev")"
    done
    waitText=`echo $waitText | cut -c 4-`
    waitcmd='-w "'$waitText'"'
@@ -357,9 +357,9 @@ chmod 777 $step.sql
   exptime=`echo $hoursperone*$notoprocess+1.5 | bc | cut -d '.' -f1`
   if [ $exptime -gt 23 ]; then exptime=23; fi
   if [ $exptime -lt 10 ]; then exptime=0$exptime; fi
-  echo bsub2slurm.sh -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
+  echo bsub2slurm.sh -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$jobid"_"$step" \
      -q $bsubquery -n $bsubncores -W $exptime:59 $extrabsub $waitcmd $stepcmd $jobid >> $step.wait.sh
-  echo bsub2slurm.sh -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$step"_"$jobid" \
+  echo bsub2slurm.sh -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$jobid"_"$step" \
      -q $bsubquery -n $bsubncores -W $exptime:59 $extrabsub $stepcmd $jobid >> $step'.nowait.sh'
  done
  
@@ -476,7 +476,7 @@ fi
 #cat << EOF > framebatch_x_second_iteration.sh
 waiting_str=''
 for jobid in `cat framebatch_02_coreg.wait.sh | rev | gawk {'print $1'} | rev`; do
-  stringg="framebatch_02_coreg_"$jobid
+  stringg=$jobid"_framebatch_02_coreg"
   waiting_str=$waiting_str" && ended("$stringg")"
 done
 waiting_string=`echo $waiting_str | cut -c 4-`
@@ -521,7 +521,7 @@ cat << EOF > framebatch_eqr.nowait.sh
 if [ ! -z \$1 ]; then
  waiting_str=''
  for jobid in \`cat framebatch_02_coreg.wait.sh | rev | gawk {'print \$1'} | rev\`; do
-  stringg="framebatch_02_coreg_"\$jobid
+  stringg=\$jobid"_framebatch_02_coreg"
   waiting_str=\$waiting_str" && ended("\$stringg")"
  done
  waiting_string=\`echo \$waiting_str | cut -c 4-\`
@@ -601,7 +601,7 @@ echo "The gapfilling will use RSLCs in your work folder and update ifg or unw th
 if [ ! -z \$1 ]; then
  waiting_str=''
  for jobid in \`cat framebatch_04_unwrap.wait.sh | rev | gawk {'print \$1'} | rev\`; do
-  stringg="framebatch_04_unwrap_"\$jobid
+  stringg=\$jobid"_framebatch_04_unwrap"
   waiting_str=\$waiting_str" && ended("\$stringg")"
  done
  waiting_string=\`echo \$waiting_str | cut -c 4-\`
@@ -660,7 +660,7 @@ chmod 770 framebatch_06_geotiffs*.sh
 #ok, but the core script will run only after unwrapping jobs are finished..
 waiting_str=''
 for jobid in `cat framebatch_04_unwrap.wait.sh | rev | gawk {'print $1'} | rev`; do
- stringg="framebatch_04_unwrap_"$jobid
+ stringg=$jobid"_framebatch_04_unwrap"
  waiting_str=$waiting_str" && ended("$stringg")"
 done
 waiting_string=`echo $waiting_str | cut -c 4-`

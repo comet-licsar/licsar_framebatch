@@ -240,6 +240,65 @@ if [ $ADD36M -eq 1 ]; then
        if [ -f gapfill_job/long_ifgs ]; then
         shuf gapfill_job/long_ifgs | head -n $maxconn >> gapfill_job/tmp_ifg_all2
        fi
+
+       #sep connections with june next year
+       rm gapfill_job/long_ifgs 2>/dev/null
+       let year2=$year+1
+       for sep in `grep $year'09' gapfill_job/long_rslcs`; do
+        for LAST in `grep $year2'06' gapfill_job/long_rslcs`; do
+          echo $sep'_'$LAST >> gapfill_job/long_ifgs
+        done
+       done
+       if [ -f gapfill_job/long_ifgs ]; then
+        shuf gapfill_job/long_ifgs | head -n $maxconn >> gapfill_job/tmp_ifg_all2
+       fi
+       
+       # added in 07/2021 - also 12 month connections..
+       #sep connections with sep next year
+       rm gapfill_job/long_ifgs 2>/dev/null
+       let year2=$year+1
+       for sep in `grep $year'09' gapfill_job/long_rslcs`; do
+        for LAST in `grep $year2'09' gapfill_job/long_rslcs`; do
+          echo $sep'_'$LAST >> gapfill_job/long_ifgs
+        done
+       done
+       if [ -f gapfill_job/long_ifgs ]; then
+        shuf gapfill_job/long_ifgs | head -n $maxconn >> gapfill_job/tmp_ifg_all2
+       fi
+       #mar connections with mar next year
+       rm gapfill_job/long_ifgs 2>/dev/null
+       let year2=$year+1
+       for sep in `grep $year'03' gapfill_job/long_rslcs`; do
+        for LAST in `grep $year2'03' gapfill_job/long_rslcs`; do
+          echo $sep'_'$LAST >> gapfill_job/long_ifgs
+        done
+       done
+       if [ -f gapfill_job/long_ifgs ]; then
+        shuf gapfill_job/long_ifgs | head -n $maxconn >> gapfill_job/tmp_ifg_all2
+       fi
+       #june connections with mar next year
+       rm gapfill_job/long_ifgs 2>/dev/null
+       let year2=$year+1
+       for sep in `grep $year'06' gapfill_job/long_rslcs`; do
+        for LAST in `grep $year2'03' gapfill_job/long_rslcs`; do
+          echo $sep'_'$LAST >> gapfill_job/long_ifgs
+        done
+       done
+       if [ -f gapfill_job/long_ifgs ]; then
+        shuf gapfill_job/long_ifgs | head -n $maxconn >> gapfill_job/tmp_ifg_all2
+       fi
+       
+        #june connections with june next year
+       rm gapfill_job/long_ifgs 2>/dev/null
+       let year2=$year+1
+       for sep in `grep $year'06' gapfill_job/long_rslcs`; do
+        for LAST in `grep $year2'06' gapfill_job/long_rslcs`; do
+          echo $sep'_'$LAST >> gapfill_job/long_ifgs
+        done
+       done
+       if [ -f gapfill_job/long_ifgs ]; then
+        shuf gapfill_job/long_ifgs | head -n $maxconn >> gapfill_job/tmp_ifg_all2
+       fi
       done
      fi
     fi
