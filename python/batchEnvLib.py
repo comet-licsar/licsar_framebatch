@@ -250,6 +250,7 @@ class LicsEnv():
         self.outPats = []
         self.prevDir = []
         self.newDirs = []
+        self.frame = frame
         self.cleanDirs = []
         self.cleanHook = None
         try:
@@ -290,4 +291,15 @@ class LicsEnv():
             sync(self.actEnv,self.frameCache,'sync',create=True)
         os.chdir(self.prevDir)
         shutil.rmtree(self.actEnv)
+        # 07/2021 - just to fix issue of not deleting SLC files after correctly generated RSLC files
+        master = get_master(self.frame)
+        slcdir = os.path.join(self.frameCache,'SLC')
+        rslcdir = os.path.join(self.frameCache,'RSLC')
+        rslcs = os.listdir(rslcdir)
+        slcs = os.listdir(slcdir)
+        slcs.remove(master)
+        for slc in slcs:
+            if slc in rslcs:
+                print(slc+' was already coregistered, removing')
+                shutil.rmtree(os.path.join(slcdir, slc))
         return True

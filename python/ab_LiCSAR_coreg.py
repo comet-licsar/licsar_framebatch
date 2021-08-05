@@ -198,9 +198,10 @@ def main(argv):
                     print('but continuing')
                 if os.path.exists(rslc_epochdir):
                     if rc!=0:
+                        print('there was an error, cleaning the (probably) wrongly generated RSLC')
                         shutil.rmtree(rslc_epochdir)
                     else:
-                        cmd = 'create_geoctiffs_to_pub.sh -M {0} {1}'.format(rslc_epochdir, date.strftime('%Y%m%d'))
+                        cmd = 'create_geoctiffs_to_pub.sh -M {0} {1}'.format(env.actEnv, date.strftime('%Y%m%d'))
                         rcc = os.system(cmd)
                 
             else: # otherwise set status to missing slc

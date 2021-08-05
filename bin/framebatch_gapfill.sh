@@ -14,7 +14,7 @@ CHECKSCRATCH=1
 prioritise=0
 checkrslc=1
 ifg_combinations=4
-
+tienshan=0
 
 #quality checker here is the basic one. but still it does problems! e.g. Iceland earthquake - took long to process due to tech complications
 #and just after this was done, this auto-checker detected it as problematic and deleted those wonderful ifgs!!
@@ -31,9 +31,10 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -S ... will run store and delete after geocoding.."
                    echo "parameter -P ... prioritise (run through cpom-comet)"
                    echo "parameter -o ... no check if gapfill dir exists - DO NOT USE IF NOT SURE WHETHER ANOTHER GAPFILL IN PROGRESS"
+                   echo "parameter -T ... Tien Shan strategy - do connections starting May etc."
                    exit; fi
 
-while getopts ":wngSaPo" option; do
+while getopts ":wngSaPoT" option; do
  case "${option}" in
   w ) waiting=1; echo "parameter -w set: will wait for standard unwrapping before ifg gap filling";
 #      shift
@@ -51,6 +52,8 @@ while getopts ":wngSaPo" option; do
 #      shift
       ;;
   o ) CHECKSCRATCH=0; echo "skipping check for existing frame on LiCSAR_temp";
+      ;;
+  T ) tienshan=1; echo "arranging ifg connections strategy for Tien Shan";
       ;;
   esac
 done
@@ -193,7 +196,92 @@ for FIRST in `cat gapfill_job/tmp_rslcs`; do
  done 
 done
 
-if [ $ADD36M -eq 1 ]; then
+if [ $tienshan -eq 1 ]; then
+    echo "preparing Tien Shan connections (all since May)"
+    maxconn=100
+    first=`head -n2 gapfill_job/tmp_rslcs | tail -n1`
+    last=`tail -n2 gapfill_job/tmp_rslcs | head -n1`
+    if [ `datediff $first $last` -gt 89 ]; then
+      cp gapfill_job/tmp_rslcs gapfill_job/long_rslcs
+    fi
+    #do 
+    for year in `cat gapfill_job/long_rslcs | cut -c -4 | sort -u`; do
+       #let year2=$year+1
+       #let year3=$year+2
+       #3 months connections
+       rm gapfill_job/long_ifgs 2>/dev/null
+       for month1 in 5 6 7 8; do
+         let month2=$month1+3
+         if [ $month1 -lt 10 ]; then month1='0'$month1; fi
+         if [ $month2 -lt 10 ]; then month2='0'$month2; fi
+         for firstdate in `grep ^$year$month1 gapfill_job/long_rslcs`; do
+           for lastdate in `grep ^$year$month2 gapfill_job/long_rslcs`; do
+             echo $firstdate'_'$lastdate >> gapfill_job/long_ifgs
+           done
+         done
+       done
+       if [ -f gapfill_job/long_ifgs ]; then
+        shuf gapfill_job/long_ifgs | head -n $maxconn >> gapfill_job/tmp_ifg_all2
+       fi
+       
+       
+       #6 months connections: May, Nov
+       rm gapfill_job/long_ifgs 2>/dev/null
+       for month1 in 5 11; do
+         let month2=$month1+6
+         year2=$year
+         if [ $month2 -gt 12 ]; then let month2=$month2-12; let year2=$year+1; fi
+         if [ $month1 -lt 10 ]; then month1='0'$month1; fi
+         if [ $month2 -lt 10 ]; then month2='0'$month2; fi
+         for firstdate in `grep ^$year$month1 gapfill_job/long_rslcs`; do
+           for lastdate in `grep ^$year2$month2 gapfill_job/long_rslcs`; do
+             echo $firstdate'_'$lastdate >> gapfill_job/long_ifgs
+           done
+         done
+       done
+       if [ -f gapfill_job/long_ifgs ]; then
+        shuf gapfill_job/long_ifgs | head -n $maxconn >> gapfill_job/tmp_ifg_all2
+       fi
+       
+       
+       #9 months connections: Aug, Sep, Oct, Nov
+       rm gapfill_job/long_ifgs 2>/dev/null
+       for month1 in 8 9 10 11; do
+         let month2=$month1+9
+         year2=$year
+         if [ $month2 -gt 12 ]; then let month2=$month2-12; let year2=$year+1; fi
+         if [ $month1 -lt 10 ]; then month1='0'$month1; fi
+         if [ $month2 -lt 10 ]; then month2='0'$month2; fi
+         for firstdate in `grep ^$year$month1 gapfill_job/long_rslcs`; do
+           for lastdate in `grep ^$year2$month2 gapfill_job/long_rslcs`; do
+             echo $firstdate'_'$lastdate >> gapfill_job/long_ifgs
+           done
+         done
+       done
+       if [ -f gapfill_job/long_ifgs ]; then
+        shuf gapfill_job/long_ifgs | head -n $maxconn >> gapfill_job/tmp_ifg_all2
+       fi
+
+       #12 months connections: May, Jun, Jul, Aug, Sep, Oct, Nov
+       rm gapfill_job/long_ifgs 2>/dev/null
+       for month1 in 5 6 7 8 9 10 11; do
+         month2=$month1
+         let year2=$year+1
+         if [ $month1 -lt 10 ]; then month1='0'$month1; fi
+         if [ $month2 -lt 10 ]; then month2='0'$month2; fi
+         for firstdate in `grep ^$year$month1 gapfill_job/long_rslcs`; do
+           for lastdate in `grep ^$year2$month2 gapfill_job/long_rslcs`; do
+             echo $firstdate'_'$lastdate >> gapfill_job/long_ifgs
+           done
+         done
+       done
+       if [ -f gapfill_job/long_ifgs ]; then
+        shuf gapfill_job/long_ifgs | head -n $maxconn >> gapfill_job/tmp_ifg_all2
+       fi
+    done;
+
+else
+ if [ $ADD36M -eq 1 ]; then
     maxconn=5
     #now, add 3 and 6 months data
     first=`head -n2 gapfill_job/tmp_rslcs | tail -n1`
@@ -302,6 +390,7 @@ if [ $ADD36M -eq 1 ]; then
       done
      fi
     fi
+ fi
 fi
 
 #cat gapfill_job/tmp_ifg_all2 | head -n-5 | sort -u > gapfill_job/tmp_ifg_all

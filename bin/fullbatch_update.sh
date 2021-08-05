@@ -73,7 +73,7 @@ elif [ $code == 'upfill' ] || [ $code == 'backfill' ]; then
 
 elif [ $code == 'gapfill' ]; then
  todayymd=`date +%Y%m%d`
- batchfile=$batchesdir/gapfill/gapfill.txt
+ batchfile=$batchesdir/gapfill/$todayymd.txt
  for frame in `cat $batchfile`; do
   echo "gapfilling - only the first identified gap"
   nohup framebatch_update_frame_dogap.sh $frame $batchesdir/$code/$todayymd'_'$frame'.gaps' 0 $batchfile > $batchesdir/$code/$todayymd'_'$frame'.log' &

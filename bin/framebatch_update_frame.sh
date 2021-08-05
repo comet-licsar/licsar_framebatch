@@ -160,7 +160,8 @@ if [ $nla_start == 1 ]; then
     done
     #
     extra=$extra" -c"
-    autodown=0
+    #autodown=0
+    autodown=1
    else
     echo "no data from this space and time are available on NLA"
     echo "will check on scihub/ASF"

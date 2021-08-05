@@ -46,6 +46,7 @@ EQR=0
 force=0
 #this switch is only working together with auto-store
 dogacos=0
+tienshan=0
 
 if [ $USER == 'earmla' ] || [ $USER == 'yma' ]; then 
  prioritise=1
@@ -215,6 +216,13 @@ if [ $prioritise_nrt -eq 1 ]; then
  bsubquery_multi='comet_responder'
 fi
 
+# get some extra info from local_config.py - e.g. tienshan = 1
+if [ -f $LiCSAR_procdir/$track/$frame/local_config.py ]; then
+ #check tien shan
+ if [ `grep -c tienshan $LiCSAR_procdir/$track/$frame/local_config.py` -gt 0 ]; then
+   tienshan=`grep ^tienshan $LiCSAR_procdir/$track/$frame/local_config.py | cut -d '=' -f2 | sed 's/ //g'`
+ fi
+fi
 #if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
 #  bsubquery='cpom-comet'
 # else
@@ -483,9 +491,7 @@ waiting_string=`echo $waiting_str | cut -c 4-`
 echo "./framebatch_02_coreg.nowait.sh; ./framebatch_03_mk_ifg.wait.sh; ./framebatch_04_unwrap.wait.sh" > ./framebatch_x_second_iteration.nowait.sh
 echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:30 -n 1 -J it2_"$frame" -o LOGS/it2.out -e LOGS/it2.err ./framebatch_x_second_iteration.nowait.sh" > framebatch_x_second_iteration.wait.sh
 chmod 770 framebatch_x_second_iteration.wait.sh framebatch_x_second_iteration.nowait.sh
-if [ $NORUN -eq 0 ]; then
- ./framebatch_x_second_iteration.wait.sh
-fi
+
 
 #~ if [ $NORUN -eq 0 ]; then
   #~ echo "setting second itera"
@@ -535,11 +541,20 @@ EOF
 chmod 770 framebatch_eqr.nowait.sh
 if [ $NORUN -eq 0 ]; then
  #./framebatch_eqr.sh -w
- echo "./framebatch_eqr.nowait.sh -w" >> framebatch_x_second_iteration.wait.sh
+ # this would generate waiting script for the EQR, and start it after the second coreg iteration
+ #echo "./framebatch_eqr.nowait.sh -w" >> framebatch_x_second_iteration.wait.sh
+ echo "./framebatch_eqr.nowait.sh -w" >> framebatch_x_second_iteration.nowait.sh
 else
  echo "To run this step, use ./framebatch_eqr.nowait.sh"
 fi
 fi
+
+
+if [ $NORUN -eq 0 ]; then
+ ./framebatch_x_second_iteration.wait.sh
+fi
+
+
 ###################################################### Make ifgs
  echo "..setting make_ifg job (IFG)"
  
@@ -595,7 +610,9 @@ fi
 if [ $prioritise -eq 1 ]; then
  gpextra=$gpextra"-P "
 fi
-
+if [ $tienshan -eq 1 ]; then
+ gpextra=$gpextra"-T "
+fi
 cat << EOF > framebatch_05_gap_filling.nowait.sh
 echo "The gapfilling will use RSLCs in your work folder and update ifg or unw that were not generated (in background - check bjobs)"
 if [ ! -z \$1 ]; then
