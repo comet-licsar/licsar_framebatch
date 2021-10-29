@@ -30,6 +30,7 @@ if [ ! -f $frame.inp ]; then
  echo "some error in creating input"
  exit
 fi
+chmod 777 $frame.inp
 
 #use input file to request gacos data
 gacosapi.sh $frame.inp
@@ -53,7 +54,7 @@ gacos_archive_to_portal.sh $frame
 
 echo "done, cleaning"
 cd $work_dir
-rm -r $frame $frame.tar.gz $frame.inp
+rm -r $frame $frame.inp
 
 exit
 

@@ -68,15 +68,21 @@ mstrDate = dt.datetime.strptime(dateStr,'%Y%m%d')
 #setup database for processing
 ################################################################################
 polyid = get_polyid(frame)
+print('debug:')
+print('polyid is: '+str(polyid))
+print('mstrDate is: '+str(mstrDate))
+masterset = set_master(polyid,mstrDate)
+
 acq_imgs = add_acq_images(polyid, startdate.date(), enddate.date(), mstrDate.date())
+#acq_imgs will now contain at least the master epoch
 if len(acq_imgs)<2:
     print('No acquisitions registered for this frame in this time period. Try framebatch_data_refill.sh first?')
     exit()
-masterset = set_master(polyid,mstrDate)
+
 
 acq_imgs = acq_imgs.sort_values('acq_date').reset_index(drop=True)
 mstrline = acq_imgs[acq_imgs['acq_date']==mstrDate]
-acq_imgs['btemp'] = acq_imgs.acq_date.apply(lambda x: abs(x - mstrline['acq_date']))
+acq_imgs['btemp'] = acq_imgs.acq_date.apply(lambda x: abs(x - mstrDate)) #mstrline['acq_date']))
 acq_imgs = acq_imgs.sort_values('btemp')
 
 acq_imgs = acq_imgs[acq_imgs['acq_date']!=mstrDate]

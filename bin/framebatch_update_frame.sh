@@ -10,10 +10,12 @@ DAYSTOLERANCE=61
 if [ -z $2 ]; then echo "parameters are frame and code (code is either upfill or backfill.. or gapfill)"; 
     echo "running with parameter -k means Keep the frame in BATCH_CACHE_DIR (not delete it)";
     echo "parameter -u would process upfilling till today"
+    echo "parameter -P will run through comet queue"
     exit; fi
 
 storeparam='-S -G'
-while getopts ":kEu" option; do
+extra=''
+while getopts ":kEuP" option; do
  case "${option}" in
   k) storeparam=' ';
      ;;
@@ -22,6 +24,7 @@ while getopts ":kEu" option; do
      ;;
   u) tillnow=1;
      ;;
+  P) extra='-P'
  esac
 done
 #shift
@@ -30,7 +33,6 @@ shift $((OPTIND -1))
 frame=$1
 code=$2
 #if [ ! -z $2 ]; then PROCESSING=0; fi
-extra=''
 maxwaithours=168
 batchesdir='/gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current/batches'
 
@@ -141,6 +143,7 @@ if [ $nla_start == 1 ]; then
    fi
    #hourly checking of NLA requests status...
    if [ `grep -c "Created request" $batchesdir/temp/temp_nla.$frame` -gt 0 ]; then
+    grep "Created request" $batchesdir/temp/temp_nla.$frame
     pom=0
     hours=0
     while [ $pom == 0 ]; do

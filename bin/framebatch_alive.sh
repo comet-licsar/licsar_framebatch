@@ -26,7 +26,8 @@ for frame in `cat $inputfile`; do
  rm -rf $LiCSAR_temp/gapfill_temp/$frame 2>/dev/null
 
  if [ $onlyPOD == 1 ]; then
-  framebatch_update_frame.sh $frame upfill
+  nohup framebatch_update_frame.sh $frame upfill &
+  sleep 900
  else
   tr=`echo $frame | cut -d '_' -f1 | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
   master=`ls $LiCSAR_procdir/$tr/$frame/SLC | head -n1`

@@ -48,7 +48,7 @@ force=0
 dogacos=0
 tienshan=0
 
-if [ $USER == 'earmla' ] || [ $USER == 'yma' ]; then 
+if [ $USER == 'earmla' ]; then 
  prioritise=1
 else
  echo "Note: your query will go through a general queue"
@@ -348,13 +348,23 @@ chmod 777 $step.sql
   #if [ $bsubquery != "cpom-comet" ]; then
   #extrabsub='-x'
   #else
-  if [ $bsubquery == "cpom-comet" ]; then
-   if [ $step == "framebatch_02_coreg" ] || [ $step == "framebatch_04_unwrap" ]; then
+  #if [ $bsubquery == "cpom-comet" ]; then
+   if [ $step == "framebatch_02_coreg" ]; then # || [ $step == "framebatch_04_unwrap" ]; then
     #maxmem=25000
-    maxmem=16000
-    extrabsub='-R "rusage[mem='$maxmem']" -M '$maxmem
+    maxmem=16384
+   elif [ $step == "framebatch_03_mk_ifg" ]; then
+    maxmem=4096   # 4 GB should be ok for mk_ifg
+   elif [ $step == "framebatch_04_unwrap" ]; then
+    maxmem=8192   # 8 GB for the unwrap_geo... should be ok
+   else
+    #maxmem=4096  # 4 GB RAM should be enough for mk_imag, mk_ifg
+    maxmem=12288  # but we still saw errors in applying orbits! errors removed using 8 GB RAM. so setting 12 GB RAM..
    fi
-  fi
+   # update of JASMIN - they somehow decreased default memory... fixing this here for all jobs..
+   #extrabsub='-R "rusage[mem='$maxmem']" -M '$maxmem
+   extrabsub='-M '$maxmem
+   #fi
+  #fi
   #get expected time
   notoprocess=`grep -c $jobid $step.list`
   if [ $step == 'framebatch_01_mk_image' ]; then hoursperone=0.9; fi
@@ -424,6 +434,8 @@ else
  #ok, let's fix also the stuff already existing...
  if [ -d $LiCSAR_public/$track/$frame/interferograms ]; then
   mkdir GEOC 2>/dev/null
+  #sometimes EIDP keeps mess
+  rm -r $LiCSAR_public/$track/$frame/interferograms/geo 2>/dev/null
   for ifg in `ls $LiCSAR_public/$track/$frame/interferograms`; do
     if [ `echo $ifg | cut -d '_' -f1` -ge `echo $startdate | sed 's/-//g'` ]; then
     if [ `echo $ifg | cut -d '_' -f2` -le `echo $enddate | sed 's/-//g'` ]; then
@@ -488,7 +500,8 @@ for jobid in `cat framebatch_02_coreg.wait.sh | rev | gawk {'print $1'} | rev`; 
   waiting_str=$waiting_str" && ended("$stringg")"
 done
 waiting_string=`echo $waiting_str | cut -c 4-`
-echo "./framebatch_02_coreg.nowait.sh; ./framebatch_03_mk_ifg.wait.sh; ./framebatch_04_unwrap.wait.sh" > ./framebatch_x_second_iteration.nowait.sh
+echo "./framebatch_01_mk_image.nowait.sh; ./framebatch_02_coreg.wait.sh; ./framebatch_03_mk_ifg.wait.sh; ./framebatch_04_unwrap.wait.sh" > ./framebatch_x_second_iteration.nowait.sh
+echo "./framebatch_05_gap_filling.wait.sh" >> framebatch_x_second_iteration.nowait.sh
 echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:30 -n 1 -J it2_"$frame" -o LOGS/it2.out -e LOGS/it2.err ./framebatch_x_second_iteration.nowait.sh" > framebatch_x_second_iteration.wait.sh
 chmod 770 framebatch_x_second_iteration.wait.sh framebatch_x_second_iteration.nowait.sh
 
@@ -638,7 +651,7 @@ chmod 770 framebatch_05_gap_filling.nowait.sh
 if [ $NORUN -eq 0 ]; then
  ./framebatch_05_gap_filling.nowait.sh -w
 else
- echo "To run gapfilling afterwards, use ./framebatch_gapfill.sh"
+ echo "To run gapfilling afterwards, use ./framebatch_gapfill.nowait.sh"
 fi
 
 
@@ -765,7 +778,7 @@ echo ""
 mkdir log tab 2>/dev/null
 master=`ls geo/*.hgt | cut -d '/' -f2 | cut -d '.' -f1`
 #if [ ! -f tab/$master'_tab' ]; then
-cp $LiCSAR_procdir/$track/$frame/tab/$master'_tab' tab/.
+cp $LiCSAR_procdir/$track/$frame/tab/$master'_tab' tab/. 2>/dev/null
 #fi
 
 

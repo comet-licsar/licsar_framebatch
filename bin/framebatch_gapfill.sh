@@ -2,7 +2,9 @@
 MAXBTEMP=181
 orig_rlks=20
 orig_azlks=4
-bsubncores=16
+rlks=$orig_rlks
+azlks=$orig_azlks
+#bsubncores=16
 #according to CEDA Support, we should keep 1 process per processor.
 #but -n1 was working usually fine... so keeping -n1
 bsubncores=1
@@ -59,6 +61,38 @@ while getopts ":wngSaPoT" option; do
 done
 shift $((OPTIND-1))
 
+
+if [ ! -z $2 ]; then MAXBTEMP=$2; fi
+if [ ! -z $3 ]; then rlks=$3; fi
+if [ ! -z $4 ]; then azlks=$4; fi
+
+
+# read local config parameters
+if [ -f local_config.py ]; then
+  if [ `grep ^tienshan local_config.py | cut -d '=' -f2 | sed 's/ //g'` -eq 1 ] 2>/dev/null; then
+   echo "setting to Tien Shan frames processing"
+   tienshan=1
+  fi
+  max_ifg_comb=`grep ^max_ifg_comb local_config.py | cut -d '=' -f2 | sed 's/ //g'`
+  if [ $max_ifg_comb -gt 0 ] 2>/dev/null; then
+   ifg_combinations=$max_ifg_comb
+  fi
+  max_ifg_btemp=`grep ^max_ifg_btemp local_config.py | cut -d '=' -f2 | sed 's/ //g'`
+  if [ $max_ifg_btemp -gt 0 ] 2>/dev/null; then
+   MAXBTEMP=$max_ifg_btemp
+  fi
+  rglkstemp=`grep ^rglks local_config.py | cut -d '=' -f2 | sed 's/ //g'`
+  if [ $rglkstemp -gt 0 ] 2>/dev/null; then
+   rlks=$rglkstemp
+   orig_rlks=$rglkstemp
+  fi
+  azlkstemp=`grep ^azlks local_config.py | cut -d '=' -f2 | sed 's/ //g'`
+  if [ $azlkstemp -gt 0 ] 2>/dev/null; then
+   azlks=$azlkstemp
+   orig_azlks=$azlkstemp
+  fi
+fi
+
 if [ $checkrslc -eq 1 ]; then
  #to fix situation when RSLCs already exist...
  master=`ls geo/????????.hgt | cut -d '/' -f2 | cut -d '.' -f1`
@@ -86,25 +120,16 @@ if [ $checkrslc -eq 1 ]; then
 fi
 
 
-if [ -z $2 ]; then echo "using default value of MAXBtemp="$MAXBTEMP; else MAXBTEMP=$2; fi
-if [ -z $3 ]; then echo "using default value of range_looks="$orig_rlks; rlks=$orig_rlks; else rlks=$3; fi
-if [ -z $4 ]; then echo "using default value of azimuth_looks="$orig_azlks; azlks=$orig_azlks; else azlks=$4; fi
-
-if [ $rlks != $orig_rlks ] || [ $azlks != $orig_azlks ]; then
- echo "You have chosen for custom multilooking"
- echo "please note that these will be generated from all rslcs here and only for ifgs that do not exist in IFG"
- echo ""
-fi
 #NBATCH=5
 NBATCH=$1
 WORKFRAMEDIR=`pwd`
-if [ -f local_config.py ]; then
- noifg=`grep '^ifg_connections' local_config.py | cut -d '=' -f2`
- if [ ! -z $noifg ]; then
-  ifg_combinations=$noifg
-  echo "setting custom ifg combination number to "$ifg_combinations
- fi
-fi
+#if [ -f local_config.py ]; then
+# noifg=`grep '^ifg_connections' local_config.py | cut -d '=' -f2`
+# if [ ! -z $noifg ]; then
+#  ifg_combinations=$noifg
+#  echo "setting custom ifg combination number to "$ifg_combinations
+# fi
+#fi
 # ifg_combinations=
 #fi
 frame=`pwd | rev | cut -d '/' -f1 | rev`
@@ -584,7 +609,7 @@ for job in `seq 1 $nojobs`; do
  if [ -f gapfill_job/ifgjob_$job.sh ]; then
   #weird error in 'job not found'.. workaround:
 #  echo bsub -q $bsubquery -n $bsubncores -W 05:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
-  echo bsub2slurm.sh -q $bsubquery -n 1 -W 05:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
+  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 05:00 -M 8192 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
   chmod 777 tmptmp; ./tmptmp #>/dev/null
   #this wait text would work for unwrapping to wait for the previous job:
   wait="-w \"ended('"$frame"_ifg_"$job"')\""
@@ -593,7 +618,7 @@ for job in `seq 1 $nojobs`; do
   #weird error in 'job not found'.. workaround:
 #  echo bsub -q $bsubquery -n $bsubncores -W 08:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
   #echo bsub2slurm.sh -q $bsubquery -n 1 -W 12:00 -M 25000 -R "rusage[mem=25000]" -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
-  echo bsub2slurm.sh -q $bsubquery -n 1 -W 12:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
+  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 08:00 -M 16000 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
   #echo "debug:"
   #cat tmptmp
   chmod 777 tmptmp

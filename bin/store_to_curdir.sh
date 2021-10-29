@@ -72,6 +72,8 @@ if [ ! -d $pubDir_meta ]; then
  exit
 fi
 
+mkdir $pubDir_ifgs 2>/dev/null
+
 if [ $QUALCHECK -eq 1 ]; then
  echo "performing a fast quality check/removal of bad ifgs/epochs"
  frame_ifg_quality_check.py -l -d $frame
@@ -138,6 +140,8 @@ if [ $DORSLC -eq 1 ]; then
        chmod 774 $frameDir/LUT 2>/dev/null
        chgrp gws_lics_admin $frameDir/LUT 2>/dev/null
        rm -f $date/*.lt.orbitonly 2>/dev/null
+       #copy results file to logs..
+       cp $date/*.results $frameDir/log/. 2>/dev/null
        echo "compressing LUT of "$date
        7za a -mx=1 $frameDir/LUT/$date.7z $date/*.lt $date/*.off >/dev/null 2>/dev/null
        if [ -f $frameDir/LUT/$date.7z ]; then

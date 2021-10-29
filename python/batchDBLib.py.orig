@@ -14,7 +14,6 @@ import numpy as np
 
 #this is a residual to trick batch processing - must be kept
 from LiCSAR_db.LiCSquery import get_ipf
-from sqlalchemy.pool import NullPool
 
 ################################################################################
 # Create SQL engine
@@ -26,8 +25,6 @@ engine = create_engine(
         hst=config.get('DB','Host'),
         dbname=config.get('DB','DBName'),
         ),
-    poolclass=NullPool,
-    #connect_args={'connect_timeout': 60*60*24},  # using 24 hours timeout - coreg may take so long. still weird, as i close and reopen connection, but.. ok.. whatever
     pool_pre_ping=True
     )
 
@@ -71,9 +68,7 @@ def get_acq_dates(polyid):
                     .join(polygs2bursts, 
                         onclause=files2bursts.c.bid==polygs2bursts.c.bid)
                 ).where(polygs2bursts.c.polyid==polyid)
-    conn = engine.connect()
-    acqDats = pd.read_sql_query(acqDtSel,conn)
-    conn.close()
+    acqDats = pd.read_sql_query(acqDtSel,engine)
     acqDats.columns = ['acq_date']
     acqDats = acqDats.sort_values(by='acq_date')
     return acqDats
@@ -88,7 +83,6 @@ def get_polyid(frame):
     except:
         print('nothing found')
         output = None
-    conn.close()
     return output
 
 ################################################################################
@@ -99,13 +93,7 @@ def get_frame_from_job(jobID):
                 onclause=polygs.c.polyid==jobs.c.polyid)
             ).where(jobs.c.job_id==jobID)
     sqlRes = conn.execute(polygsSel)
-    try:
-        res = sqlRes.fetchone()[0]
-    except:
-        res = None
-        print('error fetching sql result')
-    conn.close()
-    return res
+    return sqlRes.fetchone()[0]
 
 ################################################################################
 def create_job(polyid,user,jobType):
@@ -119,22 +107,14 @@ def create_job(polyid,user,jobType):
                                     job_type=jobTypes[jobType])
     conn = engine.connect()
     sqlRes = conn.execute(jobIns)
-    try:
-        res = sqlRes.inserted_primary_key[0]
-    except:
-        res = None
-        print('error fetching sql result')
-    conn.close()
-    return res
+    return sqlRes.inserted_primary_key[0]
 
 ################################################################################
 def set_master(polyid,mstrDate):
     conn = engine.connect()
     #get masterID
     mstrIDQry = select([acq_img.c.img_id]).where(and_(func.date(acq_img.c.acq_date)==mstrDate,acq_img.c.polyid==polyid))
-    mstrID = conn.execute(mstrIDQry).fetchone()
-    if mstrID:
-        mstrID = mstrID[0]
+    mstrID = conn.execute(mstrIDQry).fetchone()[0]
     #check previous existing records over the polyid
     polycheckQry = select([polygs2master.c.polyid]).where(polygs2master.c.polyid==polyid)
     polycheck = conn.execute(polycheckQry).fetchone()
@@ -144,26 +124,14 @@ def set_master(polyid,mstrDate):
     else:
         #Insert info about master and polygon
         polyDo = polygs2master.insert().values(polyid=polyid,master_img_id=mstrID)
-    try:
-        res = conn.execute(polyDo)
-    except:
-        res = None
-        print('error fetching sql result')
-    conn.close()
-    return res
+    return conn.execute(polyDo)
 
 ################################################################################
 def set_active(polyid):
     conn = engine.connect()
     #Update polygon
     polyUpd = polygs.update().where(polygs.c.polyid==polyid).values(active=True)
-    try:
-        res = conn.execute(polyUpd)
-    except:
-        res = None
-        print('error fetching sql result')
-    conn.close()
-    return res
+    return conn.execute(polyUpd)
 
 ################################################################################
 #def update_existing_rslcs(polyid,rslcs):
@@ -198,7 +166,7 @@ def set_inactive(polyid):
     
     jobDlt = jobs.delete().where(jobs.c.polyid==polyid)
     conn.execute(jobDlt)
-    conn.close()
+    
     return a
 
 ################################################################################
@@ -215,7 +183,6 @@ def get_master(frameName):
         output = mstrDate[0]
     else:
         output = None
-    conn.close()
     return output
 
 
@@ -248,9 +215,8 @@ def add_acq_images(polyid, startdate = None, enddate = None, masterdate = None):
             acq_dates = acq_dates[acq_dates['acq_date']>=startdate]
         if enddate:
             acq_dates = acq_dates[acq_dates['acq_date']<=enddate]
-        #add back master img
         if acq_dates[acq_dates['acq_date']==masterdate].empty:
-            acq_dates.loc[max(acq_dates.index)+1, 'acq_date'] = masterdate
+            acq_dates = acq_dates.append(masteracq)
     #fix for close-to-midnight values:
     #fix for master image included 2021-08-12
     acq_dates_sorted = acq_dates.sort_values('acq_date')
@@ -274,9 +240,7 @@ def add_acq_images(polyid, startdate = None, enddate = None, masterdate = None):
     imgQry = select([acq_img.c.img_id,acq_img.c.acq_date]).select_from(
             acq_img.join(polygs,onclause=acq_img.c.polyid==polygs.c.polyid)).where(
         acq_img.c.polyid==polyid)
-    out = pd.read_sql_query(imgQry,conn)
-    conn.close()
-    return out
+    return pd.read_sql_query(imgQry,engine)
 
 ################################################################################
 def create_slcs(polyid,imgDtFrm):
@@ -292,9 +256,7 @@ def create_slcs(polyid,imgDtFrm):
     slcDtFrm = pd.concat([polyidSrs,statSrs,imgDtFrm['img_id']],axis=1)
     slcDtFrm.to_sql('slc',engine,index=False,if_exists='append')
     slcQry = select([slc.c.slc_id]).where(slc.c.polyid==polyid)
-    out = pd.read_sql_query(slcQry,conn)
-    conn.close()
-    return out
+    return pd.read_sql_query(slcQry,engine)
 
 ################################################################################
 def create_rslcs(polyid,imgDtFrm):
@@ -310,9 +272,8 @@ def create_rslcs(polyid,imgDtFrm):
     rslcDtFrm = pd.concat([polyidSrs,statSrs,imgDtFrm['img_id']],axis=1)
     rslcDtFrm.to_sql('rslc',engine,index=False,if_exists='append')
     rslcQry = select([rslc.c.rslc_id, rslc.c.img_id]).where(rslc.c.polyid==polyid)
-    out = pd.read_sql_query(rslcQry,conn)
-    conn.close()
-    return out
+
+    return pd.read_sql_query(rslcQry,engine)
 
 ################################################################################
 def create_ifgs(polyid,imgDtFrm):
@@ -343,9 +304,8 @@ def create_ifgs(polyid,imgDtFrm):
     ifgDtFrm = pd.concat([polyidSrs,statSrs,imgSrsA,imgSrsB],axis=1)
     ifgDtFrm.to_sql('ifg',engine,index=False,if_exists='append')
     ifgQry = select([ifg.c.ifg_id]).where(ifg.c.polyid==polyid)
-    out = pd.read_sql_query(ifgQry,conn)
-    conn.close()
-    return out
+
+    return pd.read_sql_query(ifgQry,engine)
 
 ################################################################################
 def create_unws(polyid,imgDtFrm):
@@ -376,9 +336,8 @@ def create_unws(polyid,imgDtFrm):
     unwDtFrm = pd.concat([polyidSrs,statSrs,imgSrsA,imgSrsB],axis=1)
     unwDtFrm.to_sql('unw',engine,index=False,if_exists='append')
     unwQry = select([unw.c.unw_id]).where(unw.c.polyid==polyid)
-    out = pd.read_sql_query(unwQry,conn)
-    conn.close()
-    return out
+
+    return pd.read_sql_query(unwQry,engine)
 
 ################################################################################
 def link_slc_to_job(slcId,jobId):
@@ -386,7 +345,6 @@ def link_slc_to_job(slcId,jobId):
     #update
     slcUpd = slc.update().where(slc.c.slc_id==slcId).values(job_id=jobId)
     conn.execute(slcUpd)
-    conn.close()
 
 def batch_link_slcs_to_new_jobs(polyid,user,slcIds,batchN):
     slcIds['bin'] = pd.cut(slcIds['slc_id'],batchN,labels=False)
@@ -405,7 +363,6 @@ def link_rslc_to_job(rslcId,jobId):
     #update
     rslcUpd = rslc.update().where(rslc.c.rslc_id==rslcId).values(job_id=jobId)
     conn.execute(rslcUpd)
-    conn.close()
 
 def batch_link_rslcs_to_new_jobs(polyid,user,rslcIds,batchN):
     maxperjob=15
@@ -428,7 +385,6 @@ def link_ifg_to_job(ifgId,jobId):
     #update
     ifgUpd = ifg.update().where(ifg.c.ifg_id==ifgId).values(job_id=jobId)
     conn.execute(ifgUpd)
-    conn.close()
 
 def batch_link_ifgs_to_new_jobs(polyid,user,ifgIds,batchN):
     ifgIds['bin'] = pd.cut(ifgIds['ifg_id'],batchN,labels=False)
@@ -443,7 +399,6 @@ def link_unw_to_job(unwId,jobId):
     #update
     unwUpd = unw.update().where(unw.c.unw_id==unwId).values(job_id=jobId)
     conn.execute(unwUpd)
-    conn.close()
 
 def batch_link_unws_to_new_jobs(polyid,user,unwIds,batchN):
     unwIds['bin'] = pd.cut(unwIds['unw_id'],batchN,labels=False)
@@ -459,10 +414,8 @@ def get_unbuilt_slcs(jobID):
             slc.join(acq_img,onclause=acq_img.c.img_id==slc.c.img_id)
             ).where(and_(slc.c.job_id==jobID,slc.c.slc_status!=0,
                 slc.c.slc_status!=-6))
-    conn = engine.connect()
-    out = pd.read_sql_query(slcSel,conn,parse_dates=['acq_date'])
-    conn.close()
-    return out
+
+    return pd.read_sql_query(slcSel,engine,parse_dates=['acq_date'])
 
 ################################################################################
 def get_unreq_slcs(polyID):
@@ -472,10 +425,8 @@ def get_unreq_slcs(polyID):
                     .join(rslc,onclause=rslc.c.img_id==slc.c.img_id)
             ).where(and_(slc.c.polyid==polyID,slc.c.slc_status==0,
                 rslc.c.rslc_status==0))
-    conn = engine.connect()
-    out = pd.read_sql_query(slcSel,conn,parse_dates=['acq_date'])
-    conn.close()
-    return out
+
+    return pd.read_sql_query(slcSel,engine,parse_dates=['acq_date'])
 
 ################################################################################
 def get_unreq_slc_on_date(polyID,date):
@@ -485,10 +436,8 @@ def get_unreq_slc_on_date(polyID,date):
                     .join(rslc,onclause=rslc.c.img_id==slc.c.img_id)
             ).where(and_(slc.c.polyid==polyID,slc.c.slc_status==0,
                 rslc.c.rslc_status==0,func.date(acq_img.c.acq_date)==date.date()))
-    conn = engine.connect()
-    out = pd.read_sql_query(slcSel,conn,parse_dates=['acq_date'])
-    conn.close()
-    return out
+
+    return pd.read_sql_query(slcSel,engine,parse_dates=['acq_date'])
 
 ################################################################################
 def get_unbuilt_rslcs(jobID):
@@ -498,30 +447,24 @@ def get_unbuilt_rslcs(jobID):
             .join(slc,onclause=slc.c.img_id==rslc.c.img_id)
             ).where(and_(rslc.c.job_id==jobID,rslc.c.rslc_status!=0,
                 rslc.c.rslc_status!=-6,slc.c.slc_status==0))
-    conn = engine.connect()
-    out = pd.read_sql_query(rslcSel,conn,parse_dates=['acq_date'])
-    conn.close()
-    return out
+
+    return pd.read_sql_query(rslcSel,engine,parse_dates=['acq_date'])
 
 def get_all_slcs(polyid):
 
     slcSel = select([slc.c.slc_id,acq_img.c.acq_date]).select_from(
             slc.join(acq_img,onclause=acq_img.c.img_id==slc.c.img_id)\
             ).where(slc.c.polyid==polyid)
-    conn = engine.connect()
-    out = pd.read_sql_query(slcSel,conn,parse_dates=['acq_date'])
-    conn.close()
-    return out
+
+    return pd.read_sql_query(slcSel,engine,parse_dates=['acq_date'])
 
 def get_all_rslcs(polyid):
 
     rslcSel = select([rslc.c.rslc_id,acq_img.c.acq_date]).select_from(
             rslc.join(acq_img,onclause=acq_img.c.img_id==rslc.c.img_id)\
             ).where(rslc.c.polyid==polyid)
-    conn = engine.connect()
-    out = pd.read_sql_query(rslcSel,conn,parse_dates=['acq_date'])
-    conn.close()
-    return out
+
+    return pd.read_sql_query(rslcSel,engine,parse_dates=['acq_date'])
 
 def get_all_ifgs(polyid):
     imgA = acq_img.alias()
@@ -537,10 +480,7 @@ def get_all_ifgs(polyid):
             ).where(rslcA.c.polyid==polyid)
             #and_(ifg.c.job_id==jobID,ifg.c.ifg_status!=0,
             #     rslcA.c.rslc_status==0,rslcB.c.rslc_status==0))
-    conn = engine.connect()
-    out = pd.read_sql_query(ifgSel,conn,parse_dates=['acq_date_1','acq_date_2'])
-    conn.close()
-    return out
+    return pd.read_sql_query(ifgSel,engine,parse_dates=['acq_date_1','acq_date_2'])
 
 def get_all_unws(polyid):
     imgA = acq_img.alias()
@@ -556,10 +496,7 @@ def get_all_unws(polyid):
             ).where(rslcA.c.polyid==polyid)
             #and_(ifg.c.job_id==jobID,ifg.c.ifg_status!=0,
             #     rslcA.c.rslc_status==0,rslcB.c.rslc_status==0))
-    conn = engine.connect()
-    out = pd.read_sql_query(unwSel,conn,parse_dates=['acq_date_1','acq_date_2'])
-    conn.close()
-    return out
+    return pd.read_sql_query(unwSel,engine,parse_dates=['acq_date_1','acq_date_2'])
 
 ################################################################################
 def get_built_rslcs(polyid):
@@ -568,10 +505,8 @@ def get_built_rslcs(polyid):
             rslc.join(acq_img,onclause=acq_img.c.img_id==rslc.c.img_id)\
             .join(slc,onclause=slc.c.img_id==rslc.c.img_id)
             ).where(and_(rslc.c.polyid==polyid,rslc.c.rslc_status==0))
-    conn = engine.connect()
-    out = pd.read_sql_query(rslcSel,conn,parse_dates=['acq_date'])
-    conn.close()
-    return out
+
+    return pd.read_sql_query(rslcSel,engine,parse_dates=['acq_date'])
 
 ################################################################################
 def get_unreq_rslcs(polyID):
@@ -584,10 +519,8 @@ def get_unreq_rslcs(polyID):
                     .join(ifgB,onclause=ifgB.c.img_id_2==rslc.c.img_id)
             ).where(and_(rslc.c.polyid==polyID,rslc.c.rslc_status==0,
                 ifgA.c.ifg_status==0,ifgB.c.ifg_status==0))
-    conn = engine.connect()
-    out = pd.read_sql_query(rslcSel,conn,parse_dates=['acq_date'])
-    conn.close()
-    return out
+
+    return pd.read_sql_query(rslcSel,engine,parse_dates=['acq_date'])
 
 ################################################################################
 def get_unbuilt_ifgs(jobID):
@@ -596,41 +529,22 @@ def get_unbuilt_ifgs(jobID):
     imgB = acq_img.alias()
     rslcA = rslc.alias()
     rslcB = rslc.alias()
-    #ifgSel = select([ifg.c.ifg_id,imgA.c.acq_date.label('acq_date_1'),
-    #        imgB.c.acq_date.label('acq_date_2')]).select_from(
-    #        ifg.join(imgA,onclause=imgA.c.img_id==ifg.c.img_id_1)\
-    #        .join(imgB,onclause=imgB.c.img_id==ifg.c.img_id_2)\
-    #        .join(rslcA,onclause=rslcA.c.img_id==ifg.c.img_id_1)\
-    #        .join(rslcB,onclause=rslcB.c.img_id==ifg.c.img_id_2)
-    #        ).where(and_(ifg.c.job_id==jobID,ifg.c.ifg_status!=0,
-    #            rslcA.c.rslc_status==0,rslcB.c.rslc_status==0))
-    # 10/2021 - removed condition that the RSLCs must be marked as 'ready' in LiCSInfo (often not the case)
     ifgSel = select([ifg.c.ifg_id,imgA.c.acq_date.label('acq_date_1'),
             imgB.c.acq_date.label('acq_date_2')]).select_from(
             ifg.join(imgA,onclause=imgA.c.img_id==ifg.c.img_id_1)\
             .join(imgB,onclause=imgB.c.img_id==ifg.c.img_id_2)\
             .join(rslcA,onclause=rslcA.c.img_id==ifg.c.img_id_1)\
             .join(rslcB,onclause=rslcB.c.img_id==ifg.c.img_id_2)
-            ).where(and_(ifg.c.job_id==jobID,ifg.c.ifg_status!=0))
-    conn = engine.connect()
-    out = pd.read_sql_query(ifgSel,conn,parse_dates=['acq_date_1','acq_date_2'])
-    conn.close()
-    return out
+            ).where(and_(ifg.c.job_id==jobID,ifg.c.ifg_status!=0,
+                rslcA.c.rslc_status==0,rslcB.c.rslc_status==0))
+
+    return pd.read_sql_query(ifgSel,engine,parse_dates=['acq_date_1','acq_date_2'])
 
 ################################################################################
 def get_unbuilt_unws(jobID):
+
     imgA = acq_img.alias()
     imgB = acq_img.alias()
-    #unwSel = select([unw.c.unw_id,imgA.c.acq_date.label('acq_date_1'),
-    #        imgB.c.acq_date.label('acq_date_2')]).select_from(
-    #        unw.join(imgA,onclause=imgA.c.img_id==unw.c.img_id_1)\
-    #        .join(imgB,onclause=imgB.c.img_id==unw.c.img_id_2)\
-    #        .join(ifg,
-    #            onclause=and_(ifg.c.img_id_1==unw.c.img_id_1,
-    #                ifg.c.img_id_2==unw.c.img_id_2))
-    #        ).where(and_(unw.c.job_id==jobID,unw.c.unw_status!=0,
-    #            ifg.c.ifg_status==0))
-    # 10/2021 - removing check for ifgs marked 'ready' in LiCSInfo
     unwSel = select([unw.c.unw_id,imgA.c.acq_date.label('acq_date_1'),
             imgB.c.acq_date.label('acq_date_2')]).select_from(
             unw.join(imgA,onclause=imgA.c.img_id==unw.c.img_id_1)\
@@ -638,11 +552,10 @@ def get_unbuilt_unws(jobID):
             .join(ifg,
                 onclause=and_(ifg.c.img_id_1==unw.c.img_id_1,
                     ifg.c.img_id_2==unw.c.img_id_2))
-            ).where(and_(unw.c.job_id==jobID,unw.c.unw_status!=0))
-    conn = engine.connect()
-    out = pd.read_sql_query(unwSel,conn,parse_dates=['acq_date_1','acq_date_2'])
-    conn.close()
-    return out
+            ).where(and_(unw.c.job_id==jobID,unw.c.unw_status!=0,
+                ifg.c.ifg_status==0))
+
+    return pd.read_sql_query(unwSel,engine,parse_dates=['acq_date_1','acq_date_2'])
 
 ################################################################################
 def get_built_unws(polyID):
@@ -657,10 +570,8 @@ def get_built_unws(polyID):
                 onclause=and_(ifg.c.img_id_1==unw.c.img_id_1,
                     ifg.c.img_id_2==unw.c.img_id_2))
             ).where(and_(unw.c.polyid==polyID,unw.c.unw_status==0))
-    conn = engine.connect()
-    out = pd.read_sql_query(unwSel,conn,parse_dates=['acq_date_1','acq_date_2'])
-    conn.close()
-    return out
+
+    return pd.read_sql_query(unwSel,engine,parse_dates=['acq_date_1','acq_date_2'])
 
 ################################################################################
 
@@ -677,7 +588,6 @@ def get_bursts_in_frame(framename):
 
     sqlRes = conn.execute(brstSel)
     burstInfo = sqlRes.fetchall()
-    conn.close()
     return burstInfo
 
 ################################################################################
@@ -700,7 +610,6 @@ def get_frame_bursts_on_date(frame,date):
 
     sqlRes = conn.execute(brstSel)
     burstInfo = sqlRes.fetchall()
-    conn.close()
     return burstInfo
 
 ################################################################################
@@ -721,14 +630,7 @@ def get_frame_files_period(frame,startdate,enddate):
                         ).order_by(files.c.acq_date).distinct()
 
     sqlRes = conn.execute(fileQry)
-    try:
-        res = sqlRes.fetchall()
-    except:
-        res = None
-        print('error fetching sql result')
-    conn.close()
-    return res
-
+    return sqlRes.fetchall()
 
 ################################################################################
 def get_frame_files_date(frame,date):
@@ -753,14 +655,7 @@ def get_frame_files_date(frame,date):
                         ).order_by(files.c.acq_date).distinct()
 
     sqlRes = conn.execute(fileQry)
-    try:
-        res = sqlRes.fetchall()
-    except:
-        res = None
-        print('error fetching sql result')
-    conn.close()
-    return res
-
+    return sqlRes.fetchall()
 
 ################################################################################
 def get_burst_no(frame,date):
@@ -782,13 +677,7 @@ def get_burst_no(frame,date):
 
     sqlRes = conn.execute(brstQry)
 
-    try:
-        res = sqlRes.fetchall()
-    except:
-        res = None
-        print('error fetching sql result')
-    conn.close()
-    return res
+    return sqlRes.fetchall()
 
 ################################################################################
 def set_slc_status(slcID,slcStat):
@@ -796,7 +685,6 @@ def set_slc_status(slcID,slcStat):
     
     slcUpd = slc.update().where(slc.c.slc_id==slcID).values(slc_status=slcStat)
     conn.execute(slcUpd)
-    conn.close()
 
 ################################################################################
 def set_rslc_status(rslcID,rslcStat):
@@ -804,14 +692,12 @@ def set_rslc_status(rslcID,rslcStat):
     
     rslcUpd = rslc.update().where(rslc.c.rslc_id==rslcID).values(rslc_status=rslcStat)
     conn.execute(rslcUpd)
-    conn.close()
 
 def get_rslc_status(rslcID):
     conn = engine.connect()
     rslcSel = select([rslc.c.rslc_status]).select_from(rslc).where(rslc.c.rslc_id==rslcID)
     sqlRes = conn.execute(rslcSel)
     a = sqlRes.fetchall()
-    conn.close()
     return int(str(a[0]).replace('(','').split(',')[0])
 
 def get_slc_status(slcID):
@@ -819,7 +705,6 @@ def get_slc_status(slcID):
     slcSel = select([slc.c.slc_status]).select_from(slc).where(slc.c.slc_id==slcID)
     sqlRes = conn.execute(slcSel)
     a = sqlRes.fetchall()
-    conn.close()
     return int(str(a[0]).replace('(','').split(',')[0])
 
 ################################################################################
@@ -828,7 +713,6 @@ def set_ifg_status(ifgID,ifgStat):
     
     ifgUpd = ifg.update().where(ifg.c.ifg_id==ifgID).values(ifg_status=ifgStat)
     conn.execute(ifgUpd)
-    conn.close()
 
 ################################################################################
 def set_unw_status(unwID,unwStat):
@@ -836,7 +720,6 @@ def set_unw_status(unwID,unwStat):
     
     unwUpd = unw.update().where(unw.c.unw_id==unwID).values(unw_status=unwStat)
     conn.execute(unwUpd)
-    conn.close()
 
 ################################################################################
 def set_unw_perc_unwrpd(unwID,unwPerc):
@@ -844,7 +727,6 @@ def set_unw_perc_unwrpd(unwID,unwPerc):
     
     unwUpd = unw.update().where(unw.c.unw_id==unwID).values(unw_perc=unwPerc)
     conn.execute(unwUpd)
-    conn.close()
 
 ################################################################################
 def set_job_started(jobID):
@@ -852,7 +734,6 @@ def set_job_started(jobID):
     
     jobUpd = jobs.update().where(jobs.c.job_id==jobID).values(job_status=2,time_started=dt.datetime.now())
     conn.execute(jobUpd)
-    conn.close()
 
 ################################################################################
 def set_job_finished(jobID,jobStat):
@@ -860,7 +741,6 @@ def set_job_finished(jobID,jobStat):
     
     jobUpd = jobs.update().where(jobs.c.job_id==jobID).values(job_status=jobStat,time_finished=dt.datetime.now())
     conn.execute(jobUpd)
-    conn.close()
 
 ################################################################################
 def get_job_status(jobID):
@@ -868,9 +748,7 @@ def get_job_status(jobID):
     
     jobSel = select([jobs.c.job_status]).where(jobs.c.job_id==jobID)
     res = conn.execute(jobSel)
-    ress = res.fetchone()
-    conn.close()
-    return ress
+    return res.fetchone()
 
 def get_baseline(polyID):
     bsLnSel = select([acq_img.c.acq_date,acq_img.c.bperp]).\
@@ -878,10 +756,7 @@ def get_baseline(polyID):
                 acq_img.c.polyid==polyID,
                 acq_img.c.bperp!=None
                 ))
-    conn = engine.connect()
-    out = pd.read_sql_query(bsLnSel,conn)
-    conn.close()
-    return out
+    return pd.read_sql_query(bsLnSel,engine)
 
 ################################################################################
 def set_baseline(polyid,baselineDataframe):
@@ -895,4 +770,3 @@ def set_baseline(polyid,baselineDataframe):
             lambda x: x.date())
     bsLnDict = baselineDataframe.to_dict(orient='records')
     conn.execute(bsLnUpd,bsLnDict)
-    conn.close()

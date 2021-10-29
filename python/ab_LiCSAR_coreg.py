@@ -52,6 +52,7 @@ class CoregEnv(LicsEnv):
                         'RSLC/{0:%Y%m%d}/{0:%Y%m%d}.*mli.*'.format(date), # Patterns to output
                         'RSLC/{0:%Y%m%d}/{1:%Y%m%d}_{0:%Y%m%d}.slc.mli.lt'.format(date,mstrDate),
                         'RSLC/{0:%Y%m%d}/{1:%Y%m%d}_{0:%Y%m%d}.off'.format(date,mstrDate),
+                        'RSLC/{0:%Y%m%d}/{1:%Y%m%d}_{0:%Y%m%d}.results'.format(date,mstrDate),
                         'GEOC\.MLI.*',
                         'log.*']
         self.srcSlcPath = 'SLC/{:%Y%m%d}'.format(date) #used to check source slc
@@ -59,34 +60,7 @@ class CoregEnv(LicsEnv):
         self.newDirs = ['tab','log'] # empty directories to create
         self.cleanDirs = ['./RSLC','./GEOC.*','./tab'] # Directories to clean on failure
 
-def get_nomissing_rslcs(rslcCache, mstrDate, builtRslcs):
-    builtRslcs_nomissing = pd.DataFrame()
-    masterstr = mstrDate.strftime('%Y%m%d')
-    master_rslc = os.path.join(rslcCache, masterstr, masterstr+'.rslc')
-    if os.path.exists(master_rslc):
-        size_master = os.path.getsize(master_rslc)
-        size_master_rslcs = 0
-        for iwrslc in glob(os.path.join(rslcCache, masterstr, masterstr+'.IW?.rslc')):
-            size_iwrslc = os.path.getsize(iwrslc)
-            size_master_rslcs = size_master_rslcs + size_iwrslc
-        for i,rslcdate in builtRslcs.iterrows():
-            rslcdate_str = pd.Timestamp(rslcdate.values[0]).strftime('%Y%m%d')
-            rslcfile = os.path.join(rslcCache, rslcdate_str, rslcdate_str+'.rslc')
-            if os.path.exists(rslcfile):
-                size_rslc = os.path.getsize(rslcfile)
-                if size_rslc == size_master:
-                    builtRslcs_nomissing = builtRslcs_nomissing.append(rslcdate)
-            else:
-                size_rslcs = 0
-                # let's check sizes if there is no mosaic - e.g. if we unzipped the file from LiCSAR_procdir
-                for iwrslc in glob(os.path.join(rslcCache, rslcdate_str, rslcdate_str+'.IW?.rslc')):
-                    size_iwrslc = os.path.getsize(iwrslc)
-                    size_rslcs = size_rslcs + size_iwrslc
-                if size_rslcs == size_master_rslcs:
-                    builtRslcs_nomissing = builtRslcs_nomissing.append(rslcdate)
-    else:
-        print('ERROR - master RSLC mosaic does not exist!')
-    return builtRslcs_nomissing
+
 ################################################################################
 #Main
 ################################################################################
@@ -109,28 +83,40 @@ def main(argv):
     user = os.environ['USER']
     tempDir = os.path.join(tempDir,user)
     mstrDate = lq.get_master(frameName)
-
+    if not mstrDate:
+        print('error getting master date - doing workaround')
+        import framecare as fc
+        mstrDate = pd.Timestamp(fc.get_master(frameName)).to_pydatetime()
+        lq.set_master(lq.get_polyid(frameName), mstrDate)
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
     print("Processing job {0} in frame {1}".format( jobID, frameName))
     lq.set_job_started(jobID)
 
+
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    rslcCache = os.path.join(cacheDir,frameName,'RSLC')
+    builtRslcDates = pd.to_datetime(fnmatch.filter(os.listdir(rslcCache), '20??????'))
+    builtRslcs = pd.DataFrame({'acq_date': builtRslcDates})
+    builtRslcs_nomissing = get_nomissing_rslcs(rslcCache, mstrDate, builtRslcs)
+    if not builtRslcs_nomissing.empty:
+        builtRslcs = builtRslcs_nomissing.reset_index(drop=True)
+    else:
+        print('missing bursts check failed - probably no full RSLC available to be used as aux, but trying anyway')
+    try:
+        builtRslcs_orig = builtRslcs.copy(deep=True)
+    except:
+        builtRslcs_orig = builtRslcs
+    
     for ind,row in rslcs.iterrows():
-        
         date = row['acq_date']
         #oh no.. seeing the lines below makes me think that it is NOT GOOD IDEA to
         # have many people solve the same issue...
         # but keeping as it is since it works. ML
         #Get closes date and use as an aux
-        rslcCache = os.path.join(cacheDir,frameName,'RSLC')
-        #builtRslcDates = pd.to_datetime(os.listdir(rslcCache))
-        builtRslcDates = pd.to_datetime(fnmatch.filter(os.listdir(rslcCache), '20??????'))
-        builtRslcs = pd.DataFrame({'acq_date': builtRslcDates})
-        builtRslcs_nomissing = get_nomissing_rslcs(rslcCache, mstrDate, builtRslcs)
-        if not builtRslcs_nomissing.empty:
-            builtRslcs = builtRslcs_nomissing.reset_index(drop=True)
-        else:
-            print('missing bursts check failed - probably no full RSLC available to be used as aux, but trying anyway')
+        try:
+            builtRslcs = builtRslcs_orig.copy(deep=True)
+        except:
+            builtRslcs = builtRslcs_orig
         builtRslcs['date_diff'] = builtRslcs['acq_date'].apply(
                 lambda x: abs(x-date)
                 )
@@ -191,8 +177,12 @@ def main(argv):
                 #Finally set rslc status to return code
                 try:
                     #lq.conn.ping(reconnect=True)
-                    reconn_pom = lq.connection_established()
-                    lq.set_rslc_status(row['rslc_id'],rc)
+                    try:
+                        reconn_pom = lq.connection_established()
+                        lq.set_rslc_status(row['rslc_id'],rc)
+                    except:
+                        reconn_pom = lq.connection_established()
+                        lq.set_rslc_status(row['rslc_id'],rc)
                 except:
                     print('debug 1: error in mysql connection - common after Sep 2020 change in mysql db by JASMIN..')
                     print('but continuing')

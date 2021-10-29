@@ -14,7 +14,6 @@ import numpy as np
 
 #this is a residual to trick batch processing - must be kept
 from LiCSAR_db.LiCSquery import get_ipf
-from sqlalchemy.pool import NullPool
 
 ################################################################################
 # Create SQL engine
@@ -26,8 +25,6 @@ engine = create_engine(
         hst=config.get('DB','Host'),
         dbname=config.get('DB','DBName'),
         ),
-    poolclass=NullPool,
-    #connect_args={'connect_timeout': 60*60*24},  # using 24 hours timeout - coreg may take so long. still weird, as i close and reopen connection, but.. ok.. whatever
     pool_pre_ping=True
     )
 
@@ -132,9 +129,7 @@ def set_master(polyid,mstrDate):
     conn = engine.connect()
     #get masterID
     mstrIDQry = select([acq_img.c.img_id]).where(and_(func.date(acq_img.c.acq_date)==mstrDate,acq_img.c.polyid==polyid))
-    mstrID = conn.execute(mstrIDQry).fetchone()
-    if mstrID:
-        mstrID = mstrID[0]
+    mstrID = conn.execute(mstrIDQry).fetchone()[0]
     #check previous existing records over the polyid
     polycheckQry = select([polygs2master.c.polyid]).where(polygs2master.c.polyid==polyid)
     polycheck = conn.execute(polycheckQry).fetchone()
@@ -248,9 +243,8 @@ def add_acq_images(polyid, startdate = None, enddate = None, masterdate = None):
             acq_dates = acq_dates[acq_dates['acq_date']>=startdate]
         if enddate:
             acq_dates = acq_dates[acq_dates['acq_date']<=enddate]
-        #add back master img
         if acq_dates[acq_dates['acq_date']==masterdate].empty:
-            acq_dates.loc[max(acq_dates.index)+1, 'acq_date'] = masterdate
+            acq_dates = acq_dates.append(masteracq)
     #fix for close-to-midnight values:
     #fix for master image included 2021-08-12
     acq_dates_sorted = acq_dates.sort_values('acq_date')
@@ -596,22 +590,14 @@ def get_unbuilt_ifgs(jobID):
     imgB = acq_img.alias()
     rslcA = rslc.alias()
     rslcB = rslc.alias()
-    #ifgSel = select([ifg.c.ifg_id,imgA.c.acq_date.label('acq_date_1'),
-    #        imgB.c.acq_date.label('acq_date_2')]).select_from(
-    #        ifg.join(imgA,onclause=imgA.c.img_id==ifg.c.img_id_1)\
-    #        .join(imgB,onclause=imgB.c.img_id==ifg.c.img_id_2)\
-    #        .join(rslcA,onclause=rslcA.c.img_id==ifg.c.img_id_1)\
-    #        .join(rslcB,onclause=rslcB.c.img_id==ifg.c.img_id_2)
-    #        ).where(and_(ifg.c.job_id==jobID,ifg.c.ifg_status!=0,
-    #            rslcA.c.rslc_status==0,rslcB.c.rslc_status==0))
-    # 10/2021 - removed condition that the RSLCs must be marked as 'ready' in LiCSInfo (often not the case)
     ifgSel = select([ifg.c.ifg_id,imgA.c.acq_date.label('acq_date_1'),
             imgB.c.acq_date.label('acq_date_2')]).select_from(
             ifg.join(imgA,onclause=imgA.c.img_id==ifg.c.img_id_1)\
             .join(imgB,onclause=imgB.c.img_id==ifg.c.img_id_2)\
             .join(rslcA,onclause=rslcA.c.img_id==ifg.c.img_id_1)\
             .join(rslcB,onclause=rslcB.c.img_id==ifg.c.img_id_2)
-            ).where(and_(ifg.c.job_id==jobID,ifg.c.ifg_status!=0))
+            ).where(and_(ifg.c.job_id==jobID,ifg.c.ifg_status!=0,
+                rslcA.c.rslc_status==0,rslcB.c.rslc_status==0))
     conn = engine.connect()
     out = pd.read_sql_query(ifgSel,conn,parse_dates=['acq_date_1','acq_date_2'])
     conn.close()
@@ -619,18 +605,9 @@ def get_unbuilt_ifgs(jobID):
 
 ################################################################################
 def get_unbuilt_unws(jobID):
+
     imgA = acq_img.alias()
     imgB = acq_img.alias()
-    #unwSel = select([unw.c.unw_id,imgA.c.acq_date.label('acq_date_1'),
-    #        imgB.c.acq_date.label('acq_date_2')]).select_from(
-    #        unw.join(imgA,onclause=imgA.c.img_id==unw.c.img_id_1)\
-    #        .join(imgB,onclause=imgB.c.img_id==unw.c.img_id_2)\
-    #        .join(ifg,
-    #            onclause=and_(ifg.c.img_id_1==unw.c.img_id_1,
-    #                ifg.c.img_id_2==unw.c.img_id_2))
-    #        ).where(and_(unw.c.job_id==jobID,unw.c.unw_status!=0,
-    #            ifg.c.ifg_status==0))
-    # 10/2021 - removing check for ifgs marked 'ready' in LiCSInfo
     unwSel = select([unw.c.unw_id,imgA.c.acq_date.label('acq_date_1'),
             imgB.c.acq_date.label('acq_date_2')]).select_from(
             unw.join(imgA,onclause=imgA.c.img_id==unw.c.img_id_1)\
@@ -638,7 +615,8 @@ def get_unbuilt_unws(jobID):
             .join(ifg,
                 onclause=and_(ifg.c.img_id_1==unw.c.img_id_1,
                     ifg.c.img_id_2==unw.c.img_id_2))
-            ).where(and_(unw.c.job_id==jobID,unw.c.unw_status!=0))
+            ).where(and_(unw.c.job_id==jobID,unw.c.unw_status!=0,
+                ifg.c.ifg_status==0))
     conn = engine.connect()
     out = pd.read_sql_query(unwSel,conn,parse_dates=['acq_date_1','acq_date_2'])
     conn.close()

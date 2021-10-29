@@ -6,6 +6,9 @@ if [ ! -z $2 ]; then PROC=$2; fi
 #cd $BATCH_CACHE_DIR
 todel=0
 
+#first check - bad SLC - too large, i.e. over 20 GB:
+for x in `ls $frame/SLC`; do if [ `ls -al $frame/SLC/$x/$x.slc 2>/dev/null | gawk {'print $5'}` -gt 20066815424 ]; then echo "deleting "$frame/SLC/$x; rm -rf $frame/SLC/$x; fi; done
+
   #check if it is empty
   if [ ! -d $frame/RSLC ]; then todel=1;
   else

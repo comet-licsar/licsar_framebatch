@@ -5,18 +5,25 @@ SLCdir=$LiCSAR_SLC
 USE_SSH_DOWN=1 #if the wget error is related to SSL blocking, set this to 1 -- however JASMIN prefers to have it always =1 (to use xfer servers for download)
 use_scihub=0 #being used only for the latest data... like.. the current or previous day
 CHECKONLY=0
+MAXIMAGES=200 # if more images are requested to download, stop it
+NOCHECKMAX=0
 
 if [ -z $2 ]; then
  echo "Parameters are: FRAME STARTDATE [ENDDATE]"
  echo "e.g. 007D_05286_131310 2014-10-10"
  echo "optional parameter -c: will do only check if data are ingested in licsar db"
+ echo "optional parameter -A: will not check for max number of images to download: max number is "$MAXIMAGES
  exit
 fi
 
-while getopts ":c" option; do
+while getopts ":cA" option; do
  case "${option}" in
   c ) CHECKONLY=1;
       echo "Checking if files are properly ingested to licsar database";
+      shift
+      ;;
+  A ) NOCHECKMAX=1;
+      echo "overriding check for max images";
       shift
       ;;
 esac
@@ -54,7 +61,7 @@ make_simple_polygon.sh ${frame}-poly.txt
 
 
 # to get list of files that are missing:
-rm ${frame}_zipfile_names.list ${frame}_scihub.list 2>/dev/null
+rm ${frame}_zipfile_names.list ${frame}_scihub.list ${frame}_todown 2>/dev/null
 ## make list from scihub
  echo "getting scihub data"
  if [ ! -z $enddate ]; then
@@ -287,6 +294,12 @@ fi
  sleep 5
 
 if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
+ if [ $NOCHECKMAX -eq 0 ]; then
+   if [ `cat ${frame}_todown | wc -l` -gt $MAXIMAGES ]; then
+     echo "Whoops - the requested amount of images is over the threshold. Will cancel the processing"
+     exit
+   fi
+ fi
  cd $SLCdir
  count=0
  for x in `cat $BATCH_CACHE_DIR/$frame/${frame}_todown | rev | cut -d '/' -f1 | rev`; do

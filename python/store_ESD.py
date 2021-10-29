@@ -44,6 +44,8 @@ if os.path.exists(orblogfile):
             orb = misc.grep1line('RESORB',orblogfile).split()[-1]
         except:
             orb = ''
+else:
+    orb = ''
 
 #now just write the information to LiCSInfo db
 print('Epoch {0} through {1}: daz={2} px'.format(epoch, rslc3, str(daz)))
