@@ -349,16 +349,29 @@ chmod 777 $step.sql
   #extrabsub='-x'
   #else
   #if [ $bsubquery == "cpom-comet" ]; then
+  burstsnum=`get_burstsno_frame $frame`
    if [ $step == "framebatch_02_coreg" ]; then # || [ $step == "framebatch_04_unwrap" ]; then
     #maxmem=25000
     maxmem=16384
+    if [ $burstsnum -gt 45 ]; then maxmem=25000; fi
+    if [ $burstsnum -ge 90 ]; then maxmem=32000; fi
+    if [ $burstsnum -ge 120 ]; then maxmem=48000; fi
    elif [ $step == "framebatch_03_mk_ifg" ]; then
     maxmem=4096   # 4 GB should be ok for mk_ifg
+    if [ $burstsnum -gt 45 ]; then maxmem=8192; fi
+    if [ $burstsnum -ge 90 ]; then maxmem=16384; fi
+    if [ $burstsnum -ge 120 ]; then maxmem=25000; fi
    elif [ $step == "framebatch_04_unwrap" ]; then
     maxmem=8192   # 8 GB for the unwrap_geo... should be ok
+    if [ $burstsnum -gt 45 ]; then maxmem=16384; fi
+    if [ $burstsnum -ge 90 ]; then maxmem=25000; fi
+    if [ $burstsnum -ge 120 ]; then maxmem=32000; fi
    else
     #maxmem=4096  # 4 GB RAM should be enough for mk_imag, mk_ifg
     maxmem=12288  # but we still saw errors in applying orbits! errors removed using 8 GB RAM. so setting 12 GB RAM..
+    if [ $burstsnum -gt 45 ]; then maxmem=16384; fi
+    if [ $burstsnum -ge 90 ]; then maxmem=25000; fi
+    if [ $burstsnum -ge 120 ]; then maxmem=32000; fi
    fi
    # update of JASMIN - they somehow decreased default memory... fixing this here for all jobs..
    #extrabsub='-R "rusage[mem='$maxmem']" -M '$maxmem
@@ -388,7 +401,7 @@ chmod 777 $step.sql
 ## MAIN CODE
 ############### 
  if [ $only_new_rslc -eq 1 ]; then
-  newrslc=`checkNewRslc.py $frame`
+  newrslc=`checkNewRslc.py $frame | tail -n1`
   if [ $newrslc -eq 0 ]; then
    echo "No new image was acquired since last run - exiting"
    if [ `ls $BATCH_CACHE_DIR/$frame | wc -l` -eq 1 ]; then
@@ -405,21 +418,7 @@ setFrameInactive.py $frame
 echo "Activating the frame"
 setFrameActive.py $frame
 
-if [ $full_scale -eq 0 ]; then
-#if we work only in last 3 months data
- if [ $fillgaps -eq 1 ]; then
-  echo "Refilling the data gaps (should be ok for last 3 months data)"
-  framebatch_data_refill.sh $frame `date -d "90 days ago" +'%Y-%m-%d'`
- elif [ $neodc_check -eq 1 ]; then
-  echo "Checking if the files are ingested to licsar database"
-  framebatch_data_refill.sh -c $frame `date -d "90 days ago" +'%Y-%m-%d'` `date +'%Y-%m-%d'`
- fi
- echo "Preparing the frame cache (last 3 months)"
- echo "..may take some 5 minutes"
- #createFrameCache_last3months.py $frame $no_of_jobs > tmp_jobid.txt
- createFrameCache.py $frame $no_of_jobs `date -d "90 days ago" +'%Y-%m-%d'` `date -d "22 days ago" +'%Y-%m-%d'` > tmp_jobid.txt
-else
-#if we want to fill gaps throughout the whole time period
+ #doing refill/db check
  if [ $fillgaps -eq 1 ]; then
   echo "Refilling the data gaps"
   framebatch_data_refill.sh $frame $startdate $enddate
@@ -427,10 +426,41 @@ else
   echo "Checking if the files are ingested to licsar database"
   framebatch_data_refill.sh -c $frame $startdate $enddate
  fi
+
  echo "Preparing the frame cache (full scale processing)"
  echo "..may take some 15 minutes or (much) more"
  echo "(recommending using tmux or screen here..)"
  createFrameCache.py $frame $no_of_jobs $startdate $enddate > tmp_jobid.txt
+ 
+ # 2021-11-15: createFrameCache will now output also updated startdate and enddate to tmp_jobid.txt
+ if [ `grep -c ^updated tmp_jobid.txt` -gt 0 ]; then
+  echo "updated dates to make coregistration possible"
+  if [ `grep ^updated tmp_jobid.txt | gawk {'print $2'}` == 'enddate' ]; then
+   enddate=`grep ^updated tmp_jobid.txt | gawk {'print $4'}`
+  else
+   startdate=`grep ^updated tmp_jobid.txt | gawk {'print $4'}`
+  fi
+   #doing refill/db check
+  if [ $fillgaps -eq 1 ]; then
+   echo "Re-refilling the data gaps"
+   framebatch_data_refill.sh $frame $startdate $enddate
+  else
+   echo "Re-checking if the files are ingested to licsar database"
+   framebatch_data_refill.sh -c $frame $startdate $enddate
+  fi
+  echo "re-caching the frame"
+  setFrameInactive.py $frame
+  setFrameActive.py $frame
+  createFrameCache.py $frame $no_of_jobs $startdate $enddate > tmp_jobid.txt
+ fi
+ if [ `grep -c ^updated tmp_jobid.txt` -gt 0 ]; then
+  echo "ERROR - either data missing or another problem"
+  echo "please recheck your input parameters, or contact Milan"
+  echo "the tmp_jobid.txt content is:"
+  cat tmp_jobid.txt
+  exit
+ fi
+ 
  #ok, let's fix also the stuff already existing...
  if [ -d $LiCSAR_public/$track/$frame/interferograms ]; then
   mkdir GEOC 2>/dev/null
@@ -448,7 +478,7 @@ else
     fi
   done
  fi
-fi
+
  grep first_job_id tmp_jobid.txt | gawk {'print $3'} > $logdir/job_start.txt
  if [ -z `cat $logdir/job_start.txt` ]; then echo "The frame "$frame "is erroneous and cannot be processed"; exit; fi
  rm tmp_jobid.txt

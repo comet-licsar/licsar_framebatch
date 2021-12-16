@@ -51,11 +51,12 @@ if [ $dir == 'D' ]; then dir='dsc'; else dir='asc'; fi
 if [ `echo $frame | cut -d '_' -f2` == 'SM' ]; then mode='SM'; fi
 
 cd $BATCH_CACHE_DIR/$frame
-chmod -R 770 $BATCH_CACHE_DIR/$frame
+chmod 770 $BATCH_CACHE_DIR/$frame 2>/dev/null
+chmod 770 $BATCH_CACHE_DIR/$frame/* 2>/dev/null
 if [ -z `ls $curdir/$tr/$frame/*xy` ]; then echo 'no polygonfile (.xy) generated. stopping'; exit; fi
 xyfile=`ls $curdir/$tr/$frame/*xy | head -n1 | rev | cut -d '/' -f1 | rev`
 cp $curdir/$tr/$frame/$xyfile .
-chmod 770 $BATCH_CACHE_DIR/$frame/$xyfile
+chmod 770 $BATCH_CACHE_DIR/$frame/$xyfile 2>/dev/null
 mv $xyfile ${frame}-poly.txt
 make_simple_polygon.sh ${frame}-poly.txt
 

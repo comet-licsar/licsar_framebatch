@@ -422,6 +422,30 @@ def batch_link_rslcs_to_new_jobs(polyid,user,rslcIds,batchN):
         jid = create_job(polyid,user,'coreg')
         rslcGroup['rslc_id'].map(lambda s:link_rslc_to_job(s,jid))
 
+
+def batch_link_rslcs_to_new_jobs_todo(polyid,user,rslcs_pd,batchN):
+    rslcIds = rslcs_pd[['rslc_id']].reset_index(drop=True)
+    maxperjob=15
+    if len(rslcIds)/batchN > maxperjob:
+        print('increasing number of jobs to fit the maxperjob limit')
+        batchN = int(len(rslcIds)/maxperjob)
+    numrep = int(len(rslcIds)/batchN) + 1
+    bins = list(np.arange(batchN))*numrep
+    bins = bins[:len(rslcIds)]
+    rslcs_pd['bin'] = bins
+    #rslcIds['bin'] = pd.cut(rslcIds['rslc_id'],batchN,labels=False)
+    rslcGrouped = rslcs_pd.groupby('bin')
+    #for label,rslcGroup in rslcGrouped:
+        #make sure each group has at least one coregistrable epoch
+    #    abs(rslcGroup.btemp).min().days
+    #for label,rslcGroup in rslcGrouped:
+        #make sure each group has no uncoregistrable item
+    #    abs(rslcGroup.btemp).min().days
+    for label,rslcGroup in rslcGrouped:
+        jid = create_job(polyid,user,'coreg')
+        rslcGroup['rslc_id'].map(lambda s:link_rslc_to_job(s,jid))
+
+
 ################################################################################
 def link_ifg_to_job(ifgId,jobId):
     conn = engine.connect()

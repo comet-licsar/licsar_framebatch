@@ -104,6 +104,73 @@ existing_acq_lics = get_rslcs_from_lics(frame,srcDir,cacheDir,date_strings)
 #get final acquisitions list for those existing in the RSLC processing directory
 existing_acq = fnmatch.filter(os.listdir(cacheDir+'/'+frame+'/RSLC'), '20??????')
 
+#get available LUTs - needed for RSLCs if longer than 6 months..
+track=str(int(frame[:3]))
+try:
+    existing_luts = fnmatch.filter(os.listdir(os.path.join(srcDir,track,frame,'LUT')), '20*')
+    def rpl(x): return x.replace('.7z','')
+    existing_luts = list(map(rpl,existing_luts))
+    existing_luts.sort()
+except:
+    existing_luts = []
+
+# if the closest epoch to the master is >6 months, then check if it has lut. if not, then find file with closest lut (or in existing_ lists) and update the start/end date
+rlsc3_limit = 180
+if min(abs(acq_imgs.btemp)).days > rlsc3_limit:
+    possible_acqs = existing_acq + existing_acq_lics + existing_luts
+    possible_acqs = list(set(possible_acqs))
+    def todt(x): return pd.Timestamp(x)
+    try:
+        possible_acqs_dt = list(map(todt,possible_acqs))
+    except:
+        possible_acqs_dt = []
+    isinposs = False
+    for x in acq_imgs.acq_date.values:
+        if not isinposs:
+            if x in possible_acqs_dt:
+                isinposs = True
+    if not isinposs:
+        # need to change the dates:
+        print('WARNING: the dates did not contain Btemp connection towards the frame. Updating the dates')
+        print('will not start until this is fixed')
+        # if it is empty, we need to choose some closer to master:
+        if not possible_acqs_dt:
+            fromstart = (startdate - mstrDate).days
+            fromend = (enddate - mstrDate).days
+            tdelta_limit = rlsc3_limit - 25  # will include few more - at least two
+            td = pd.Timedelta(days=tdelta_limit)
+            if fromstart < fromend:
+                startdate = mstrDate + td
+                print('updated startdate = '+startdate.strftime('%Y-%m-%d'))
+            else:
+                enddate = mstrDate - td
+                print('updated enddate = ' +enddate.strftime('%Y-%m-%d'))
+        else:
+            pomfirst = acq_imgs['acq_date'].values[0]
+            pomlast = acq_imgs['acq_date'].values[-1]
+            possible_acqs_pd = pd.DataFrame(possible_acqs_dt)
+            pomfirstlen = min(abs(pomfirst - possible_acqs_pd[0]))
+            pomlastlen = min(abs(pomlast - possible_acqs_pd[0]))
+            if pomfirstlen < pomlastlen:
+                possible_acqs_pd['btemp'] = abs(pomfirst - possible_acqs_pd[0])
+                # also adding a bit longer time
+                startdate = (possible_acqs_pd.sort_values('btemp').iloc[0][0] - pd.Timedelta(days=25)).to_pydatetime()
+                print('updated startdate = ' +startdate.strftime('%Y-%m-%d'))
+            else:
+                possible_acqs_pd['btemp'] = abs(pomlast - possible_acqs_pd[0])
+                enddate = (possible_acqs_pd.sort_values('btemp').iloc[0][0] + pd.Timedelta(days=25)).to_pydatetime()
+                print('updated enddate = '+enddate.strftime('%Y-%m-%d'))
+        print('please rerun with the new dates')
+        exit()
+        # repeat the acq_images adding - not the best as it expects ingested data - thus will do this twice, see licsar_make_frame.sh
+        #acq_imgs = add_acq_images(polyid, startdate.date(), enddate.date(), mstrDate.date())
+        #acq_imgs = acq_imgs.sort_values('acq_date').reset_index(drop=True)
+        #mstrline = acq_imgs[acq_imgs['acq_date']==mstrDate]
+        #acq_imgs['btemp'] = acq_imgs.acq_date.apply(lambda x: abs(x - mstrDate)) #mstrline['acq_date']))
+        #acq_imgs = acq_imgs.sort_values('btemp')
+        #acq_imgs = acq_imgs[acq_imgs['acq_date']!=mstrDate]
+
+
 #acq_imgs2 = acq_imgs
 #for r in existing_acq:
 #    acq_imgs2 = acq_imgs2[acq_imgs2.acq_date != dt.datetime.strptime(r,'%Y%m%d')]
@@ -116,11 +183,13 @@ rslcs = create_rslcs(polyid,acq_imgs)
 rslcids = get_all_rslcs(polyid)
 slcids = get_all_slcs(polyid)
 
+existing_rslcids = []
 if rslcids.rslc_id.count():
     for acq in existing_acq:
         if dt.datetime.strptime(acq,'%Y%m%d').date() in rslcids.acq_date.dt.date.tolist():
             rslcID=int(rslcids[rslcids.acq_date == dt.datetime.strptime(acq,'%Y%m%d')].rslc_id)
             set_rslc_status(rslcID,0)
+            existing_rslcids.append(rslcID)
             slcID=int(slcids[slcids.acq_date == dt.datetime.strptime(acq,'%Y%m%d')].slc_id)
             set_slc_status(slcID,0)
 
@@ -159,6 +228,11 @@ batch_link_slcs_to_new_jobs(polyid,user,slcs,batchN)
 #the rslcs job linking should be improved, but it is ok this way..
 #ok, first sort rslcs w.r.t. master:
 aa = acq_imgs.join(rslcs.set_index('img_id'), on='img_id')
+for exrs in existing_rslcids:
+    aa = aa[aa['rslc_id'] != exrs]
+#.join(
+#            rslcids.rename(columns={"acq_date": "rslc_date"}).set_index('rslc_id'), on='rslc_id')
+#            rslcids.set_index('img_id'), on='img_id')
 rslcs = aa[['rslc_id']].reset_index(drop=True)
 batch_link_rslcs_to_new_jobs(polyid,user,rslcs,batchN)
 batch_link_ifgs_to_new_jobs(polyid,user,ifgs,batchN)

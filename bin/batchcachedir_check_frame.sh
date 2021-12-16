@@ -1,6 +1,6 @@
 #!/bin/bash
 PROC=0
-if [ -z $1 ]; then echo "set parameter - frame"; exit; fi
+if [ -z $1 ]; then echo "set parameter - frame"; echo "if second parameter is 1, this script will perform reprocessing automatically"; exit; fi
 frame=$1
 if [ ! -z $2 ]; then PROC=$2; fi
 #cd $BATCH_CACHE_DIR
@@ -16,7 +16,18 @@ for x in `ls $frame/SLC`; do if [ `ls -al $frame/SLC/$x/$x.slc 2>/dev/null | gaw
    rslcdates=`ls $frame/RSLC | wc -l`
    if [ $slcdates -gt 1 ]; then echo "this frame has SLCs to process: "$frame;
          if [ $PROC == 1 ]; then
-           batchcachedir_reprocess_from_slcs.sh $frame
+           if [ $slcdates -lt 5 ]; then
+             batchcachedir_reprocess_from_slcs.sh $frame
+           else
+             echo "quite a lot of not processed SLCs. switching to licsar_make_frame.sh reprocessing"
+             mstr=`ls $frame/geo/*.hgt | head -n1`
+             ls $frame/SLC | sed '/'`basename $mstr .hgt`'/d' > $frame/tmp_reprocess.slc
+             startdate=`head -n1 $frame/tmp_reprocess.slc`
+             enddate=`tail -n1 $frame/tmp_reprocess.slc`
+             if [ `grep -c comet $frame/framebatch_02_coreg.nowait.sh` -gt 0 ]; then extral='-P'; fi
+             licsar_make_frame.sh -f $extral $frame 1 0 `date -d $startdate +'%Y-%m-%d'` `date -d $enddate +'%Y-%m-%d'`
+             rm $frame/tmp_reprocess.slc
+           fi
          fi
    else
     if [ $rslcdates -lt 2 ]; then todel=1;
