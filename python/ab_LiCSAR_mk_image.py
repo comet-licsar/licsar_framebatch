@@ -45,8 +45,8 @@ class SlcEnv(LicsEnv):
                         'SLC/{0:%Y%m%d}/{0:%Y%m%d}\..*mli.*'.format(date),
                         'SLC/{0:%Y%m%d}/{0:%Y%m%d}\.slc\.par'.format(date),
                         'SLC/{0:%Y%m%d}/{0:%Y%m%d}\.slc'.format(date),
-                        'log.*',
-                        'tab.*']
+                        'log.*']
+                        #'tab.*']
         self.cleanDirs = ['./SLC','./tab']
 ################################################################################
 #Check files
@@ -95,6 +95,9 @@ def main(argv):
     lq.set_job_started(jobID)
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+    if os.path.exists('missingFiles'):
+        os.remove('missingFiles')
+    
     for ind,row in slcs.iterrows():
         date = row['acq_date']
         filesTable = lq.get_frame_files_date(frameName,date)

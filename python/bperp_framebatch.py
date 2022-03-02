@@ -96,13 +96,19 @@ if __name__ == '__main__':
     print('Calculating unwrapped pixel perentage (this takes a while).')
     unw_pix_perc=np.zeros(len(ifg_list))
 
+    import xarray as xr
+    print('TODO: rename from unw percentage to mean coh')
     # currently using unfiltered coherence, can change to .filt.cc
     for idx,ifg in enumerate(ifg_list):
+        cctif = cc_ifgs[idx]
+        a = xr.open_rasterio(cctif).squeeze('band')
+        meancoh = 100*a.where(a>0).mean().values/255
+        unw_pix_perc[idx] = meancoh
         #cc = np.fromfile('IFG/'+ifg+'/'+ifg+cc_type, dtype='>f4')
         #cc[np.where(np.logical_or(cc==0,cc<=float(inps.coh)))] = np.nan
         #unw_pix_perc[idx] = (np.nansum(cc)/np.nansum(mstr_rslc))*100
-        unw_pix_perc[idx] = 1
-        print('TODO: Unwrapped pixel percentage for '+ifg+': '+str(unw_pix_perc[idx]))
+        #unw_pix_perc[idx] = 100
+        #print('TODO: Unwrapped pixel percentage for '+ifg+': '+str(unw_pix_perc[idx]))
 
     # plotting routines
     print('Plotting Bperp/Bt+Coherence.')
@@ -136,6 +142,7 @@ if __name__ == '__main__':
     ax.scatter(bp_aq, bp_pb, color='black',zorder=1)
     ax.scatter((datetime.strptime(mstr,'%Y%m%d')), 0 , marker='o', color='red', edgecolors='black', s=80, zorder=2)
 
+    '''
     # Plotting dots along bottom...
     print('Comparing SCIHUB/NLA/unwrapped ifg output lists.')
 
@@ -164,8 +171,10 @@ if __name__ == '__main__':
     ax.scatter(scihub_dates, (np.ones(len(scihub_dates))*(np.amin(bp_pb)-50)) ,facecolor='darkgrey',label='Available on Scihub')
     ax.scatter(asf_dates, (np.ones(len(asf_dates))*(np.amin(bp_pb)-40)) ,facecolor='lightcoral',label='Required ASF download')
     ax.scatter(bp_aq, (np.ones(len(bp_aq))*(np.amin(bp_pb)-30)) ,facecolor='deepskyblue',label='Processed to UNW')
+    '''
+
     ax.legend(loc='upper right',fontsize=16)
     
-    plt.savefig(inps.frame+'_bperp_unw.pdf', format='pdf')
+#    plt.savefig(inps.frame+'_bperp_unw.pdf', format='pdf')
     plt.savefig(inps.frame+'_bperp_unw.png', format='png')
     #plt.show()

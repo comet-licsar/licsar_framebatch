@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# in case the requested dataset is not connected within 180 days..:
+
+continue_anyway = True
+
 ################################################################################
 #imports
 ################################################################################
@@ -161,7 +165,8 @@ if min(abs(acq_imgs.btemp)).days > rlsc3_limit:
                 enddate = (possible_acqs_pd.sort_values('btemp').iloc[0][0] + pd.Timedelta(days=25)).to_pydatetime()
                 print('updated enddate = '+enddate.strftime('%Y-%m-%d'))
         print('please rerun with the new dates')
-        exit()
+        if not continue_anyway:
+            exit()
         # repeat the acq_images adding - not the best as it expects ingested data - thus will do this twice, see licsar_make_frame.sh
         #acq_imgs = add_acq_images(polyid, startdate.date(), enddate.date(), mstrDate.date())
         #acq_imgs = acq_imgs.sort_values('acq_date').reset_index(drop=True)

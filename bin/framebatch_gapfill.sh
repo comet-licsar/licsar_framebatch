@@ -18,6 +18,7 @@ checkrslc=1
 ifg_combinations=4
 tienshan=0
 
+source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 #quality checker here is the basic one. but still it does problems! e.g. Iceland earthquake - took long to process due to tech complications
 #and just after this was done, this auto-checker detected it as problematic and deleted those wonderful ifgs!!
 #it is all the no-ESD test that is performed over whole image, and not only at the edges of bursts. so rather keep =0
@@ -203,6 +204,17 @@ mkdir gapfill_job
 # chmod 770 gapfill_job/unw_correct.sh
 # bsub -q $bsubquery  -n 1 -W 23:59 gapfill_job/unw_correct.sh
 #fi
+echo "fixing missing geocoded MLIs (should be fast)"
+track=`track_from_frame $frame`
+if [ ! -d GEOC.MLI ]; then mkdir GEOC.MLI; fi
+for x in `ls RSLC`; do
+ if [ ! -d GEOC.MLI/$x ]; then
+  if [ ! -f $LiCSAR_public/$track/$frame/epochs/$x/$x.geo.mli.tif ]; then
+   echo "generating MLI for "$x
+   create_geoctiffs_to_pub.sh -M `pwd` $x >/dev/null
+  fi
+ fi
+done
 echo "getting list of ifg to fill"
 if [ ! -d IFG ]; then mkdir IFG; fi
 if [ ! -d GEOC ]; then mkdir GEOC; fi

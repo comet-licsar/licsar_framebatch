@@ -7,6 +7,12 @@ if [ -z $1 ]; then
 
 frame=$1
 maxwaithours=168
+input=''
+if [ ! -z $2 ]; then
+ if [ ! -f $2 ]; then echo "if you use 2nd parameter, it should be an existing txt file with a list of epochs"; exit; fi
+ input=`realpath $2`
+fi
+
 
 cd $work_dir
 #check for writing rights
@@ -24,7 +30,7 @@ fi
 #track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
 
 #create input file
-gacos_input_creator.sh $frame
+gacos_input_creator.sh $frame $input
 
 if [ ! -f $frame.inp ]; then
  echo "some error in creating input"

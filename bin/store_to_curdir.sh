@@ -131,8 +131,8 @@ if [ $DORSLC -eq 1 ]; then
     # if there are 'some' rslc files
     if [ `ls $frame/RSLC/$date/$date.IW?.rslc 2>/dev/null | wc -l` -gt 0 ]; then
      echo "checking "$frame"/"$date
-     #if it already doesn't exist in current dir
-     if [ ! -d $frameDir/RSLC/$date ] && [ ! -f $frameDir/RSLC/$date.7z ]; then
+     #if it already doesn't exist in current dir, or in LUTs
+     if [ ! -d $frameDir/RSLC/$date ] && [ ! -f $frameDir/RSLC/$date.7z ] && [ ! -f $frameDir/LUT/$date.7z ]; then
       cd $frame/RSLC
       #cleaning the folder
       if [ `ls $date/*.lt 2>/dev/null | wc -w` -gt 0 ] && [ `datediff $date $today` -ge 21 ]; then

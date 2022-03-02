@@ -47,8 +47,8 @@ if unwrap_in_geo:
                     'SLC/{:%Y%m%d}.*'.format(mstrDate),
                     'geo','log/snaphu.conf','local_config.py']
             self.outPats = ['GEOC.*', # Patterns to output
-                            'log.*',
-                            'tab.*']
+                            'log.*']
+                            #'tab.*']
             self.srcIFGPath = 'GEOC/{0:%Y%m%d}_{1:%Y%m%d}'.format(dateA,dateB)
             self.newDirs = ['tab','log'] # empty directories to create
             self.cleanDirs = ['./GEOC','./tab'] # Directories to clean on failure
@@ -60,8 +60,8 @@ else:
                     'SLC/{:%Y%m%d}.*'.format(mstrDate),
                     'geo','DEM','log/snaphu.conf','local_config.py']
             self.outPats = ['IFG.*', # Patterns to output
-                            'log.*',
-                            'tab.*']
+                            'log.*']
+                            #'tab.*']
             self.srcIFGPath = 'IFG/{0:%Y%m%d}_{1:%Y%m%d}'.format(dateA,dateB)
             self.newDirs = ['tab','log'] # empty directories to create
             self.cleanDirs = ['./IFG','./tab'] # Directories to clean on failure

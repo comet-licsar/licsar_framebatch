@@ -136,6 +136,7 @@ if [ $nla_start == 1 ]; then
    echo "starting NLA request"
   echo 'LiCSAR_0_getFiles.py -f '$frame' -s '$startdate' -e '$nlamaxdate' -r'
    LiCSAR_0_getFiles.py -f $frame -s $startdate -e $nlamaxdate -r > $batchesdir/temp/temp_nla.$frame
+   chmod 777 $batchesdir/temp/temp_nla.$frame
    if [ $PROCESSING -eq 0 ]; then
      echo "indicated NLA only - exiting";
      echo "you may start the processing itself manually using: "

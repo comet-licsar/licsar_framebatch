@@ -33,6 +33,8 @@ if [ -z $1 ]; then
  exit;
 fi
 #export BATCH_CACHE_DIR=/work/scratch-nopw/licsar/earmla
+source $LiCSARpath/lib/LiCSAR_bash_lib.sh
+
 
 NORUN=0
 neodc_check=0
@@ -66,11 +68,11 @@ while getopts ":cnSEfNPRG" option; do
      ;;
   n) NORUN=1; echo "No run option. Scripts will be generated but not start automatically";
      ;;
-  S) STORE=1; echo "After the processing, data will be stored to db and public dir";
-  if [ $USER == 'yma' ]; then deleteafterstore=0; echo "(not deleting it after store..";
-  else
-     deleteafterstore=1;
-  fi
+  S) STORE=1; echo "After the processing, data will be stored to db and public dir - but not deleted";
+  #if [ $USER == 'yma' ]; then deleteafterstore=0; echo "(not deleting it after store..";
+  #else
+     deleteafterstore=0;
+  #fi
      NORUN=0;
      ;;
   G) dogacos=1; echo "after store-to-curdir, we will also update GACOS data";
@@ -533,7 +535,8 @@ waiting_string=`echo $waiting_str | cut -c 4-`
 echo "./framebatch_01_mk_image.nowait.sh; ./framebatch_02_coreg.wait.sh; ./framebatch_03_mk_ifg.wait.sh; ./framebatch_04_unwrap.wait.sh" > ./framebatch_x_second_iteration.nowait.sh
 echo "./framebatch_05_gap_filling.wait.sh" >> framebatch_x_second_iteration.nowait.sh
 echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:30 -n 1 -J it2_"$frame" -o LOGS/it2.out -e LOGS/it2.err ./framebatch_x_second_iteration.nowait.sh" > framebatch_x_second_iteration.wait.sh
-chmod 770 framebatch_x_second_iteration.wait.sh framebatch_x_second_iteration.nowait.sh
+echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:45 -n 1 -J it2p_"$frame" -o LOGS/it2p.out -e LOGS/it2p.err framebatch_postproc_coreg.sh "$frame" 1" > framebatch_x_second_iteration.postproc.wait.sh
+chmod 770 framebatch_x_second_iteration.wait.sh framebatch_x_second_iteration.nowait.sh framebatch_x_second_iteration.postproc.wait.sh
 
 
 #~ if [ $NORUN -eq 0 ]; then
@@ -594,7 +597,9 @@ fi
 
 
 if [ $NORUN -eq 0 ]; then
- ./framebatch_x_second_iteration.wait.sh
+ #./framebatch_x_second_iteration.wait.sh
+ echo 'warning - testing version for 2nd iteration postprocessing'
+ ./framebatch_x_second_iteration.postproc.wait.sh
 fi
 
 
@@ -673,13 +678,26 @@ else
 fi
 EOF
 chmod 770 framebatch_05_gap_filling.nowait.sh
+
+#somehow got the wait gapfill script lost?
+#redo here:
+waiting_str=''
+for jobid in `cat framebatch_04_unwrap.wait.sh | rev | gawk {'print $1'} | rev`; do
+  stringg=$jobid"_framebatch_04_unwrap"
+  waiting_str=$waiting_str" && ended("$stringg")"
+done
+waiting_string=`echo $waiting_str | cut -c 4-`
+echo "bsub2slurm.sh -w '"$waiting_string"' -q $bsubquery -W 10:00 -n 1 -J framebatch_05_gap_filling_$frame -o LOGS/framebatch_05_gap_filling.out -e LOGS/framebatch_05_gap_filling.err ./framebatch_05_gap_filling.nowait.sh" > framebatch_05_gap_filling.wait.sh
+chmod 777 framebatch_05_gap_filling.wait.sh
+
 #if [ $NORUN -eq 0 ] && [ $STORE -lt 1 ]; then
 #this below option means that even in AUTOSTORE, the gapfilling will be performed...
 #in this case, however, it will be sent to bsub together with geotiff generation script
 #so.. more connections now depend on 'luck having to wait for bsub2slurm.sh -x'
 #this definitely needs improvement, yet better 'than nothing'.. i suppose
 if [ $NORUN -eq 0 ]; then
- ./framebatch_05_gap_filling.nowait.sh -w
+ echo "warning, gapfilling should be auto-started within framebatch.postproc script"
+ #./framebatch_05_gap_filling.nowait.sh -w
 else
  echo "To run gapfilling afterwards, use ./framebatch_gapfill.nowait.sh"
 fi
@@ -806,9 +824,10 @@ echo ""
 
 #some additional rather debug thingz
 mkdir log tab 2>/dev/null
-master=`ls geo/*.hgt | cut -d '/' -f2 | cut -d '.' -f1`
+#master=`ls geo/*.hgt | cut -d '/' -f2 | cut -d '.' -f1`
 #if [ ! -f tab/$master'_tab' ]; then
-cp $LiCSAR_procdir/$track/$frame/tab/$master'_tab' tab/. 2>/dev/null
+# update 2022 - often wrong tab files. trying without it, see if it is not missing anywhere
+#cp $LiCSAR_procdir/$track/$frame/tab/$master'_tab' tab/. 2>/dev/null
 #fi
 
 

@@ -19,14 +19,16 @@ for x in `ls $frame/SLC`; do if [ `ls -al $frame/SLC/$x/$x.slc 2>/dev/null | gaw
            if [ $slcdates -lt 5 ]; then
              batchcachedir_reprocess_from_slcs.sh $frame
            else
-             echo "quite a lot of not processed SLCs. switching to licsar_make_frame.sh reprocessing"
-             mstr=`ls $frame/geo/*.hgt | head -n1`
-             ls $frame/SLC | sed '/'`basename $mstr .hgt`'/d' > $frame/tmp_reprocess.slc
-             startdate=`head -n1 $frame/tmp_reprocess.slc`
-             enddate=`tail -n1 $frame/tmp_reprocess.slc`
-             if [ `grep -c comet $frame/framebatch_02_coreg.nowait.sh` -gt 0 ]; then extral='-P'; fi
-             licsar_make_frame.sh -f $extral $frame 1 0 `date -d $startdate +'%Y-%m-%d'` `date -d $enddate +'%Y-%m-%d'`
-             rm $frame/tmp_reprocess.slc
+             echo "quite a lot of not processed SLCs. performing through postproc_coreg only"
+             framebatch_postproc_coreg.sh $frame
+             #~ echo "quite a lot of not processed SLCs. switching to licsar_make_frame.sh reprocessing"
+             #~ mstr=`ls $frame/geo/*.hgt | head -n1`
+             #~ ls $frame/SLC | sed '/'`basename $mstr .hgt`'/d' > $frame/tmp_reprocess.slc
+             #~ startdate=`head -n1 $frame/tmp_reprocess.slc`
+             #~ enddate=`tail -n1 $frame/tmp_reprocess.slc`
+             #~ if [ `grep -c comet $frame/framebatch_02_coreg.nowait.sh` -gt 0 ]; then extral='-P'; fi
+             #~ licsar_make_frame.sh -f $extral $frame 1 0 `date -d $startdate +'%Y-%m-%d'` `date -d $enddate +'%Y-%m-%d'`
+             #~ rm $frame/tmp_reprocess.slc
            fi
          fi
    else
@@ -65,7 +67,7 @@ for x in `ls $frame/SLC`; do if [ `ls -al $frame/SLC/$x/$x.slc 2>/dev/null | gaw
         else
          echo "this frame should be stored and deleted: "$frame
          if [ $PROC == 1 ]; then
-           store_to_curdir.sh $frame 1
+           store_to_curdir.sh $frame 1 0 0
          fi
 
         fi
