@@ -5,7 +5,7 @@ SLCdir=$LiCSAR_SLC
 USE_SSH_DOWN=1 #if the wget error is related to SSL blocking, set this to 1 -- however JASMIN prefers to have it always =1 (to use xfer servers for download)
 use_scihub=0 #being used only for the latest data... like.. the current or previous day
 CHECKONLY=0
-MAXIMAGES=200 # if more images are requested to download, stop it
+MAXIMAGES=100 # if more images are requested to download, stop it
 NOCHECKMAX=0
 
 if [ -z $2 ]; then
@@ -62,7 +62,7 @@ make_simple_polygon.sh ${frame}-poly.txt
 
 
 # to get list of files that are missing:
-rm ${frame}_zipfile_names.list ${frame}_scihub.list ${frame}_todown 2>/dev/null
+rm ${frame}_zipfile_names.list ${frame}_scihub.list ${frame}_todown missingFiles 2>/dev/null
 ## make list from scihub
  echo "getting scihub data"
  if [ ! -z $enddate ]; then

@@ -37,7 +37,7 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -T ... Tien Shan strategy - do connections starting May etc."
                    exit; fi
 
-while getopts ":wngSaPoT" option; do
+while getopts ":wn:gSaPoT" option; do
  case "${option}" in
   w ) waiting=1; echo "parameter -w set: will wait for standard unwrapping before ifg gap filling";
 #      shift
@@ -575,8 +575,11 @@ fi
  cat gapfill_job/tmp_unw_todo >> gapfill_job/tmp_ifg_copy
  echo "..copying ifgs to unwrap only"
  for ifg in `cat gapfill_job/tmp_unw_todo`; do 
-  if [ -d IFG/$ifg ]; then cp -r IFG/$ifg $SCRATCHDIR/$frame/IFG/.; fi;
-  if [ -d GEOC/$ifg ]; then cp -r GEOC/$ifg $SCRATCHDIR/$frame/GEOC/.; fi;
+  #if [ -d IFG/$ifg ]; then cp -r IFG/$ifg $SCRATCHDIR/$frame/IFG/.; fi;
+  if [ -d GEOC/$ifg ]; then
+   cp -r GEOC/$ifg $SCRATCHDIR/$frame/GEOC/.; 
+  elif [ -d IFG/$ifg ]; then cp -r IFG/$ifg $SCRATCHDIR/$frame/IFG/.;
+  fi;
  done
  if [ $rlks != $orig_rlks ] || [ $azlks != $orig_azlks ]; then
   echo "preparing MLI and DEM for the custom multilooking"
@@ -630,7 +633,7 @@ for job in `seq 1 $nojobs`; do
   #weird error in 'job not found'.. workaround:
 #  echo bsub -q $bsubquery -n $bsubncores -W 08:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
   #echo bsub2slurm.sh -q $bsubquery -n 1 -W 12:00 -M 25000 -R "rusage[mem=25000]" -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
-  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 08:00 -M 16000 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
+  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 08:00 -M 16000 -J $frame'_unw_'$job -e gapfill_job/$frame'_unw_'$job.err -o gapfill_job/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
   #echo "debug:"
   #cat tmptmp
   chmod 777 tmptmp

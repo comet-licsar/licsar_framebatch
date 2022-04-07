@@ -159,10 +159,12 @@ if [ $autocont -eq 1 ]; then
  echo "bsub2slurm.sh -w '"$waitText"' -o coreg_its/coreg.wait.out -e coreg_its/coreg.wait.err -J coreg."$frame".wait -q "$que" -n 1 -W 00:30 ./postproc_coreg.sh" > postproc.coreg.wait.sh
  chmod 777 postproc.coreg.wait.sh
  ./postproc.coreg.wait.sh
-fi
 
-if [ `cat coreg_its/noncoreg 2>/dev/null | wc -l` -gt 0 ]; then
- echo "WARNING, this iteration should fix the frame only partially."
- echo "Please rerun this script after the coreg jobs finish, for a second iteration"
- echo "In total, "`cat coreg_its/noncoreg | wc -l`" SLCs will be left after this iteration, as they are temporally too far"
+else
+
+ if [ `cat coreg_its/noncoreg 2>/dev/null | wc -l` -gt 0 ]; then
+  echo "WARNING, this iteration should fix the frame only partially."
+  echo "Please rerun this script after the coreg jobs finish, for a second iteration"
+  echo "In total, "`cat coreg_its/noncoreg | wc -l`" SLCs will be left after this iteration, as they are temporally too far"
+ fi
 fi
