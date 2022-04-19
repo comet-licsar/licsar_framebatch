@@ -75,26 +75,13 @@ diffprev=0
 if [ -f coreg_its/noncoreg ]; then
  if [ ! -f coreg_its/noncoreg.prev ]; then
   mv coreg_its/noncoreg coreg_its/noncoreg.prev
-  diffprev=`cat coreg_its/noncoreg | wc -l`
+  diffprev=`cat coreg_its/noncoreg.prev | wc -l`
  else
   diffprev=`diff coreg_its/noncoreg coreg_its/noncoreg.prev | wc -l`
   mv coreg_its/noncoreg coreg_its/noncoreg.prev
  fi
 fi
 
- if [ $autocont -eq 1 ]; then
-# if [ $x == $lastslc ]; then
-  echo "setting second iteration"
-  if [ ! $diffprev == 0 ]; then
-   echo "framebatch_postproc_coreg.sh "$frame" 1" > postproc_coreg.sh; 
-   #extraw='-Ep ./postproc_coreg.sh'
-  else
-   echo "./framebatch_x_second_iteration.nowait.sh" > postproc_coreg.sh
-   #extraw='-Ep ./framebatch_x_second_iteration.nowait.sh'
-  fi
-  chmod 777 postproc_coreg.sh
-# fi
- fi
 
 for x in `cat coreg_its/tmp_reprocess.slc`; do
  doit=0
@@ -154,6 +141,30 @@ for x in `cat coreg_its/tmp_reprocess.slc`; do
  fi
 done
 
+# double-check here for the previous non coregs...
+if [ $diffprev == 0 ]; then
+if [ -f coreg_its/noncoreg ]; then
+ if [ ! -f coreg_its/noncoreg.prev ]; then
+  diffprev=`cat coreg_its/noncoreg | wc -l`
+ else
+  diffprev=`diff coreg_its/noncoreg coreg_its/noncoreg.prev | wc -l`
+ fi
+fi
+fi
+
+ if [ $autocont -eq 1 ]; then
+# if [ $x == $lastslc ]; then
+  echo "setting second iteration"
+  if [ ! $diffprev == 0 ]; then
+   echo "framebatch_postproc_coreg.sh "$frame" 1" > postproc_coreg.sh; 
+   #extraw='-Ep ./postproc_coreg.sh'
+  else
+   echo "./framebatch_x_second_iteration.nowait.sh" > postproc_coreg.sh
+   #extraw='-Ep ./framebatch_x_second_iteration.nowait.sh'
+  fi
+  chmod 777 postproc_coreg.sh
+# fi
+ fi
 if [ $autocont -eq 1 ]; then
  # add next iteration in waiting mode
  echo "bsub2slurm.sh -w '"$waitText"' -o coreg_its/coreg.wait.out -e coreg_its/coreg.wait.err -J coreg."$frame".wait -q "$que" -n 1 -W 00:30 ./postproc_coreg.sh" > postproc.coreg.wait.sh

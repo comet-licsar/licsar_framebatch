@@ -586,10 +586,10 @@ fi
 EOF
 chmod 770 framebatch_eqr.nowait.sh
 if [ $NORUN -eq 0 ]; then
- #./framebatch_eqr.sh -w
+ ./framebatch_eqr.nowait.sh -w #this would store only RSLCs after 1st iteration
  # this would generate waiting script for the EQR, and start it after the second coreg iteration
  #echo "./framebatch_eqr.nowait.sh -w" >> framebatch_x_second_iteration.wait.sh
- echo "./framebatch_eqr.nowait.sh -w" >> framebatch_x_second_iteration.nowait.sh
+ #echo "./framebatch_eqr.nowait.sh -w" >> framebatch_x_second_iteration.nowait.sh
 else
  echo "To run this step, use ./framebatch_eqr.nowait.sh"
 fi
