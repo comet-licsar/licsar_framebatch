@@ -17,6 +17,9 @@ prioritise=0
 checkrslc=1
 ifg_combinations=4
 tienshan=0
+# for S1A or S1B only
+A=0
+B=0
 
 source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 #quality checker here is the basic one. but still it does problems! e.g. Iceland earthquake - took long to process due to tech complications
@@ -35,10 +38,15 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -P ... prioritise (run through cpom-comet)"
                    echo "parameter -o ... no check if gapfill dir exists - DO NOT USE IF NOT SURE WHETHER ANOTHER GAPFILL IN PROGRESS"
                    echo "parameter -T ... Tien Shan strategy - do connections starting May etc."
+                   echo "parameter -A or -B .. do only S1A/S1B combinations"
                    exit; fi
 
-while getopts ":wn:gSaPoT" option; do
+while getopts ":wn:gSaABPoT" option; do
  case "${option}" in
+  A) A=1; echo "S1A only";
+      ;;
+  B) B=1; echo "S1B only";
+      ;;
   w ) waiting=1; echo "parameter -w set: will wait for standard unwrapping before ifg gap filling";
 #      shift
       ;;
@@ -218,7 +226,24 @@ done
 echo "getting list of ifg to fill"
 if [ ! -d IFG ]; then mkdir IFG; fi
 if [ ! -d GEOC ]; then mkdir GEOC; fi
-ls RSLC/20??????/*rslc.mli | cut -d '/' -f2 > gapfill_job/tmp_rslcs
+# for S1A/B only:
+if [ $A == 1 ]; then
+ rm gapfill_job/tmp_rslcs 2>/dev/null
+ for mp in `ls RSLC/20??????/*rslc.mli.par`; do
+   if [ `grep ^sensor $mp | gawk {'print $2'}` == 'S1A' ]; then
+     echo $mp | cut -d '/' -f2 >> gapfill_job/tmp_rslcs
+   fi
+ done
+elif [ $B == 1 ]; then
+ rm gapfill_job/tmp_rslcs 2>/dev/null
+ for mp in `ls RSLC/20??????/*rslc.mli.par`; do
+   if [ `grep ^sensor $mp | gawk {'print $2'}` == 'S1B' ]; then
+     echo $mp | cut -d '/' -f2 >> gapfill_job/tmp_rslcs
+   fi
+ done
+else
+ ls RSLC/20??????/*rslc.mli | cut -d '/' -f2 > gapfill_job/tmp_rslcs
+fi
 #ls IFG/20*_20??????/*.cc 2>/dev/null | cut -d '/' -f2 > gapfill_job/tmp_ifg_existing
 ls GEOC/20*_20??????/*.cc.tif 2>/dev/null | cut -d '/' -f2 > gapfill_job/tmp_ifg_existing
 #rm gapfill_job/tmp_ifg_all2 2>/dev/null
@@ -234,7 +259,16 @@ for FIRST in `cat gapfill_job/tmp_rslcs`; do
 done
 
 if [ $tienshan -eq 1 ]; then
-    echo "preparing Tien Shan connections (all since May)"
+    echo "preparing Tien Shan connections"
+    # Pick month to start connections from. Default to May unless stated
+    if [ `grep -c startmonth $LiCSAR_procdir/$track/$frame/local_config.py` -gt 0 ]; then
+       startmonth=`grep ^startmonth $LiCSAR_procdir/$track/$frame/local_config.py | cut -d '=' -f2 | sed 's/ //g'`
+    else
+       startmonth=5
+    fi
+    MONTHS=(ZERO Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)
+    echo 'Start Month:' ${MONTHS[$startmonth]}
+    
     maxconn=100
     first=`head -n2 gapfill_job/tmp_rslcs | tail -n1`
     last=`tail -n2 gapfill_job/tmp_rslcs | head -n1`
@@ -243,16 +277,21 @@ if [ $tienshan -eq 1 ]; then
     fi
     #do 
     for year in `cat gapfill_job/long_rslcs | cut -c -4 | sort -u`; do
-       #let year2=$year+1
+       let year1=$year
+       let year2=$year+1
        #let year3=$year+2
        #3 months connections
        rm gapfill_job/long_ifgs 2>/dev/null
-       for month1 in 5 6 7 8; do
+       #for month1 in 5 6 7 8; do
+       for month1 in `seq $startmonth $(expr $startmonth + 3)`; do
          let month2=$month1+3
+         # Reformat months to be 01-12
+         if [ $month1 -gt 12 ]; then let month1=$month1-12; let year1=$year+1; fi 
          if [ $month1 -lt 10 ]; then month1='0'$month1; fi
+         if [ $month2 -gt 12 ]; then let month2=$month2-12; let year2=$year+1; fi
          if [ $month2 -lt 10 ]; then month2='0'$month2; fi
-         for firstdate in `grep ^$year$month1 gapfill_job/long_rslcs`; do
-           for lastdate in `grep ^$year$month2 gapfill_job/long_rslcs`; do
+         for firstdate in `grep ^$year1$month1 gapfill_job/long_rslcs`; do
+           for lastdate in `grep ^$year2$month2 gapfill_job/long_rslcs`; do
              echo $firstdate'_'$lastdate >> gapfill_job/long_ifgs
            done
          done
@@ -264,13 +303,16 @@ if [ $tienshan -eq 1 ]; then
        
        #6 months connections: May, Nov
        rm gapfill_job/long_ifgs 2>/dev/null
-       for month1 in 5 11; do
+       #for month1 in 5 11; do
+       for month1 in $startmonth $(expr $startmonth + 6); do 
          let month2=$month1+6
-         year2=$year
+         let year1=$year
+	 let year2=$year
+	 if [ $month1 -gt 12 ]; then let month1=$month1-12; let year1=$year+1; fi 
          if [ $month2 -gt 12 ]; then let month2=$month2-12; let year2=$year+1; fi
          if [ $month1 -lt 10 ]; then month1='0'$month1; fi
          if [ $month2 -lt 10 ]; then month2='0'$month2; fi
-         for firstdate in `grep ^$year$month1 gapfill_job/long_rslcs`; do
+         for firstdate in `grep ^$year1$month1 gapfill_job/long_rslcs`; do
            for lastdate in `grep ^$year2$month2 gapfill_job/long_rslcs`; do
              echo $firstdate'_'$lastdate >> gapfill_job/long_ifgs
            done
@@ -283,13 +325,16 @@ if [ $tienshan -eq 1 ]; then
        
        #9 months connections: Aug, Sep, Oct, Nov
        rm gapfill_job/long_ifgs 2>/dev/null
-       for month1 in 8 9 10 11; do
+       #for month1 in 8 9 10 11; do
+       for month1 in `seq $(expr $startmonth + 3) $(expr $startmonth + 6)`; do
          let month2=$month1+9
-         year2=$year
+         let year1=$year
+         let year2=$year
+         if [ $month1 -gt 12 ]; then let month1=$month1-12; let year1=$year+1; fi
          if [ $month2 -gt 12 ]; then let month2=$month2-12; let year2=$year+1; fi
          if [ $month1 -lt 10 ]; then month1='0'$month1; fi
          if [ $month2 -lt 10 ]; then month2='0'$month2; fi
-         for firstdate in `grep ^$year$month1 gapfill_job/long_rslcs`; do
+         for firstdate in `grep ^$year1$month1 gapfill_job/long_rslcs`; do
            for lastdate in `grep ^$year2$month2 gapfill_job/long_rslcs`; do
              echo $firstdate'_'$lastdate >> gapfill_job/long_ifgs
            done
@@ -301,12 +346,19 @@ if [ $tienshan -eq 1 ]; then
 
        #12 months connections: May, Jun, Jul, Aug, Sep, Oct, Nov
        rm gapfill_job/long_ifgs 2>/dev/null
-       for month1 in 5 6 7 8 9 10 11; do
-         month2=$month1
-         let year2=$year+1
+       #for month1 in 5 6 7 8 9 10 11; do
+       for month1 in `seq $startmonth $(expr $startmonth + 6)`; do
+	 let year1=$year
+         if [ $month1 -gt 12 ]; then let month1=$month1-12; let year1=$year+1; fi
+         let year2=$year1+1 
+         let month2=$month1
          if [ $month1 -lt 10 ]; then month1='0'$month1; fi
-         if [ $month2 -lt 10 ]; then month2='0'$month2; fi
-         for firstdate in `grep ^$year$month1 gapfill_job/long_rslcs`; do
+
+#         let month2=$month1
+#         let year2=$year+1
+#         if [ $month1 -lt 10 ]; then month1='0'$month1; fi
+#         if [ $month2 -lt 10 ]; then month2='0'$month2; fi
+         for firstdate in `grep ^$year1$month1 gapfill_job/long_rslcs`; do
            for lastdate in `grep ^$year2$month2 gapfill_job/long_rslcs`; do
              echo $firstdate'_'$lastdate >> gapfill_job/long_ifgs
            done
@@ -504,8 +556,8 @@ for job in `seq 1 $nojobs`; do
  #need to edit the unwrap script below to also accept range/azi looks!
  #hmm... actually it seems that unwrap will work anyway...
  #echo "LiCSAR_04_unwrap.py -d . -f $frame -T gapfill_job/unwjob_$job.log -l gapfill_job/unwjob_$job" > gapfill_job/unwjob_$job.sh
- echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -I . " > gapfill_job/unwjob_$job.sh
- echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -C . " >> gapfill_job/unwjob_$job.sh
+ echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -I "`pwd`" " > gapfill_job/unwjob_$job.sh
+ echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -C "`pwd`" " >> gapfill_job/unwjob_$job.sh
  echo "cat gapfill_job/unwjob_$job | parallel -j 1 unwrap_geo.sh $frame" >> gapfill_job/unwjob_$job.sh
  waitText=$waitText" && ended("$frame"_unw_"$job")"
  chmod 770 gapfill_job/unwjob_$job.sh
@@ -573,12 +625,21 @@ fi
  cp -r gapfill_job $SCRATCHDIR/$frame/.
  #sed 's/ /_/' gapfill_job/tmp_ifg_todo > gapfill_job/tmp_ifg_copy
  cat gapfill_job/tmp_unw_todo >> gapfill_job/tmp_ifg_copy
- echo "..copying ifgs to unwrap only"
+ echo "..copying (or linking) ifgs to unwrap only"
  for ifg in `cat gapfill_job/tmp_unw_todo`; do 
   #if [ -d IFG/$ifg ]; then cp -r IFG/$ifg $SCRATCHDIR/$frame/IFG/.; fi;
   if [ -d GEOC/$ifg ]; then
-   cp -r GEOC/$ifg $SCRATCHDIR/$frame/GEOC/.; 
-  elif [ -d IFG/$ifg ]; then cp -r IFG/$ifg $SCRATCHDIR/$frame/IFG/.;
+   if [ $links == 1 ]; then
+    ln -s `pwd`/GEOC/$ifg $SCRATCHDIR/$frame/GEOC/$ifg
+   else
+    cp -r GEOC/$ifg $SCRATCHDIR/$frame/GEOC/.; 
+   fi
+  elif [ -d IFG/$ifg ]; then
+   if [ $links == 1 ]; then
+    ln -s `pwd`/IFG/$ifg $SCRATCHDIR/$frame/IFG/$ifg;
+   else
+    cp -r IFG/$ifg $SCRATCHDIR/$frame/IFG/.;
+   fi
   fi;
  done
  if [ $rlks != $orig_rlks ] || [ $azlks != $orig_azlks ]; then
@@ -619,13 +680,13 @@ fi
 
 #now we can start jobs..
 echo "..running "$nojobs" jobs to generate ifgs/unws"
+rm bjobs.sh 2>/dev/null
 for job in `seq 1 $nojobs`; do
  wait=''
  if [ -f gapfill_job/ifgjob_$job.sh ]; then
   #weird error in 'job not found'.. workaround:
 #  echo bsub -q $bsubquery -n $bsubncores -W 05:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
-  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 05:00 -M 8192 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
-  chmod 777 tmptmp; ./tmptmp #>/dev/null
+  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 05:00 -M 8192 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh >> bjobs.sh
   #this wait text would work for unwrapping to wait for the previous job:
   wait="-w \"ended('"$frame"_ifg_"$job"')\""
  fi
@@ -633,13 +694,11 @@ for job in `seq 1 $nojobs`; do
   #weird error in 'job not found'.. workaround:
 #  echo bsub -q $bsubquery -n $bsubncores -W 08:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
   #echo bsub2slurm.sh -q $bsubquery -n 1 -W 12:00 -M 25000 -R "rusage[mem=25000]" -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
-  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 08:00 -M 16000 -J $frame'_unw_'$job -e gapfill_job/$frame'_unw_'$job.err -o gapfill_job/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
-  #echo "debug:"
-  #cat tmptmp
-  chmod 777 tmptmp
-  ./tmptmp #>/dev/null
+  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 08:00 -M 16000 -J $frame'_unw_'$job -e gapfill_job/$frame'_unw_'$job.err -o gapfill_job/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh >> bjobs.sh
  fi
 done
+chmod 777 bjobs.sh
+./bjobs.sh
 
 # copying and cleaning job
 echo "..running job that will copy outputs from TEMP to your WORKDIR"
@@ -666,6 +725,7 @@ echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' 
 #echo bsub -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
 #echo "debug last:"
 #cat $WORKFRAMEDIR/gapfill_job/tmptmp
+echo "starting copyjob - may take few minutes if the number of ifg jobs is large"
 chmod 777 $WORKFRAMEDIR/gapfill_job/tmptmp; $WORKFRAMEDIR/gapfill_job/tmptmp
 #rm $WORKFRAMEDIR/gapfill_job/tmptmp
 cd -

@@ -27,6 +27,7 @@ if [ -z $1 ]; then
  echo "-E ............... after resampling, move to an area for copying to ARC4 EIDP"
  echo "-N ............... check if there are new acquisitions since the last run. If not, will cancel the processing"
  echo "-P ............... prioritise... i.e. run on comet queue (default: use short-serial where needed)"
+ echo "-A or -B ......... perform ifg gapfill (4 ifgs + extras) for only S1A/S1B"
  #echo "-R ............... prioritise through comet_responder queue"
 # echo "-k YYYY-MM-DD .... generate kml for the ifg pairs containing given date (e.g. earthquake..)"
  #echo "geocode_to_public_website=0"
@@ -35,7 +36,7 @@ fi
 #export BATCH_CACHE_DIR=/work/scratch-nopw/licsar/earmla
 source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 
-
+sensorgapfill=''
 NORUN=0
 neodc_check=0
 only_new_rslc=0
@@ -62,8 +63,12 @@ fi
 #options to be c,n,S
 #option=`echo $1 | rev | cut -d '-' -f1 | rev`
 #case $option in
-while getopts ":cnSEfNPRG" option; do
+while getopts ":cnSEfNPRGAB" option; do
  case "${option}" in
+  A) sensorgapfill="-A";
+     ;;
+  B) sensorgapfill="-B";
+     ;;
   c) neodc_check=1; echo "performing check if files exist in neodc and are ingested to licsar db";
      ;;
   n) NORUN=1; echo "No run option. Scripts will be generated but not start automatically";
@@ -674,7 +679,7 @@ if [ ! -z \$1 ]; then
  chmod 770 framebatch_05_gap_filling.wait.sh
  ./framebatch_05_gap_filling.wait.sh
 else
- framebatch_gapfill.sh $gpextra $NBATCH
+ framebatch_gapfill.sh $sensorgapfill $gpextra $NBATCH
 fi
 EOF
 chmod 770 framebatch_05_gap_filling.nowait.sh
