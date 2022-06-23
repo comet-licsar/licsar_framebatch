@@ -371,6 +371,19 @@ if [ $updated == 1 ]; then
  echo "regenerating baseline plot and gaps.txt file"
  plot_network.py $pubDir $pubDir_meta/network.png $pubDir_meta/gaps.txt
  chmod -R 775 $pubDir_meta/* 2>/dev/null
+ 
+ # checking if the frame is in framelist - if not, add it there
+ framelist=$LiCSAR_public/framelist.txt
+ if [ `grep -c $frame $framelist` == 0 ]; then
+  if [ ! -f $framelist.tmp ]; then
+  cp $framelist $framelist.tmp
+  echo $frame >> $framelist.tmp
+  sort $framelist.tmp > $framelist
+  rm $framelist.tmp
+  else
+   echo "ERROR - wanted to update framelist.txt but it seems in a parallel process, cancelling"
+  fi
+ fi
 fi
 #echo "WARNING - we do not deactivate the frame now..."
 #echo "Deactivating the frame after its storing to db"
