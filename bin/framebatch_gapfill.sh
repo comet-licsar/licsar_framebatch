@@ -594,7 +594,7 @@ fi
  
  #if [ -d $SCRATCHDIR/$frame ]; then echo "..cleaning scratchdir"; rm -rf $SCRATCHDIR/$frame; fi
  mkdir -p $SCRATCHDIR/$frame/RSLC
- chmod -R 777 $SCRATCHDIR/$frame
+ chmod 777 $SCRATCHDIR/$frame
  mkdir $SCRATCHDIR/$frame/IFG 2>/dev/null
  mkdir $SCRATCHDIR/$frame/GEOC 2>/dev/null
  mkdir $SCRATCHDIR/$frame/SLC $SCRATCHDIR/$frame/LOGS  2>/dev/null
