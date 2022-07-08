@@ -2,12 +2,30 @@
 source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 
 if [ -z $1 ]; then 
- echo "set parameter: frame";
- echo "this script will prepare coreg jobs to help against iterations - it might get messy, do not use it routinely";
+ echo "set parameter: frame [1]";
+ echo "this script will run jobs to coregister SLCs in the frame folder"  #prepare coreg jobs to help against iterations - it might get messy, do not use it routinely";
+ echo "by running with the optional parameter 1, it would perform iterative processing to hopefully coregister all SLCs"
+ echo "other parameters:"
+ echo "-f ..... force override the 180 days gap limitation (that could cause wrong SD estimate)"
  exit; fi
+
+
+force=0
+autocont=0
+extracoregparms=''
+while getopts ":f" option; do
+ case "${option}" in
+  f) force=1;
+     autocont=1;
+     extracoregparms='-E';
+     #shift
+     ;;
+ esac
+done
+shift $((OPTIND -1))
+
 frame=$1
 
-autocont=0
 if [ ! -z $2 ]; then 
   #this is a hidden switch. it means that after the last coreg job, we will run second iteration of licsar_make_frame. testing..
   autocont=1
@@ -82,15 +100,22 @@ if [ -f coreg_its/noncoreg ]; then
  fi
 fi
 
-
-for x in `cat coreg_its/tmp_reprocess.slc`; do
+msize=`du -c SLC/$mstr/*IW?.slc | tail -n1 | gawk {'print $1'}`
+for x in `cat coreg_its/tmp_reprocess.slc | sort -r`; do
  doit=0
- for y in `cat coreg_its/tmp.rslc`; do 
-  if [ `datediff $x $y` -lt 180 ]; then
-   doit=1
-   break
+ if [ $force == 0 ]; then
+  for y in `cat coreg_its/tmp.rslc`; do 
+   if [ `datediff $x $y` -lt 180 ]; then
+    doit=1
+    break
+   fi
+  done
+ else
+  if [ ! -f SLC/$x/forcecoreg_tried ]; then
+   ssize=`du -c SLC/$x/*IW?.slc | tail -n1 | gawk {'print $1'}`  # check if the slc has same size as mater slc
+   if [ $ssize -eq $msize ]; then doit=1; touch SLC/$x/forcecoreg_tried; fi
   fi
- done
+ fi
  if [ $doit -eq 1 ]; then
   echo $x > coreg_its/coreg.$x
   echo "mkdir coreg_its/tmpdir_coreg."$x"; cd coreg_its/tmpdir_coreg."$x > coreg_its/coreg.$x.sh
@@ -116,7 +141,7 @@ for x in `cat coreg_its/tmp_reprocess.slc`; do
   echo "ln -s RSLC/"$mstr"/"$mstr".rslc.mli "$mstr".rmli" >> coreg_its/coreg.$x.sh
   echo "ln -s RSLC/"$mstr"/"$mstr".rslc.mli.par "$mstr".rmli.par" >> coreg_its/coreg.$x.sh
   echo "ln -s "`pwd`"/geo" >> coreg_its/coreg.$x.sh
-  echo "time OMP_NUM_THREADS=1 LiCSAR_02_coreg.py -f "$frame" -d . -m "$mstr" -i -k -l "`pwd`"/coreg_its/coreg."$x >> coreg_its/coreg.$x.sh
+  echo "time OMP_NUM_THREADS=1 LiCSAR_02_coreg.py -f "$frame" -d . -m "$mstr" -i -k -l "`pwd`"/coreg_its/coreg."$x $extracoregparms >> coreg_its/coreg.$x.sh
   echo "rm RSLC/"$x"/$x.lock 2>/dev/null" >> coreg_its/coreg.$x.sh
   echo "rmdir RSLC/"$x" 2>/dev/null" >> coreg_its/coreg.$x.sh
   echo "mv RSLC/"$x" "`pwd`"/RSLC/." >> coreg_its/coreg.$x.sh
@@ -136,7 +161,11 @@ for x in `cat coreg_its/tmp_reprocess.slc`; do
      waitText=$waitText" && ended("$jobname")";
    fi
   fi
- else
+  if [ $force == 1 ]; then
+   echo "using only one SLC to force-coregister (avoid 180 days check): "$x
+   break  #we want to link only one such SLC for processing
+  fi
+ else  # if not 'doit'
   echo $x >> coreg_its/noncoreg
  fi
 done
