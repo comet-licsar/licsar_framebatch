@@ -1,3 +1,8 @@
 #ignore pyc files
 *.pyc
 
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/licsar_framebatch.iml
+.idea/modules.xml
+.idea/vcs.xml
+.idea/workspace.xml
