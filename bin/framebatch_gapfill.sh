@@ -531,7 +531,7 @@ if [ -f gapfill_job/tmp_rslcs2mosaic ]; then
   fi
   echo "SLC_mosaic_S1_TOPS tab/$image'R_tab' RSLC/$image/$image.rslc RSLC/$image/$image.rslc.par $rlks $azlks 0 tab/$master'R_tab'" >> gapfill_job/mosaic.sh
  done
- chmod 770 gapfill_job/mosaic.sh
+ chmod 777 gapfill_job/mosaic.sh
  waitTextmosaic="ended('"$frame"_mosaic')"
 fi
 if [ ! -f tab/$master'R_tab' ]; then cp tab/$master'_tab' tab/$master'R_tab'; fi
@@ -551,7 +551,7 @@ for job in `seq 1 $nojobs`; do
   # fi
   #done
   echo "LiCSAR_03_mk_ifgs.py -d . -r $rlks -a $azlks -f $frame -c 0 -T gapfill_job/ifgjob_$job.log  -i gapfill_job/ifgjob_$job" > gapfill_job/ifgjob_$job.sh
-  chmod 770 gapfill_job/ifgjob_$job.sh
+  chmod 777 gapfill_job/ifgjob_$job.sh
  fi
  #need to edit the unwrap script below to also accept range/azi looks!
  #hmm... actually it seems that unwrap will work anyway...
@@ -560,7 +560,7 @@ for job in `seq 1 $nojobs`; do
  echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -C "`pwd`" " >> gapfill_job/unwjob_$job.sh
  echo "cat gapfill_job/unwjob_$job | parallel -j 1 unwrap_geo.sh $frame" >> gapfill_job/unwjob_$job.sh
  waitText=$waitText" && ended("$frame"_unw_"$job")"
- chmod 770 gapfill_job/unwjob_$job.sh
+ chmod 777 gapfill_job/unwjob_$job.sh
 done
 
 #check if there is nothing to process, then just ... finish
@@ -718,8 +718,9 @@ if [ $geocode == 1 ]; then
  echo $WORKFRAMEDIR/framebatch_06_geotiffs.nowait.sh >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
  echo "sleep 60" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 fi
+echo "chmod -R 777 "$WORKFRAMEDIR >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "rm -rf $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
-chmod 770 $WORKFRAMEDIR/gapfill_job/copyjob.sh
+chmod 777 $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #workaround for 'Empty job. Job not submitted'
 echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
 #echo bsub -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
@@ -727,5 +728,7 @@ echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' 
 #cat $WORKFRAMEDIR/gapfill_job/tmptmp
 echo "starting copyjob - may take few minutes if the number of ifg jobs is large"
 chmod 777 $WORKFRAMEDIR/gapfill_job/tmptmp; $WORKFRAMEDIR/gapfill_job/tmptmp
+echo "changing permissions (so admins can store and delete the frame in work directory if needed)"
+chmod -R 777 $WORKFRAMEDIR
 #rm $WORKFRAMEDIR/gapfill_job/tmptmp
 cd -
