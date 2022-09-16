@@ -16,7 +16,7 @@ extracoregparms=''
 while getopts ":f" option; do
  case "${option}" in
   f) force=1;
-     autocont=1;
+     #autocont=1;
      extracoregparms='-E';
      #shift
      ;;
