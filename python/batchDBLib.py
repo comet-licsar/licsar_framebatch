@@ -250,7 +250,10 @@ def add_acq_images(polyid, startdate = None, enddate = None, masterdate = None):
             acq_dates = acq_dates[acq_dates['acq_date']<=enddate]
         #add back master img
         if acq_dates[acq_dates['acq_date']==masterdate].empty:
-            acq_dates.loc[max(acq_dates.index)+1, 'acq_date'] = masterdate
+            if acq_dates.empty: # in case we have no data between the start/end date:
+                acq_dates.loc[0, 'acq_date'] = masterdate
+            else:
+                acq_dates.loc[max(acq_dates.index)+1, 'acq_date'] = masterdate
     #fix for close-to-midnight values:
     #fix for master image included 2021-08-12
     acq_dates_sorted = acq_dates.sort_values('acq_date')
