@@ -150,9 +150,10 @@ if min(abs(acq_imgs.btemp)).days > rlsc3_limit:
                 enddate = mstrDate - td
                 print('updated enddate = ' +enddate.strftime('%Y-%m-%d'))
         else:
-            pomfirst = acq_imgs['acq_date'].values[0]
-            pomlast = acq_imgs['acq_date'].values[-1]
+            pomfirst = acq_imgs['acq_date'].sort_values().values[0]
+            pomlast = acq_imgs['acq_date'].sort_values().values[-1]
             possible_acqs_pd = pd.DataFrame(possible_acqs_dt)
+            possible_acqs_pd = possible_acqs_pd.sort_values(0)
             pomfirstlen = min(abs(pomfirst - possible_acqs_pd[0]))
             pomlastlen = min(abs(pomlast - possible_acqs_pd[0]))
             if pomfirstlen < pomlastlen:
