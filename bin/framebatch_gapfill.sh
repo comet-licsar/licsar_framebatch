@@ -17,6 +17,8 @@ prioritise=0
 checkrslc=1
 ifg_combinations=4
 tienshan=0
+checkMosaic=1
+locl=0
 # for S1A or S1B only
 A=0
 B=0
@@ -39,13 +41,16 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -o ... no check if gapfill dir exists - DO NOT USE IF NOT SURE WHETHER ANOTHER GAPFILL IN PROGRESS"
                    echo "parameter -T ... Tien Shan strategy - do connections starting May etc."
                    echo "parameter -A or -B .. do only S1A/S1B combinations"
+                   echo "parameter -l ... use local processing strategy - e.g. volc responder 2.0"
                    exit; fi
 
-while getopts ":wn:gSaABPoT" option; do
+while getopts ":wn:gSaABPolT" option; do
  case "${option}" in
   A) A=1; echo "S1A only";
       ;;
   B) B=1; echo "S1B only";
+      ;;
+  l) locl=1; checkrslc=0; tienshan=0; checkMosaic=0;
       ;;
   w ) waiting=1; echo "parameter -w set: will wait for standard unwrapping before ifg gap filling";
 #      shift
@@ -168,8 +173,10 @@ if [ $qualcheck -eq 1 ]; then
  cd $frame
 fi
 
-echo "Executing gap filling routine (results will be saved in this folder: "$WORKFRAMEDIR" )."
-if [ `echo $frame | cut -c 11` != '_' ]; then echo "ERROR, you are not in FRAME folder. Exiting"; exit; fi
+if [ $locl == 0 ]; then
+ echo "Executing gap filling routine (results will be saved in this folder: "$WORKFRAMEDIR" )."
+ if [ `echo $frame | cut -c 11` != '_' ]; then echo "ERROR, you are not in FRAME folder. Exiting"; exit; fi
+fi
 #if [ -z $BATCH_CACHE_DIR ]; then echo "BATCH_CACHE_DIR not set. Cancelling"; exit; fi
 
 #decide for query based on user rights
@@ -212,6 +219,8 @@ mkdir gapfill_job
 # chmod 770 gapfill_job/unw_correct.sh
 # bsub -q $bsubquery  -n 1 -W 23:59 gapfill_job/unw_correct.sh
 #fi
+
+if [ $locl == 0 ]; then
 echo "fixing missing geocoded MLIs (should be fast)"
 track=`track_from_frame $frame`
 if [ ! -d GEOC.MLI ]; then mkdir GEOC.MLI; fi
@@ -223,6 +232,10 @@ for x in `ls RSLC`; do
   fi
  fi
 done
+else
+echo "doing local proc - skipping check for GEOC.MLI - only ifgs"
+fi
+
 echo "getting list of ifg to fill"
 if [ ! -d IFG ]; then mkdir IFG; fi
 if [ ! -d GEOC ]; then mkdir GEOC; fi
@@ -508,6 +521,7 @@ if [ $nojobs10 -gt 0 ]; then let nojobs=$nojobs+1; fi
 
 #distribute ifgs for processing jobs and run them
 nifgmax=0; waitText=""; waitTextmosaic="";
+if [ $checkMosaic -eq 1 ]; then
 if [ -f gapfill_job/tmp_rslcs2mosaic ]; then
  rm gapfill_job/mosaic.sh 2>/dev/null
  mkdir tab  2>/dev/null
@@ -535,6 +549,9 @@ if [ -f gapfill_job/tmp_rslcs2mosaic ]; then
  waitTextmosaic="ended('"$frame"_mosaic')"
 fi
 if [ ! -f tab/$master'R_tab' ]; then cp tab/$master'_tab' tab/$master'R_tab'; fi
+fi
+
+
 for job in `seq 1 $nojobs`; do
  let nifg=$nifgmax+1
  let nifgmax=$nifgmax+$NBATCH
@@ -642,6 +659,7 @@ fi
    fi
   fi;
  done
+ if [ $locl == 0 ]; then  # expecting geo ready
  if [ $rlks != $orig_rlks ] || [ $azlks != $orig_azlks ]; then
   echo "preparing MLI and DEM for the custom multilooking"
   echo "(nothing will get rewritten in your workfolder)"
@@ -654,6 +672,7 @@ fi
   #SLC_mosaic_S1_TOPS tab/$master'_tab' SLC/$master/$master.mli SLC/$master/$master.mli.par $rlks $azlks 0 2>/dev/null
   multilookSLC $master $rlks $azlks 1 $SCRATCHDIR/$frame/SLC/$master
   echo "..recreating geocoding tables"
+  echo "WARNING - NEED TO FIX THIS - JUST ADD OUTPUT RESOLUTION AND IT WILL WORK - PLEASE ASK EARMLA IF NEEDED"
   python -c "from LiCSAR_lib.coreg_lib import geocode_dem; geocode_dem('"$SCRATCHDIR/$frame/SLC/$master"','"$SCRATCHDIR/$frame/geo"','"$SCRATCHDIR/$frame/DEM"','"$SCRATCHDIR/$frame"','"$master"')"
   #echo "..generating custom multilooked hgt file"
   #ml_width=`grep range_samples SLC/$master/$master.slc.mli.par | gawk {'print $2'}`
@@ -662,12 +681,14 @@ fi
   #geocode geo/$master.lt_fine geo/EQA.dem $demwidth geo/$master.hgt $ml_width - 2 0 - - - - - >/dev/null 2>/dev/null
   #rashgt geo/$master.hgt SLC/$master/$master.slc.mli $ml_width
  fi
+ fi
 ##########################################################
  echo "running jobs"
  cd $SCRATCHDIR/$frame
  #weird error - mk_ifg is reading SLC tabs instead of rslc?? (need debug).. quick fix here:
  #for x in `ls tab/20??????_tab`; do cp `echo $x | sed 's/_tab/R_tab/'` $x; done
 
+if [ $checkMosaic == 1 ]; then
 #first run mosaicking
 if [ `echo $waitTextmosaic | wc -w` -gt 0 ]; then
  waitcmdmosaic="-w \""$waitTextmosaic"\""
@@ -676,6 +697,7 @@ if [ `echo $waitTextmosaic | wc -w` -gt 0 ]; then
  #bsub -q $bsubquery -n 1 -W 04:00 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
 else
  waitcmdmosaic='';
+fi
 fi
 
 #now we can start jobs..
