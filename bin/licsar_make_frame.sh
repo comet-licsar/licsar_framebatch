@@ -90,6 +90,7 @@ while getopts ":cnSEfNPRGAB" option; do
   P) prioritise=1; echo "prioritising - using comet queue in all steps";
      ;;
   R) prioritise_nrt=1; echo "prioritising through comet_responder";
+     force=1;
      ;;
   N) only_new_rslc=1; echo "Checking if new images appeared since the last processing";
      ;;
