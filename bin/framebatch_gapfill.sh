@@ -551,6 +551,10 @@ fi
 if [ ! -f tab/$master'R_tab' ]; then cp tab/$master'_tab' tab/$master'R_tab'; fi
 fi
 
+if [ $locl == 0 ]; then
+l03extra=' -f '$frame
+else l03extra='';
+fi
 
 for job in `seq 1 $nojobs`; do
  let nifg=$nifgmax+1
@@ -567,7 +571,7 @@ for job in `seq 1 $nojobs`; do
   #  echo "SLC_mosaic_S1_TOPS tab/$image'R_tab' RSLC/$image/$image.rslc RSLC/$image/$image.rslc.par $rlks $azlks 0 tab/$master'R_tab'" >> gapfill_job/ifgjob_$job.sh
   # fi
   #done
-  echo "LiCSAR_03_mk_ifgs.py -d . -r $rlks -a $azlks -f $frame -c 0 -T gapfill_job/ifgjob_$job.log  -i gapfill_job/ifgjob_$job" > gapfill_job/ifgjob_$job.sh
+  echo "LiCSAR_03_mk_ifgs.py -d . -r $rlks -a $azlks"$l03extra" -c 0 -T gapfill_job/ifgjob_$job.log  -i gapfill_job/ifgjob_$job" > gapfill_job/ifgjob_$job.sh
   chmod 777 gapfill_job/ifgjob_$job.sh
  fi
  #need to edit the unwrap script below to also accept range/azi looks!
