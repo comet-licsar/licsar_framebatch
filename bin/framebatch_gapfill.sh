@@ -137,6 +137,7 @@ fi
 #NBATCH=5
 NBATCH=$1
 WORKFRAMEDIR=`pwd`
+mkdir -p $WORKFRAMEDIR/LOGS
 #if [ -f local_config.py ]; then
 # noifg=`grep '^ifg_connections' local_config.py | cut -d '=' -f2`
 # if [ ! -z $noifg ]; then
