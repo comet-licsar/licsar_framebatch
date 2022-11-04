@@ -49,6 +49,7 @@ EQR=0
 force=0
 #this switch is only working together with auto-store
 dogacos=0
+dogacos=1  # will do this now
 tienshan=0
 
 if [ $USER == 'earmla' ]; then 
