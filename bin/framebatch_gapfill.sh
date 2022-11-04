@@ -22,6 +22,7 @@ locl=0
 # for S1A or S1B only
 A=0
 B=0
+ifglist=''
 
 source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 #quality checker here is the basic one. but still it does problems! e.g. Iceland earthquake - took long to process due to tech complications
@@ -38,13 +39,14 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -g ... will run further framebatch step, i.e. geocoding"
                    echo "parameter -S ... will run store and delete after geocoding.."
                    echo "parameter -P ... prioritise (run through cpom-comet)"
+                   echo "parameter -i ifg.list ... add ifg pairs from the given ifg.list file"
                    echo "parameter -o ... no check if gapfill dir exists - DO NOT USE IF NOT SURE WHETHER ANOTHER GAPFILL IN PROGRESS"
                    echo "parameter -T ... Tien Shan strategy - do connections starting May etc."
                    echo "parameter -A or -B .. do only S1A/S1B combinations"
                    echo "parameter -l ... use local processing strategy - e.g. volc responder 2.0"
                    exit; fi
 
-while getopts ":wn:gSaABPolT" option; do
+while getopts ":wn:gSaABi:PolT" option; do
  case "${option}" in
   A) A=1; echo "S1A only";
       ;;
@@ -70,6 +72,9 @@ while getopts ":wn:gSaABPolT" option; do
   o ) CHECKSCRATCH=0; echo "skipping check for existing frame on LiCSAR_temp";
       ;;
   T ) tienshan=1; echo "arranging ifg connections strategy for Tien Shan";
+      ;;
+  i ) ifglist=$2; echo "adding ifgs from the text file"
+      shift
       ;;
   esac
 done
@@ -494,6 +499,11 @@ else
      fi
     fi
  fi
+fi
+
+# adding from the txt file here:
+if [ ! -z $ifglist ]; then
+ cat $ifglist >> gapfill_job/tmp_ifg_all2
 fi
 
 #cat gapfill_job/tmp_ifg_all2 | head -n-5 | sort -u > gapfill_job/tmp_ifg_all
