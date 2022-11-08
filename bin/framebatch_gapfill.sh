@@ -57,7 +57,7 @@ while getopts ":wn:gSaABi:PolT" option; do
   w ) waiting=1; echo "parameter -w set: will wait for standard unwrapping before ifg gap filling";
 #      shift
       ;;
-  n ) ifg_combinations=$2; echo "setting number of ifg combinations per epoch to "$2;
+  n ) ifg_combinations=$OPTARG; echo "setting number of ifg combinations per epoch to "$OPTARG;
       shift
       ;;
   g ) geocode=1; echo "parameter -g set: will do post-processing step - geocoding after the finish";
@@ -73,8 +73,8 @@ while getopts ":wn:gSaABi:PolT" option; do
       ;;
   T ) tienshan=1; echo "arranging ifg connections strategy for Tien Shan";
       ;;
-  i ) ifglist=$2; echo "adding ifgs from the text file"
-      shift
+  i ) ifglist=$OPTARG; echo "adding ifgs from the text file "$ifglist
+#      shift
       ;;
   esac
 done
