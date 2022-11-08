@@ -313,8 +313,9 @@ if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
   pom_to=`ls /neodc/sentinel1?/data/IW/L1_SLC/*/$y/$m/$d/$x 2>/dev/null`
   if [ ! -z $pom_to ]; then
    echo "it is so - the file appeared on neodc, will update the licsinfo_db"
-   arch2DB.py -f $pom_to
-  else
+   if [ `arch2DB.py -f $pom_to | grep -c ERROR` -gt 0 ]; then pom_to=''; echo "but it is erroneous, so will redownload it"; fi
+  fi
+  if [ -z $pom_to ]; then
    echo "downloading file "$x" from alaska server"
    echo "( it is file no. "$count" from "$filestodown" )"
    scihub_pom=0
