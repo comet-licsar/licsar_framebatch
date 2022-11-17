@@ -208,6 +208,10 @@ fi
 rm -r gapfill_job 2>/dev/null
 mkdir gapfill_job
 
+# sometimes the GEOC/* dirs are empty!! not sure why, but let us fix this:
+rm GEOC/*/gmt.history 2>/dev/null
+rm GEOC/????????_???????? 2>/dev/null
+
 #waiting_str=''
 #if [ $waiting -gt 0 ]; then
 # for jobid in `cat framebatch_04_unwrap.sh | rev | gawk {'print $1'} | rev`; do
