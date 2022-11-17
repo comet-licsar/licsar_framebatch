@@ -58,7 +58,7 @@ while getopts ":wn:gSaABi:PolT" option; do
 #      shift
       ;;
   n ) ifg_combinations=$OPTARG; echo "setting number of ifg combinations per epoch to "$OPTARG;
-      shift
+#      shift
       ;;
   g ) geocode=1; echo "parameter -g set: will do post-processing step - geocoding after the finish";
 #      shift
@@ -73,7 +73,7 @@ while getopts ":wn:gSaABi:PolT" option; do
       ;;
   T ) tienshan=1; echo "arranging ifg connections strategy for Tien Shan";
       ;;
-  i ) ifglist=$OPTARG; echo "adding ifgs from the text file "$ifglist
+  i ) ifglist=$OPTARG; echo "adding ifgs from the text file "$ifglist;
 #      shift
       ;;
   esac
