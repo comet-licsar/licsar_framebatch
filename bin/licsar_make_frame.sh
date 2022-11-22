@@ -60,10 +60,6 @@ else
  prioritise=0
 fi
 
-#while [ "$1" != "" ]; do
-#options to be c,n,S
-#option=`echo $1 | rev | cut -d '-' -f1 | rev`
-#case $option in
 while getopts ":cnSEfNPRGAB" option; do
  case "${option}" in
   A) sensorgapfill="-A";
@@ -112,38 +108,12 @@ if [ -z $LiCSAR_temp ]; then
  exit
 fi
 
-#while [ -f $BATCH_CACHE_DIR'.lock' ]; do
-# echo "batchdir locked by other sync process, wait"
-# echo "or just do: rm "$BATCH_CACHE_DIR'.lock'
-# sleep 1000
-#done
-#if [ ! -d $LiCSAR_temp/batchdir ] || [ ! -L $BATCH_CACHE_DIR ]; then
-#if [ ! -d $LiCSAR_temp/batchdir ]; then
-# echo "update 02/2021: moving your batchdir automatically to LiCSAR_temp - and linking so it would not do a change to you."
-# echo "please wait - depending on the size, this operation can take 10s minutes"
-# echo "(you can of course cancel anytime, but it will start again with licsar_make_frame.sh)"
-# echo "... but also note that data in BATCH_CACHE_DIR will now be deleted in 3 (?) months"
-# touch $BATCH_CACHE_DIR'.lock' 2>/dev/null
-# mkdir $LiCSAR_temp/batchdir 2>/dev/null
-# rsync -r -l $BATCH_CACHE_DIR/* $LiCSAR_temp/batchdir 2>/dev/null
-# echo "data sync finished, updating the BATCH_CACHE_DIR now"
-# mv $BATCH_CACHE_DIR $BATCH_CACHE_DIR'.temp'
-# ln -s $LiCSAR_temp/batchdir $BATCH_CACHE_DIR
-# rm $BATCH_CACHE_DIR'.lock' 2>/dev/null
-#fi
-#if [ -d $BATCH_CACHE_DIR'.temp' ]; then
-# echo "rsyncing once again"
-# rsync -r -l $BATCH_CACHE_DIR'.temp'/* $LiCSAR_temp/batchdir 2>/dev/null
-# rm -rf $BATCH_CACHE_DIR'.temp'
-# rm $BATCH_CACHE_DIR'.lock' 2>/dev/null
-#fi
-
-#export BATCH_CACHE_DIR=$LiCSAR_temp/batchdir
-
 # 03/2019 - we started to use scratch-nopw disk as a possible solution for constant stuck job problems
 # after JASMIN update to Phase 4
-if [ ! -d /work/scratch-nopw/licsar/$USER ]; then mkdir /work/scratch-nopw/licsar/$USER; fi
-if [ ! -d /work/scratch-pw/licsar/$USER ]; then mkdir /work/scratch-pw/licsar/$USER; fi
+#if [ ! -d /work/scratch-nopw/licsar/$USER ]; then mkdir /work/scratch-nopw/licsar/$USER; fi
+#if [ ! -d /work/scratch-pw/licsar/$USER ]; then mkdir /work/scratch-pw/licsar/$USER; fi
+# 11/2022 - new disk relocation to /work/scratch-pw3 - ok, let's keep this through module only
+#if [ ! -d /work/scratch-pw3/licsar/$USER ]; then mkdir /work/scratch-pw3/licsar/$USER; fi
 if [ ! -d $LiCSAR_temp ]; then mkdir -p $LiCSAR_temp; fi
 
 #if [ ! -d /work/scratch/licsar/$USER ]; then mkdir /work/scratch/licsar/$USER; fi
