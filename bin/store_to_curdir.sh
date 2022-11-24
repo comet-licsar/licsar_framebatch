@@ -90,7 +90,7 @@ if [ $DORSLC -eq 1 ]; then
   #first of all check and move last three RSLCs - if they are full-bursted
   if [ $KEEPRSLC -eq 1 ]; then
     #check only last 10 rslcs
-    ls $frame/RSLC/20?????? -d | cut -d '/' -f3 | tail -n 10 > temp_$frame'_keeprslc'
+    ls $frame/RSLC/20?????? -d | cut -d '/' -f3 | tail -n 10 > $BATCH_CACHE_DIR/temp_$frame'_keeprslc'
     master=`ls $frame/geo/20??????.hgt | cut -d '.' -f1 | cut -d '/' -f3`
     mastersize=`grep azimuth_lines $frame/SLC/$master/$master.slc.par | gawk {'print $2'}`
     sed -i '/'$master'/d' temp_$frame'_keeprslc'
@@ -116,12 +116,12 @@ if [ $DORSLC -eq 1 ]; then
     done
     if [ `ls $frameDir/RSLC/*7z 2>/dev/null | wc -l` -gt 2 ]; then
      #delete more rslc 7z files than last 2 dates
-     ls $frameDir/RSLC/*7z > temp_$frame'_keeprslc2'
+     ls $frameDir/RSLC/*7z > $BATCH_CACHE_DIR/temp_$frame'_keeprslc2'
      for todel in `head -n-2 temp_$frame'_keeprslc2'`; do
       rm -f $todel
      done
     fi
-    rm -f temp_$frame'_keeprslc' temp_$frame'_keeprslc2' 2>/dev/null
+    rm -f $BATCH_CACHE_DIR/temp_$frame'_keeprslc' $BATCH_CACHE_DIR/temp_$frame'_keeprslc2' 2>/dev/null
   fi
   #now do the routine export
   master=`ls $frame/geo/20??????.hgt | cut -d '.' -f1 | cut -d '/' -f3`
@@ -148,7 +148,7 @@ if [ $DORSLC -eq 1 ]; then
        if [ -f $frameDir/LUT/$date.7z ]; then
           chmod 775 $frameDir/LUT/$date.7z 2>/dev/null
           chgrp gws_lics_admin $frameDir/LUT/$date.7z 2>/dev/null
-          rm -f $date/*.lt
+          rm -f $date/*.lt 2>/dev/null
        else
           echo "error in zipping the "$date"/*.lt to "$frameDir"/LUT/"$date".7z - please check manually"
        fi

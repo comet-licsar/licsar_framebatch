@@ -54,6 +54,8 @@ cd $frame
 tar -xzf $frame.tar.gz
 cd ..
 
+chmod -R 777 $frame
+
 #maybe it works like this?
 #archive gacos data to LiCSAR_public
 gacos_archive_to_portal.sh $frame
