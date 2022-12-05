@@ -23,14 +23,26 @@ ccrgs = misc.grep_full('dr = ', logfile)
 ccrg = 0.0
 for ccl in ccrgs:
     ccrg = ccrg+float(ccl.split()[2])
+'''
+keyword='matching_iteration_'
+match_it=`grep -c $keyword $c`
+let no=$match_it/2
+if [ $match_it -eq 0 ]; then
+ #another version without '_'
+ keyword='matching iteration '
 
+cc=`grep "intensity_matching" $c | head -n1 | cut -d ':' -f2 | gawk {'print $1'}`
+ ver=i
+
+'''
 #now daz is SD shift + ICC shift in azimuth
 daz = esd + ccazi
 
-rslc3 = misc.grep1line('Spectral diversity destimation',logfile).split(':')[-1]
+rslc3 = misc.grep1line('Spectral diversity estimation',logfile).split(':')[-1]
 if not rslc3:
     rslc3 = master
-
+else:
+    rslc3=rslc3.strip()
 
 # get applied orbit file (if possible)
 orblogfile = os.path.join(os.path.dirname(logfile),'getValidOrbFile_{}.log'.format(epoch))

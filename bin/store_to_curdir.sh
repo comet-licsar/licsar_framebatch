@@ -132,7 +132,7 @@ if [ $DORSLC -eq 1 ]; then
     # if there are 'some' rslc files
     if [ `ls $frame/RSLC/$date/$date.IW?.rslc 2>/dev/null | wc -l` -gt 0 ]; then
      echo "checking "$frame"/"$date
-     #if it already doesn't exist in current dir, or in LUTs
+     #if it already doesn't exist in LiCSAR_proc dir, or in LUTs, zip it there
      if [ ! -d $frameDir/RSLC/$date ] && [ ! -f $frameDir/RSLC/$date.7z ] && [ ! -f $frameDir/LUT/$date.7z ]; then
       cd $frame/RSLC
       #cleaning the folder
