@@ -80,6 +80,21 @@ if [ $QUALCHECK -eq 1 ]; then
  frame_ifg_quality_check.py -l -d $frame
 fi
 
+# do not export those created before 2023 due to update in LUTs:
+if [ `date | rev | gawk {'print $1'} | rev` == 2022 ]; then
+ziplist=`ls $frameDir/backup/*.7z 2>/dev/null`
+if [ `echo $ziplist | wc -w` -gt 0 ]; then
+ for x in $ziplist; do
+  xx=`basename $x .7z`;
+  if [ -d RSLC/$xx ]; then
+   DORSLC=0;
+  fi
+ done
+fi
+if [ $DORSLC -eq 0 ]; then
+ echo "skipping RSLCs as these were probably coregistered to uncorrected dataset"
+fi
+fi
 
 if [ $DORSLC -eq 1 ]; then
  #move rslcs
