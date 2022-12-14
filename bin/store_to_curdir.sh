@@ -86,7 +86,7 @@ ziplist=`ls $frameDir/backup/*.7z 2>/dev/null`
 if [ `echo $ziplist | wc -w` -gt 0 ]; then
  for x in $ziplist; do
   xx=`basename $x .7z`;
-  if [ -d RSLC/$xx ]; then
+  if [ -d $frame/RSLC/$xx ]; then
    DORSLC=0;
   fi
  done
