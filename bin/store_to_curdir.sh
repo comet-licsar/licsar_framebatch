@@ -182,7 +182,9 @@ if [ $DORSLC -eq 1 ]; then
    fi
   done
  fi
- fi
+
+
+fi
 
 if [ $DOIFG -eq 1 ]; then
  echo "checking interferograms"
@@ -234,28 +236,6 @@ fi
   cp $frame/local_config.py $frameDir/. 2>/dev/null
   chmod 775 $frameDir/local_config.py 2>/dev/null
   chgrp gws_lics_admin $frameDir/local_config.py 2>/dev/null
- fi
-
- #move tabs and logs
-# if [ -d $frame/tab ]; then
-#  echo "copying new tabs and logs"
-#  for tab in `ls $frame/tab`; do
-#   if [ ! -f $frameDir/tab/$tab ]; then
-#    cp $frame/tab/$tab $frameDir/tab/.
-#   fi
-#  done
-# fi
- if [ -d $frame/log ]; then
-  echo "copying logs"
-  echo "only *quality* logs will be saved"
-  for log in `ls $frame/log/*quality* $frame/log/getValidO*`; do
-   #if [ ! -f $frameDir/log/`basename $log` ]; then
-    cp $log $frameDir/log/.
-    chmod 775 $frameDir/log/$log 2>/dev/null
-    chgrp gws_lics_admin $frameDir/log/$log 2>/dev/null
-    ##cp $frame/log/$log $frameDir/log/.
-   #fi
-  done
  fi
 
 
@@ -406,6 +386,33 @@ fi
 #for tr in `seq 1 175`; do for fr in `ls $tr`; do plot_network.py $LiCSAR_public/$tr/$fr $LiCSAR_public/$tr/$fr/metadata/network.png $LiCSAR_public/$tr/$fr/metadata/gaps.txt; done; done
 
 #plot_network.py `pwd` `pwd`/metadata/network2.png `pwd`/metadata/gaps.txt
+
+
+
+ #move tabs and logs
+# if [ -d $frame/tab ]; then
+#  echo "copying new tabs and logs"
+#  for tab in `ls $frame/tab`; do
+#   if [ ! -f $frameDir/tab/$tab ]; then
+#    cp $frame/tab/$tab $frameDir/tab/.
+#   fi
+#  done
+# fi
+# 12/2022 - copy logs only for data after esd (new orbits) correction
+if [ $DORSLC -eq 1 ]; then
+ if [ -d $frame/log ]; then
+  echo "copying logs"
+  echo "only *quality* logs will be saved"
+  for log in `ls $frame/log/*quality* $frame/log/getValidO*`; do
+   #if [ ! -f $frameDir/log/`basename $log` ]; then
+    cp $log $frameDir/log/.
+    chmod 775 $frameDir/log/$log 2>/dev/null
+    chgrp gws_lics_admin $frameDir/log/$log 2>/dev/null
+    ##cp $frame/log/$log $frameDir/log/.
+   #fi
+  done
+ fi
+fi
 
 
 ##
