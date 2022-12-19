@@ -596,7 +596,7 @@ for job in `seq 1 $nojobs`; do
  echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -I "`pwd`" " > gapfill_job/unwjob_$job.sh
  echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -C "`pwd`" " >> gapfill_job/unwjob_$job.sh
  echo "cat gapfill_job/unwjob_$job | parallel -j 1 unwrap_geo.sh $frame" >> gapfill_job/unwjob_$job.sh
- waitText=$waitText" && ended("$frame"_unw_"$job")"
+ waitText=$waitText" && ended('"$frame"_unw_"$job"')"
  chmod 777 gapfill_job/unwjob_$job.sh
 done
 
