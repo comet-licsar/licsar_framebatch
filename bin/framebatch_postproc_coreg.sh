@@ -59,17 +59,19 @@ for x in `ls RSLC | sed '/'$mstr'/d'`; do
  if [ -f RSLC/$x/$x.lock ] || [ `ls RSLC/$x | wc -l` -eq 0 ]; then rm -rf RSLC/$x; fi;
 done
 
+# get rg and azi looks
+if [ -f local_config.py ]; then
+   rg=`grep ^rglks local_config.py | cut -d '=' -f2 | sed 's/ //g'`
+   az=`grep ^azlks local_config.py | cut -d '=' -f2 | sed 's/ //g'`
+fi
+if [ -z $rg ]; then rg=20; fi
+if [ -z $az ]; then az=4; fi
+
 # check / fix mosaic
 if [ ! -f RSLC/$mstr/$mstr.rslc ]; then
  if [ ! -f RSLC/$mstr/$mstr.rslc.lock ]; then
   echo "need to regenerate master mosaic, one moment please"
   touch RSLC/$mstr/$mstr.rslc.lock
-  if [ -f local_config.py ]; then
-   rg=`grep ^rglks local_config.py | cut -d '=' -f2 | sed 's/ //g'`
-   az=`grep ^azlks local_config.py | cut -d '=' -f2 | sed 's/ //g'`
-  fi
-  if [ -z $rg ]; then rg=20; fi
-  if [ -z $az ]; then az=4; fi
   rm ./tab/$mstr'_tab' 2>/dev/null
   for i in 1 2 3; do
    if [ -f SLC/$mstr/$mstr.IW$i.slc ]; then
@@ -85,6 +87,14 @@ if [ ! -f RSLC/$mstr/$mstr.rslc ]; then
   exit
  fi
 fi
+
+# checking and maybe regenerating master mli - otherwise it would get done in parallel! (not wanted)
+mmli=SLC/$mstr/$mstr.slc.mli
+if [ ! -f $mmli ]; then
+ echo 'multilooking reference epoch SLC'
+ multilookSLC $mstr $rg $az >/dev/null 2>/dev/null
+fi
+
 
 ls RSLC > coreg_its/tmp.rslc
 extraw=''
