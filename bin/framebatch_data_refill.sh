@@ -48,21 +48,25 @@ if [ ! -d $BATCH_CACHE_DIR/$frame ]; then echo 'this frame was not started by fr
 tr=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
 dir=`echo $frame | cut -c 4`
 if [ $dir == 'D' ]; then dir='dsc'; else dir='asc'; fi
+mode='IW'
 if [ `echo $frame | cut -d '_' -f2` == 'SM' ]; then mode='SM'; fi
 
 cd $BATCH_CACHE_DIR/$frame
-chmod 770 $BATCH_CACHE_DIR/$frame 2>/dev/null
-chmod 770 $BATCH_CACHE_DIR/$frame/* 2>/dev/null
+chmod 777 $BATCH_CACHE_DIR/$frame 2>/dev/null
+chmod 777 $BATCH_CACHE_DIR/$frame/* 2>/dev/null
 if [ -z `ls $curdir/$tr/$frame/*xy` ]; then echo 'no polygonfile (.xy) generated. stopping'; exit; fi
 xyfile=`ls $curdir/$tr/$frame/*xy | head -n1 | rev | cut -d '/' -f1 | rev`
 cp $curdir/$tr/$frame/$xyfile .
-chmod 770 $BATCH_CACHE_DIR/$frame/$xyfile 2>/dev/null
+chmod 777 $BATCH_CACHE_DIR/$frame/$xyfile 2>/dev/null
 mv $xyfile ${frame}-poly.txt
 make_simple_polygon.sh ${frame}-poly.txt
 
 
 # to get list of files that are missing:
 rm ${frame}_zipfile_names.list ${frame}_scihub.list ${frame}_todown missingFiles 2>/dev/null
+
+
+if [ $use_scihub -eq 1 ]; then
 ## make list from scihub
  echo "getting scihub data"
  if [ ! -z $enddate ]; then
@@ -75,6 +79,24 @@ rm ${frame}_zipfile_names.list ${frame}_scihub.list ${frame}_todown missingFiles
  echo "identified "`cat ${frame}_zipfile_names.list | wc -l`" images"
  echo "getting their expected CEMS path"
  zips2cemszips.sh ${frame}_zipfile_names.list ${frame}_scihub.list >/dev/null
+
+else
+# 2023: ok, ASF OFTEN changes the filenames, i.e. scihub vs ASF differs (last 4 letters)
+# found by Pedro, fixed by Milan.. we really should fully rearrange all those historic shell scripts
+echo 'getting ASF data'
+if [ ! -z $enddate ]; then enddate=`date -d 'tomorrow' +'%Y-%m-%d'`; fi
+startdate_str=`echo $startdate | sed 's/-//g'`
+enddate_str=`echo $enddate | sed 's/-//g'`
+cat << EOF > asf_search.py
+from s1data import *
+a=get_images_for_frame('$frame', '$startdate_str', '$enddate_str', sensType='$mode');
+a=get_neodc_path_images(a);
+for b in a:
+    print(b)
+EOF
+python3 asf_search.py | grep neodc > ${frame}_scihub.list
+
+fi
  sort -o ${frame}_scihub2.list ${frame}_scihub.list
  mv ${frame}_scihub2.list ${frame}_scihub.list
 ## make list from nla
