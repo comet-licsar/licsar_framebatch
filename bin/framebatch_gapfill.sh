@@ -247,6 +247,15 @@ else
 echo "doing local proc - skipping check for GEOC.MLI - only ifgs"
 fi
 
+if [ ! -f SLC/$master/$master.slc.mli ]; then
+  echo "multilooking master SLC"
+  multilookSLC $master $rlks $azlks 1 SLC/$master
+fi
+
+if [ ! -f RSLC/$master/$master.rslc.mli ]; then
+  ln -s `pwd`/SLC/$master/$master.slc.mli `pwd`/RSLC/$master/$master.rslc.mli
+fi
+
 echo "getting list of ifg to fill"
 if [ ! -d IFG ]; then mkdir IFG; fi
 if [ ! -d GEOC ]; then mkdir GEOC; fi
