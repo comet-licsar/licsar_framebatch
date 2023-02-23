@@ -40,9 +40,11 @@ else
   echo "too many RSLCs generated. copying one by one"
   mkdir $eqrframedir/RSLC 2>/dev/null
   for rslc in `ls $WORKFRAMEDIR/RSLC | tail -n 4`; do
+  if [ ! $rslc == $master ]; then
    if [ ! -d $eqrframedir/RSLC/$rslc ]; then
     cp -r $WORKFRAMEDIR/RSLC/$rslc $eqrframedir/RSLC/.
    fi
+  fi
   done
  else
   rsync -r $WORKFRAMEDIR/RSLC $eqrframedir
