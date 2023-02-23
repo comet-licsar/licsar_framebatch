@@ -24,7 +24,7 @@ if [ -z $1 ]; then
  echo "-S ............... store to lics database - CAREFUL WITH THIS (only for admins)"
  #echo "-G ............... update GACOS data after store to lics database"
  echo "-f ............... force processing in case the frame is already running in framebatch"
- echo "-E ............... after resampling, move to an area for copying to ARC4 EIDP"
+ #echo "-E ............... after resampling, move to an area for copying to ARC4 EIDP"
  echo "-N ............... check if there are new acquisitions since the last run. If not, will cancel the processing"
  echo "-P ............... prioritise... i.e. run on comet queue (default: use short-serial where needed)"
  echo "-A or -B ......... perform ifg gapfill (4 ifgs + extras) for only S1A/S1B"
