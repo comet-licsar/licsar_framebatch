@@ -41,6 +41,8 @@ if [ ! -z $3 ]; then
  if [ $enddate == `date +'%Y-%m-%d'` ] || [ $enddate == `date -d 'tomorrow' +'%Y-%m-%d'` ] || [ $enddate == `date -d 'yesterday' +'%Y-%m-%d'` ]; then
   if [ -f ~/.scihub_credentials ]; then use_scihub=1; fi
  fi
+else
+ enddate=`date -d 'tomorrow' +'%Y-%m-%d'`;
 fi
 
 if [[ ! `echo $frame | cut -d '_' -f3 | cut -c 6` == ?([0-9]) ]]; then echo 'frame wrongly set: '$frame; exit; fi
@@ -84,7 +86,7 @@ else
 # 2023: ok, ASF OFTEN changes the filenames, i.e. scihub vs ASF differs (last 4 letters)
 # found by Pedro, fixed by Milan.. we really should fully rearrange all those historic shell scripts
 echo 'getting ASF data'
-if [ ! -z $enddate ]; then enddate=`date -d 'tomorrow' +'%Y-%m-%d'`; fi
+#
 startdate_str=`echo $startdate | sed 's/-//g'`
 enddate_str=`echo $enddate | sed 's/-//g'`
 cat << EOF > asf_search.py
