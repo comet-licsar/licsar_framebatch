@@ -19,6 +19,7 @@ ifg_combinations=4
 tienshan=0
 checkMosaic=1
 locl=0
+dobovl=0
 # for S1A or S1B only
 A=0
 B=0
@@ -44,13 +45,16 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -T ... Tien Shan strategy - do connections starting May etc."
                    echo "parameter -A or -B .. do only S1A/S1B combinations"
                    echo "parameter -l ... use local processing strategy - e.g. volc responder 2.0"
+                   echo "parameter -b ... will do burst overlap ddiff ifgs"
                    exit; fi
 
-while getopts ":wn:gSaABi:PolT" option; do
+while getopts ":wn:gSaABi:PolbT" option; do
  case "${option}" in
   A) A=1; echo "S1A only";
       ;;
   B) B=1; echo "S1B only";
+      ;;
+  b) dobovl=1;
       ;;
   l) locl=1; checkrslc=0; tienshan=0; checkMosaic=0;
       ;;
@@ -597,6 +601,9 @@ for job in `seq 1 $nojobs`; do
   # fi
   #done
   echo "LiCSAR_03_mk_ifgs.py -d . -r $rlks -a $azlks"$l03extra" -c 0 -T gapfill_job/ifgjob_$job.log  -i gapfill_job/ifgjob_$job" > gapfill_job/ifgjob_$job.sh
+  if [ $dobovl == 1 ]; then
+    echo "cat gapfill_job/ifgjob_$job | sed 's/ /_/' | parallel -j 1 create_bovl_ifg.sh " >> gapfill_job/ifgjob_$job.sh
+  fi
   chmod 777 gapfill_job/ifgjob_$job.sh
  fi
  #need to edit the unwrap script below to also accept range/azi looks!
