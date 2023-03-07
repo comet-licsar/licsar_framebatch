@@ -774,7 +774,7 @@ if [ $geocode == 1 ]; then
  echo $WORKFRAMEDIR/framebatch_06_geotiffs.nowait.sh >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
  echo "sleep 60" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 fi
-echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+#echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "echo 'sync done, deleting TEMP folder'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "rm -rf $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "chmod -R 777 "$WORKFRAMEDIR >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
