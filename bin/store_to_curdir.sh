@@ -37,6 +37,7 @@ DORSLC=1
 KEEPRSLC=1
 DOGEOC=1
 DOIFG=1
+DOSUBSETS=1
 #let's request gacos data if we do DELETEAFTER..
 DOGACOS=0
 #previously the default was to overwrite...
@@ -182,9 +183,43 @@ if [ $DORSLC -eq 1 ]; then
    fi
   done
  fi
-
-
 fi
+
+if [ $DOSUBSETS -eq 1 ]; then
+ if [ -d $frameDir/subsets ]; then
+  echo "clipping for subsets"
+  for subset in `ls $frameDir/subsets`; do
+    cornersclip=$frameDir/subsets/$subset/corners_clip.$frame
+    subdir=$frameDir/subsets/$subset
+    if [ -f $cornersclip ]; then
+       # getting the clip coords
+       azi1=`cat $cornersclip | rev | gawk {'print $1'} | rev | sort -n | head -n1`
+       azi2=`cat $cornersclip | rev | gawk {'print $1'} | rev | sort -n | tail -n1`
+       let azidiff=azi2-azi1+1
+       rg1=`cat $cornersclip | rev | gawk {'print $2'} | rev | sort -n | head -n1`
+       rg2=`cat $cornersclip | rev | gawk {'print $2'} | rev | sort -n | tail -n1`
+       let rgdiff=rg2-rg1+1
+       # running the clipping
+       for sdate in `ls $frame/RSLC/20?????? -d | cut -d '/' -f3`; do
+       #for x in `ls RSLC | grep 20`; do 
+        if [ -f $frame/RSLC/$sdate/$sdate.rslc ]; then
+        if [ ! -d $subdir/RSLC/$sdate ]; then
+          echo "clipping "$sdate
+          mkdir -p $subdir/RSLC/$sdate
+          SLC_copy $frame/RSLC/$sdate/$sdate.rslc $frame/RSLC/$sdate/$sdate.rslc.par $subdir/RSLC/$sdate/$sdate.rslc $subdir/RSLC/$sdate/$sdate.rslc.par - - $rg1 $rgdiff $azi1 $azidiff - - >/dev/null 2>/dev/null
+          # no need for multilooking here?... 
+          #multi_look $outdir/RSLC/$x/$x.rslc $outdir/RSLC/$x/$x.rslc.par $outdir/RSLC/$x/$x.rslc.mli $outdir/RSLC/$x/$x.rslc.mli.par $rgl $azl >/dev/null 2>/dev/null
+          # create_geoctiffs_to_pub.sh -M `pwd` $x >/dev/null   # to be improved
+        fi
+        fi
+       done
+    else
+       echo "corners clip file does not exist - the subset was not initialised correctly"
+    fi
+  done
+ fi
+fi
+
 
 if [ $DOIFG -eq 1 ]; then
  echo "checking interferograms"
