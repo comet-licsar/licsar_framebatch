@@ -97,7 +97,13 @@ if [ $DORSLC -eq 0 ]; then
 fi
 fi
 
+
 if [ $DORSLC -eq 1 ]; then
+ if [ -f $frame/framebatch_01_mk_image.nowait.sh ]; then
+  firstrun=`stat $frame/framebatch_01_mk_image.nowait.sh | grep Modify | gawk {'print $2'} | sed 's/-//g'`
+ else
+  firstrun=$today
+ fi
  #move rslcs
  if [ -d $frame/RSLC ]; then
   mkdir -p $frameDir/RSLC
@@ -116,8 +122,9 @@ if [ $DORSLC -eq 1 ]; then
       fi
     done
     for date in `sort -r temp_$frame'_keeprslc' | head -n2`; do
-     #let's keep only newer 2 ones - and if the datediff is at least 21 days... (precise orbits)
-     if [ $date -gt $master ] && [ `datediff $date $today` -ge 21 ]; then
+     #let's keep only newer 2 ones - and if the datediff is at least 21 days from the scripts... (precise orbits)
+     #if [ $date -gt $master ] && [ `datediff $date $today` -ge 21 ]; then
+     if [ $date -gt $master ] && [ `datediff $date $firstrun` -ge 21 ] && [ `datediff $date $today` -ge 21 ]; then
       #these should be kept in RSLC folder!
       out7z=$frameDir/RSLC/$date.7z
       if [ ! -f $out7z ]; then
