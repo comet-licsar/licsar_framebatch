@@ -165,6 +165,7 @@ if [ $DORSLC -eq 1 ]; then
        chgrp gws_lics_admin $frameDir/LUT 2>/dev/null
        rm -f $date/*.lt.orbitonly 2>/dev/null
        #copy results file to logs..
+       chmod 775 $date/*.results
        cp $date/*.results $frameDir/log/. 2>/dev/null
        echo "compressing LUT of "$date
        7za a -mx=1 $frameDir/LUT/$date.7z $date/*.lt $date/*.off >/dev/null 2>/dev/null
