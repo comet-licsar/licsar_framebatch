@@ -15,7 +15,10 @@ from shapely.geometry import Polygon
 import matplotlib.pyplot as plt
 import LiCSAR_lib.LiCSAR_misc as misc
 import s1data as s1
-gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
+try:
+    gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
+except:
+    print('WARNING: cannot load KML support')
 import rioxarray
 
 pubdir = os.environ['LiCSAR_public']
@@ -1336,6 +1339,29 @@ def delete_bursts(bidtanxs, test = True):
              except:
                  print('some error occurred - cancelling')
                  return
+
+
+def epoch_has_all_frame_bursts(epoch, frame):
+    """ Checks if epoch contains all necessary bursts in frame definition.
+    Needs to have the epoch already ingested in LiCSInfo database.
+    
+    Args:
+        epoch (dt.datetime.date, dt.datetime or str): epoch date (if str, should be as 20191120)
+        frame (str): frame ID
+    Returns:
+        boolean: True means Yes, it has all bursts. False means it has missing bursts"
+    """
+    if type(epoch) == type('str'):
+        epoch = dt.datetime.strptime(epoch, '%Y%m%d')
+    if type(epoch) == type(dt.datetime.now()):
+        epoch = epoch.date()
+    burstlist = lq.get_bursts_in_frame(frame)
+    from mk_imag_lib import check_master_bursts
+    out = check_master_bursts( frame, burstlist, epoch, None, lq, midnighterror = True)
+    if out == 0:
+        return True
+    else:
+        return False
 
 
 def delete_frame(frame):
