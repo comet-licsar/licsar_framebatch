@@ -43,7 +43,7 @@ procdir = os.environ['LiCSAR_procdir']
 #    return tuple(filter(None, [x, y]))
 
 #aa['geometry'] = aa['geometry'].apply(lambda x: shapely.ops.transform(_to_2d, x))
-'''
+
 # now it is ready to import to database:
 #for i,j in aa.iterrows():
 #    print(i)
@@ -58,7 +58,7 @@ procdir = os.environ['LiCSAR_procdir']
 #frame='100A_05236_141313'
 #sid='SAREZ'
 #fc.subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid)
-'''
+
 
 def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = False, resol_m=30):
     """This will initialise a subset given by corner lon/lat-s.
