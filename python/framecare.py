@@ -614,6 +614,15 @@ def make_bperp_file(frame, bperp_file):
 
 
 def get_master(frame, asfilenames = False, asdate = False, asdatetime = False, metafile = None):
+    """Gets reference epoch of given frame, returns in several ways
+
+    Args:
+        frame (str): frame ID
+        asfilenames (bool): returns as filenames that were used to create this ref. epoch during init
+        asdate (bool): returns as dt.datetime.date
+        asdatetime (bool): will include also the acquisition centre time (returns as dt.datetime)
+        metafile (str): path to metadata file of the frame. if None, it will search in LiCSAR_public
+    """
     if not metafile:
         track=str(int(frame[0:3]))
         metafile = os.path.join(pubdir,track,frame,'metadata','metadata.txt')
@@ -716,6 +725,13 @@ def extract_bursts_by_track(bidtanxs, track):
 
 
 def bursts2geopandas(bidtanxs, merge = False, use_s1burst = False):
+    """Gets geopandas layer for a list of burst IDs (in the form of bidtanx, i.e. e.g. 73_IW1_1234
+
+    Args:
+        bidtanxs (list): list of burst ids, e.g. ['73_IW1_1234']
+        merge (bool): whether to merge the output into one polygon
+        use_s1burst (bool): use the official S-1 burst polygons (more accurate, including burst overlaps)
+    """
     # in order to export to KML:
     # frame_gpd.to_file('~/kmls/'+frame+'.kml', driver='KML')
     # or to SHP:
@@ -748,6 +764,14 @@ def bursts2geopandas(bidtanxs, merge = False, use_s1burst = False):
 
 
 def frame2geopandas(frame, brute = False, use_s1burst = False, merge = False):
+    """Gets geopandas layer for a frame
+
+    Args:
+        frame (str): frame ID
+        brute (bool): do not use polygons in LiCSInfo, but regenerate them instead (by quite brute/slow approach)
+        merge (bool): whether to merge the bursts into one (frame) polygon
+        use_s1burst (bool): use the official S-1 burst polygons (more accurate, including burst overlaps)
+    """
     if use_s1burst:
         bidtanxs=lq.get_bidtanxs_in_frame(frame)
         bidtanxs=lq.sqlout2list(bidtanxs)
@@ -1075,8 +1099,11 @@ def generate_frame_name(bidtanxs):
     return polyid_name
 
 def generate_new_frame(bidtanxs,testonly = True, hicode = None):
-    """
-    hicode... use 'H' for high resolution (1/5 multilook), or 'M' for medium, i.e. 56 m
+    """ Main function to generate new frame definition based on selected bursts
+    Args:
+        bidtanxs (list): list of burst IDs in the bidtanx form, e.g. ['73_IW1_1234','73_IW1_2345',..]
+        testonly (bool): if True, only perform dry run for debugging
+        hicode (str or None): special code for non-standard frame resolution; use 'H' for high resolution (1/5 multilook), or 'M' for medium, i.e. 56 m - not much used but should work ok
     """
     #and now i can generate the new frame:
     track = bidtanxs[0].split('_')[0]
@@ -1176,6 +1203,8 @@ def generate_new_frame(bidtanxs,testonly = True, hicode = None):
 
 
 def generate_frame_from_bursts_kml(inputkml):
+    """ Directly generates a frame definition from burst ids stored in a KML file
+    """
     bursts = load_bursts_from_kml(inputkml)
     generate_new_frame(bursts, testonly=False)
 
@@ -1215,6 +1244,7 @@ def load_bursts_from_kml(inputkml):
 
 
 def export_bidtanxs_to_kml(bidtanxs, outpath = '/gws/nopw/j04/nceo_geohazards_vol1/public/shared/test', projname = 'track', merge = False):
+    """Exports list of burst IDs (bidtanxs) to an outpath/projname_TRACK.kml file. If merge=True, the bursts will be merged to one polygon"""
     #kmlout name will be auto_completed
     bidtanxs.sort()
     tracks = set()
@@ -1435,6 +1465,7 @@ def remove_bad_bursts(frame, badbursts, testonly = True):
 
 
 def add_more_bursts(frame, extrabursts, testonly = True):
+    """Adds some more bursts to the frame definition. Please follow the printed comments to delete the old frame definition, as this operation will basically create new frame definition."""
     #extrabursts should be a list of bursts not existing in the frame, to be added there
     #in testonly - it will only give text output, rather than really do something..
     bursts = lq.get_bidtanxs_in_frame(frame)
