@@ -119,7 +119,7 @@ def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = Fals
     return
 
 
-def subset_initialise_centre_coords(frame, clon, clat, sid, is_volc = False, radius = 25/2, resol_m=30):
+def subset_initialise_centre_coords(frame, clon, clat, sid, is_volc = False, radius_km = 25/2, resol_m=30):
     """This will initialise a subset given by centre lon/lat and radius in km.
     The results will be stored in \$LiCSAR_procdir/subsets
     
@@ -129,7 +129,7 @@ def subset_initialise_centre_coords(frame, clon, clat, sid, is_volc = False, rad
         clat (float): centre latitude,
         sid (str):  string ID (for volcano, use its volcano ID number)
         is_volc (bool): if true, it will set the output folder \$LiCSAR_procdir/subsets/volc
-        radius (float): radius (half of the diameter) of the subset scene, in km
+        radius_km (float): radius (half of the diameter) of the subset scene, in km
         resol_m (float): output resolution in metres to have geocoding table ready in (note, RSLCs are anyway in full res)
     """
     
@@ -139,7 +139,7 @@ def subset_initialise_centre_coords(frame, clon, clat, sid, is_volc = False, rad
     lon2=lon+radius_deg
     lat1=lat-radius_deg
     lat2=lat+radius_deg
-    subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = False, resol_m=30)
+    subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = is_volc, resol_m=resol_m)
     return
 
 
