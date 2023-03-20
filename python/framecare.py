@@ -135,10 +135,10 @@ def subset_initialise_centre_coords(frame, clon, clat, sid, is_volc = False, rad
     
     # BASICS
     radius_deg=radius_km/111
-    lon1=lon-radius_deg
-    lon2=lon+radius_deg
-    lat1=lat-radius_deg
-    lat2=lat+radius_deg
+    lon1=clon-radius_deg
+    lon2=clon+radius_deg
+    lat1=clat-radius_deg
+    lat2=clat+radius_deg
     subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = is_volc, resol_m=resol_m)
     return
 
