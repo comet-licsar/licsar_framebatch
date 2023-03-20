@@ -5,6 +5,7 @@
 import os, glob
 import subprocess as subp
 import LiCSquery as lq
+from volcdb import *
 from LiCSAR_misc import *
 import datetime as dt
 import fiona
@@ -141,6 +142,30 @@ def subset_initialise_centre_coords(frame, clon, clat, sid, is_volc = False, rad
     lat2=clat+radius_deg
     subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = is_volc, resol_m=resol_m)
     return
+
+
+def make_subsets_volcano(volcid):
+    """Makes subset clips for the volcano with given ID"""
+    volcvids=get_volclip_vids(volcid)
+    for vid in volcvids:
+        make_subsets_volclip(vid)
+
+
+def make_subsets_volclip(vid):
+    """Makes subset clips for the volc_frame_clip id vid"""
+    volc = get_volclip_info(vid)
+    if type(volc) == type(False):
+        print('no records found')
+        return
+    print('Processing '+volc.name)
+    # load volc_frame_clips info, get frames, and then:
+    for frame in volc.polyid_name:
+        print('creating subset for frame '+frame)
+        if not volc.geometry and volc.diameter_km:
+            rc = subset_initialise_centre_coords(frame, volc.lon, volc.lat, sid=str(vid), is_volc = True, radius_km = volc.diameter_km/2, resol_m=volc.resolution_m)
+        else:
+            lon1, lon2, lat1, lat2 = lq.get_boundary_lonlats(volc.geometry)
+            rc = subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid=str(vid), is_volc = True, resol_m=volc.resolution_m)
 
 
 def check_and_fix_burst(mburst, framebursts):
