@@ -104,8 +104,8 @@ def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = Fals
     # running the clipping in init-only mode
     clipcmd = "cd "+framedir+"; "
     clipcmd = clipcmd + "clip_slc.sh "+subsetdir+" "+str(lon1)+" "+str(lon2)+" "
-    clipcmd =     clipcmd   +str(lat1)+" "+str(lat2)+" "
-    clipcmd =     clipcmd   +str(medhgt)+" "+str(resol)+" 0 1"
+    clipcmd = clipcmd +str(lat1)+" "+str(lat2)+" "
+    clipcmd = clipcmd +str(medhgt)+" "+str(resol)+" 0 1"
     #
     print('initializing the subset')
     os.chdir(framedir)
