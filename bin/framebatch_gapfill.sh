@@ -525,7 +525,17 @@ if [ ! -z $ifglist ]; then
 fi
 
 #cat gapfill_job/tmp_ifg_all2 | head -n-5 | sort -u > gapfill_job/tmp_ifg_all
-cat gapfill_job/tmp_ifg_all2 | sort -u > gapfill_job/tmp_ifg_all
+cat gapfill_job/tmp_ifg_all2 | sort -u > gapfill_job/tmp_ifg_all # this is the important file with ALL ifgs..
+if [ $dobovl -eq 1 ]; then
+ cp gapfill_job/tmp_ifg_all gapfill_job/tmp_bovl_todo
+ for x in `ls GEOC/*/*.cc.tif 2>/dev/null | cut -d '/' -f2`; do
+  if [  -f GEOC/$x/$x.geo.bovldiff.tif ]; then
+   sed -i '/'$x'/d' gapfill_job/tmp_bovl_todo
+  fi
+ done
+ for x in `cat gapfill_job/tmp_bovl_todo | sed 's/_/ /'`; do echo $x >> gapfill_job/tmp_rslcs2copy; done
+fi
+
 for ifg in `cat gapfill_job/tmp_ifg_existing`; do  sed -i '/'$ifg'/d' gapfill_job/tmp_ifg_all; done
 sed 's/_/ /' gapfill_job/tmp_ifg_all > gapfill_job/tmp_ifg_todo
 #rm gapfill_job/tmp_rslcs2copy 2>/dev/null
@@ -534,6 +544,9 @@ sort -u gapfill_job/tmp_rslcs2copy -o gapfill_job/tmp_rslcs2copy 2>/dev/null
 mv gapfill_job/tmp_ifg_all gapfill_job/tmp_unw_todo
 #for x in `ls IFG/*/*.cc 2>/dev/null | cut -d '/' -f2`; do if [ ! -f IFG/$x/$x.unw ]; then echo $x >> gapfill_job/tmp_unw_todo; fi; done
 for x in `ls GEOC/*/*.cc.tif 2>/dev/null | cut -d '/' -f2`; do if [ ! -f GEOC/$x/$x.geo.unw.tif ]; then echo $x >> gapfill_job/tmp_unw_todo; fi; done
+#if [ $dobovl -eq 1 ]; then
+# for x in `ls GEOC/*/*.cc.tif 2>/dev/null | cut -d '/' -f2`; do if [ ! -f GEOC/$x/$x.geo.bovldiff.tif ]; then echo $x >> gapfill_job/tmp_bovl_todo; fi; done
+#fi
 
 #check rslc mosaics
 #rm gapfill_job/tmp_rslcs2mosaic 2>/dev/null
@@ -585,11 +598,20 @@ l03extra=' -f '$frame
 else l03extra='';
 fi
 
+
 for job in `seq 1 $nojobs`; do
  let nifg=$nifgmax+1
  let nifgmax=$nifgmax+$NBATCH
  sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_unw_todo | sort -u > gapfill_job/unwjob_$job
  sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_ifg_todo | sort -u > gapfill_job/ifgjob_$job
+ if [ $dobovl == 1 ]; then
+  sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_bovl_todo | sort -u > gapfill_job/bovljob_$job
+  if [ `wc -l gapfill_job/bovljob_$job | gawk {'print $1'}` -eq 0 ]; then rm gapfill_job/bovljob_$job; else
+   echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_bovl_ifg.sh " >> gapfill_job/bovljob_$job.sh
+  fi
+  chmod 777 gapfill_job/bovljob_$job.sh
+  waitText=$waitText" && ended('"$frame"_bovl_"$job"')"
+ fi
  if [ `wc -l gapfill_job/ifgjob_$job | gawk {'print $1'}` -eq 0 ]; then rm gapfill_job/ifgjob_$job; else
   #rm gapfill_job/ifgjob_$job.sh 2>/dev/null #just to clean..
   #deal with mosaics here..
@@ -601,9 +623,9 @@ for job in `seq 1 $nojobs`; do
   # fi
   #done
   echo "LiCSAR_03_mk_ifgs.py -d . -r $rlks -a $azlks"$l03extra" -c 0 -T gapfill_job/ifgjob_$job.log  -i gapfill_job/ifgjob_$job" > gapfill_job/ifgjob_$job.sh
-  if [ $dobovl == 1 ]; then
-    echo "cat gapfill_job/ifgjob_$job | sed 's/ /_/' | parallel -j 1 create_bovl_ifg.sh " >> gapfill_job/ifgjob_$job.sh
-  fi
+  #if [ $dobovl == 1 ]; then
+  #  echo "cat gapfill_job/ifgjob_$job | sed 's/ /_/' | parallel -j 1 create_bovl_ifg.sh " >> gapfill_job/ifgjob_$job.sh
+  #fi
   chmod 777 gapfill_job/ifgjob_$job.sh
  fi
  #need to edit the unwrap script below to also accept range/azi looks!
@@ -618,6 +640,7 @@ done
 
 #check if there is nothing to process, then just ... finish
 if [ `wc -l gapfill_job/tmp_ifg_todo | gawk {'print $1'}` == 0 ] && [ `wc -l gapfill_job/tmp_unw_todo | gawk {'print $1'}` == 0 ]; then
+if [ $dobovl == 1 ] && [ `wc -l gapfill_job/tmp_bovl_todo | gawk {'print $1'}` == 0 ]; then
  echo "there is nothing else to process - gapfilling done"
  if [ $geocode == 1 ]; then
   echo "starting geocoding job now"
@@ -628,6 +651,7 @@ if [ `wc -l gapfill_job/tmp_ifg_todo | gawk {'print $1'}` == 0 ] && [ `wc -l gap
  #cleaning
  rm -r gapfill_job
  exit
+fi
 fi
 
 
@@ -644,7 +668,9 @@ fi
   echo "Preparation phase: copying data to SCRATCH disk (may take long)"
  fi
  echo "There are "`wc -l gapfill_job/tmp_ifg_todo | gawk {'print $1'}`" interferograms to process and "`wc -l gapfill_job/tmp_unw_todo | gawk {'print $1'}`" to unwrap."
- 
+ if [ $dobovl == 1 ]; then
+  echo "(and "`wc -l gapfill_job/tmp_bovl_todo | gawk {'print $1'}`" burst overlap ifgs to generate)"
+ fi
  #if [ -d $SCRATCHDIR/$frame ]; then echo "..cleaning scratchdir"; rm -rf $SCRATCHDIR/$frame; fi
  mkdir -p $SCRATCHDIR/$frame/RSLC
  chmod 777 $SCRATCHDIR/$frame
@@ -753,6 +779,9 @@ for job in `seq 1 $nojobs`; do
 #  echo bsub -q $bsubquery -n $bsubncores -W 08:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
   #echo bsub2slurm.sh -q $bsubquery -n 1 -W 12:00 -M 25000 -R "rusage[mem=25000]" -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
   echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 08:00 -M 16000 -J $frame'_unw_'$job -e gapfill_job/$frame'_unw_'$job.err -o gapfill_job/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh >> bjobs.sh
+ fi
+ if [ -f gapfill_job/bovljob_$job.sh ]; then
+  echo bsub2slurm.sh -q $bsubquery -n 1 -W 08:00 -M 16000 -J $frame'_bovl_'$job -e gapfill_job/$frame'_bovl_'$job.err -o gapfill_job/$frame'_bovl_'$job.out gapfill_job/bovljob_$job.sh >> bjobs.sh
  fi
 done
 chmod 777 bjobs.sh
