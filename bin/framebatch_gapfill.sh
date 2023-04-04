@@ -722,6 +722,9 @@ fi
   fi;
  done
  if [ $locl == 0 ]; then  # expecting geo ready
+ #rglkstmp=`get_value SLC/$master/$master.slc.mli.par range_looks`
+ #azlkstmp=`get_value SLC/$master/$master.slc.mli.par azimuth_looks`
+ #if [ ! -z $rglkstmp ]; then orig_rlks=$rglkstmp; orig_azlks=$azlkstmp; fi
  if [ $rlks != $orig_rlks ] || [ $azlks != $orig_azlks ]; then
   echo "preparing MLI and DEM for the custom multilooking"
   echo "(nothing will get rewritten in your workfolder)"
