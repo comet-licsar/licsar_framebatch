@@ -763,7 +763,14 @@ def bursts2geopandas(bidtanxs, merge = False, use_s1burst = False):
     # frame_gpd.to_file('~/shps/'+frame+'.shp', driver='ESRI Shapefile')
     geometry = []
     crs = {'init': 'epsg:4326'}
-    orbdir = lq.get_orbdir_from_bidtanx(bidtanxs[0])
+    for bidtanx in bidtanxs:
+        try:
+            orbdir = lq.get_orbdir_from_bidtanx(bidtanx)
+            print(orbdir)
+        except:
+            orbdir = False
+        if orbdir:
+            break
     if merge == False:
         #if use_s1burst:
         if type(bidtanxs)==list:
@@ -1293,6 +1300,7 @@ def export_bidtanxs_to_kml(bidtanxs, outpath = '/gws/nopw/j04/nceo_geohazards_vo
         frame_gpd.to_file(kmlout, driver='KML')
     if merge == False:
         print('done. please edit the kmls - delete not wanted bursts, save and return')
+
 
 def export_frame_to_kml(frame, outpath = '/gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/insar_temp/frames_redef/kmls', merge=False):
     """ Exports the frame polygon to kml. Currently only the uglier version (coarse burst polygons)
