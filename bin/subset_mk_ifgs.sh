@@ -17,6 +17,9 @@ if [ ! -z $2 ]; then
  extra='-i '$ifglist
 fi
 
+cd $1
+subsetpath=`pwd`
+sid=`echo $subsetpath | rev | cut -d '/' -f 2 | rev`
 mlipar=`ls SLC/*/*.mli.par`
 if [ -z $mlipar ]; then echo 'mli par of ref epoch does not exist, cancelling'; exit; fi
 
@@ -29,16 +32,15 @@ source local_config.py
 #fi
 if [ -z $azlks ]; then echo 'error - probably no local_config.py file, exiting'; exit; fi
 
-subdir=`pwd`
-tempdir=$BATCH_CACHE_DIR/subsets/$frame
+tempdir=$BATCH_CACHE_DIR/subsets/$sid/$frame
 mkdir -p $tempdir
 cd $tempdir
 echo "copying needed files"
 for ddir in SLC RSLC tab; do
- rsync -r -u -l $subdir/$ddir .;
+ rsync -r -u -l $subsetpath/$ddir .;
 done
-cp $subdir/local_config.py .
-if [ ! -d geo ]; then cp -r $subdir/geo.$resol_m'm' geo; fi
+cp $subsetpath/local_config.py .
+if [ ! -d geo ]; then cp -r $subsetpath/geo.$resol_m'm' geo; fi
 
 echo "now this should work"
 framebatch_gapfill.sh -l -P $extra -o 5 180 $rglks $azlks
