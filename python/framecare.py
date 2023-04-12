@@ -67,6 +67,15 @@ def get_frame_path(frame):
     return framepath
 
 
+def lonlat_to_poly(lon1, lon2, lat1, lat2):
+    # sort the coordinates
+    lon1,lon2=sorted([lon1,lon2])
+    lat1,lat2=sorted([lat1,lat2])
+    lonlats = [(lon1,lat1), (lon1,lat2), (lon2,lat2), (lon2,lat1), (lon1,lat1)]
+    polygon = Polygon(lonlats)
+    return polygon
+
+
 def subset_get_frames(lon1, lon2, lat1, lat2, full_overlap=True, only_initialised=False):
     """This will get frames that overlap with given coordinates.
     """
@@ -91,9 +100,21 @@ def subset_get_frames(lon1, lon2, lat1, lat2, full_overlap=True, only_initialise
                 framesok.append(frame)
     return framesok
 
+
+def vis_subset_frames(lon1, lon2, lat1, lat2):
+    frames = subset_get_frames(lon1, lon2, lat1, lat2)
+    poly=lonlat_to_poly(lon1, lon2, lat1, lat2)
+    tovis=[poly]
+    for frame in frames:
+        framepoly=lq.get_polygon_from_frame(frame)
+        tovis.append(framepoly)
+    vis_aoi(tovis)
+
+
 '''
 sid='angren'
 frames=subset_get_frames(lon1, lon2, lat1, lat2, full_overlap=True, only_initialised=True)
+
 for frame in frames:
     subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = False, resol_m=30)
 
@@ -111,7 +132,7 @@ def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = Fals
         frame (str): frame ID,
         lon1, lon2 (float, float): corner longitudes (no need to be sorted)
         lat1, lat2 (float, float): corner latitudes (no need to be sorted)
-        sid (str):  string ID (for volcano, use its volcano ID number)
+        sid (str):  string ID (for volcano, use the volclip id (vid) instead of volcano ID (volcid) to keep consistence!)
         is_volc (bool): if true, it will set the output folder $LiCSAR_procdir/subsets/volc
         resol_m (float): output resolution in metres to have geocoding table ready in (note, RSLCs are anyway in full res)
     """
