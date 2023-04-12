@@ -60,6 +60,48 @@ procdir = os.environ['LiCSAR_procdir']
 #sid='SAREZ'
 #fc.subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid)
 
+def get_frame_path(frame):
+    """Will get expected path for the frame"""
+    track=int(frame[:3])
+    framepath = os.path.join(os.environ['LiCSAR_procdir'],str(track),frame)
+    return framepath
+
+
+def subset_get_frames(lon1, lon2, lat1, lat2, full_overlap=True, only_initialised=False):
+    """This will get frames that overlap with given coordinates.
+    """
+    # sort the coordinates
+    lon1,lon2=sorted([lon1,lon2])
+    lat1,lat2=sorted([lat1,lat2])
+    lonlats = [(lon1,lat1), (lon1,lat2), (lon2,lat2), (lon2,lat1), (lon1,lat1)]
+    polygon = Polygon(lonlats)
+    #wkt = polygon.wkt
+    frames = lq.sqlout2list(get_frames_in_lonlat((lon1+lon2)/2,(lat1+lat2)/2))
+    framesok = []
+    for frame in frames:
+        framepoly=lq.get_polygon_from_frame(frame)
+        if only_initialised:
+            if not os.path.exists(get_frame_path(frame)):
+                continue
+        if full_overlap:
+            if framepoly.contains(polygon):
+                framesok.append(frame)
+        else:
+            if framepoly.contains(polygon) or framepoly.overlaps(polygon):
+                framesok.append(frame)
+    return framesok
+
+'''
+sid='angren'
+frames=subset_get_frames(lon1, lon2, lat1, lat2, full_overlap=True, only_initialised=True)
+for frame in frames:
+    subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = False, resol_m=30)
+
+
+for frame in frames:
+    cmd = 'framebatch_update_frame.sh -P '+frame+' upfill'
+    os.system(cmd)
+'''
 
 def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = False, resol_m=30):
     """This will initialise a subset given by corner lon/lat-s.
@@ -67,8 +109,8 @@ def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = Fals
     
     Args:
         frame (str): frame ID,
-        lon1, lon2 (float, float): corner longitudes,
-        lat1, lat2 (float, float): corner latitudes,
+        lon1, lon2 (float, float): corner longitudes (no need to be sorted)
+        lat1, lat2 (float, float): corner latitudes (no need to be sorted)
         sid (str):  string ID (for volcano, use its volcano ID number)
         is_volc (bool): if true, it will set the output folder $LiCSAR_procdir/subsets/volc
         resol_m (float): output resolution in metres to have geocoding table ready in (note, RSLCs are anyway in full res)
@@ -710,7 +752,8 @@ def get_frame_master_s1ab(frame, metafile = None):
 
 
 def vis_aoi(aoi):
-    """to visualize a polygon element ('aoi')"""
+    """to visualize a polygon element ('aoi')
+    Note: aoi might be a list of polygons, see subset_get_frames"""
     crs = {'init': 'epsg:4326'}
     if type(aoi)==list:
         aoi_gpd = gpd.GeoDataFrame(crs=crs, geometry=aoi)
