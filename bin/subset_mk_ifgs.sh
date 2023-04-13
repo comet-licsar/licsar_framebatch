@@ -5,7 +5,7 @@
 
 if [ -z $1 ]; then
  echo "Usage e.g.: subset_mk_ifgs.sh $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
- echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$frame directory"
+ echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frame directory"
  echo "NOTE: if you use ifgs.list, please provide FULL PATH"
  exit
 fi
