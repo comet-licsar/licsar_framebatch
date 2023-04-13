@@ -33,7 +33,7 @@ source local_config.py
 if [ -z $azlks ]; then echo 'error - probably no local_config.py file, exiting'; exit; fi
 
 tempdir=$BATCH_CACHE_DIR/subsets/$sid/$frame
-mkdir -p $tempdir
+mkdir -p $tempdir/log
 cd $tempdir
 echo "copying needed files"
 for ddir in SLC RSLC tab; do
