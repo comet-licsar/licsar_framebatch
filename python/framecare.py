@@ -148,7 +148,10 @@ def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = Fals
     lat1,lat2=sorted([lat1,lat2])
     #
     track=str(int(frame[0:3]))
+    '''
+        track=str(int(frame[0:3]))
     framedir = os.path.join(os.environ['LiCSAR_procdir'],track,frame)
+    
     subsetdir = os.path.join(os.environ['LiCSAR_procdir'],'subsets',sidpath,frame[:4])
     if os.path.exists(subsetdir):
         print('the subset directory exists. continuing anyway..')
@@ -169,6 +172,44 @@ def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = Fals
     clipcmd = clipcmd + "clip_slc.sh "+subsetdir+" "+str(lon1)+" "+str(lon2)+" "
     clipcmd = clipcmd +str(lat1)+" "+str(lat2)+" "
     clipcmd = clipcmd +str(medhgt)+" "+str(resol)+" 0 1"
+    #
+    if os.path.exists(subsetdir):
+        print('this subset already exists in:')
+        print(subsetdir)
+        print('cancelling for now - you may do this manually adapting:')
+        print(clipcmd)
+    '''
+    framedir = os.path.join(os.environ['LiCSAR_procdir'],track,frame)
+    if not os.path.exists(framedir):
+        print('error, seems the frame was not initialised, cancelling')
+        return False
+    subsetdir = os.path.join(os.environ['LiCSAR_procdir'],'subsets',sidpath,frame[:4])
+    if os.path.exists(subsetdir):
+        print('the subset directory exists. continuing anyway..')
+    if not os.path.exists(os.path.join(framedir, 'subsets')):
+        os.mkdir(os.path.join(framedir, 'subsets'))
+    #
+    # get median height
+    print('getting median height')
+    hgt=os.path.join(os.environ['LiCSAR_public'], str(int(frame[:3])), frame, 'metadata', frame+'.geo.hgt.tif')
+    a=rioxarray.open_rasterio(hgt)
+    a=a.sortby(['x','y'])
+    medhgt=round(float(a.sel(x=slice(lon1,lon2), y=slice(lat1, lat2)).median()))
+    #medhgt=round(float(a.sel(x=(lon1,lon2), y=(lat1, lat2), method='nearest').median()))
+    print('... as {} m'.format(str(medhgt)))
+    #
+    # running the clipping in init-only mode
+    clipcmd = "cd "+framedir+"; "
+    clipcmd = clipcmd + "clip_slc.sh "+subsetdir+" "+str(lon1)+" "+str(lon2)+" "
+    clipcmd = clipcmd +str(lat1)+" "+str(lat2)+" "
+    clipcmd = clipcmd +str(medhgt)+" "+str(resol)+" 0 1"
+    #
+    if os.path.exists(subsetdir):
+        print('this subset already exists in:')
+        print(subsetdir)
+        print('cancelling for now - you may do this manually adapting:')
+        print(clipcmd)
+        return False
     #
     print('initializing the subset')
     os.chdir(framedir)

@@ -260,6 +260,14 @@ if [ ! -f RSLC/$master/$master.rslc.mli ]; then
   ln -s `pwd`/SLC/$master/$master.slc.mli `pwd`/RSLC/$master/$master.rslc.mli
 fi
 
+echo "check for MLIs/regenerating if needed"
+for x in `ls RSLC`; do
+ if [ ! -f RSLC/$x/$x.rslc.mli ]; then
+  #echo "multilooking "$x
+  multilookRSLC $x $rlks $azlks 1 RSLC/$x
+ fi
+done
+
 echo "getting list of ifg to fill"
 if [ ! -d IFG ]; then mkdir IFG; fi
 if [ ! -d GEOC ]; then mkdir GEOC; fi
