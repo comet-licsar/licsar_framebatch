@@ -50,7 +50,7 @@ if [ `ls SLC | wc -l` -lt 2 ]; then
  exit
 fi
 rm coreg_its/tmp* coreg_its/coreg* 2>/dev/null
-if [ $force -eq 0 ]; then
+if [ $force -eq 1 ]; then
  #cleaning full
  rm -rf coreg_its 2>/dev/null
 fi
