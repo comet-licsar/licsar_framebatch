@@ -50,6 +50,11 @@ if [ `ls SLC | wc -l` -lt 2 ]; then
  exit
 fi
 rm coreg_its/tmp* coreg_its/coreg* 2>/dev/null
+if [ $force -eq 0 ]; then
+ #cleaning full
+ rm -rf coreg_its 2>/dev/null
+fi
+
 mkdir -p coreg_its
 if [ `grep -c comet framebatch_02_coreg.nowait.sh` -gt 0 ]; then que='comet'; else que='short-serial'; fi
 mstr=`get_master`
