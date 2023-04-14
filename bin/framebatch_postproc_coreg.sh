@@ -127,8 +127,10 @@ for x in `cat coreg_its/tmp_reprocess.slc | sort -r`; do
   done
  else
   if [ ! -f SLC/$x/forcecoreg_tried ]; then
-   ssize=`du -c SLC/$x/*IW?.slc | tail -n1 | gawk {'print $1'}`  # check if the slc has same size as mater slc
-   if [ $ssize -eq $msize ]; then doit=1; touch SLC/$x/forcecoreg_tried; fi
+   #ssize=`du -c SLC/$x/*IW?.slc | tail -n1 | gawk {'print $1'}`  # check if the slc has same size as master slc
+   #if [ $ssize -eq $msize ]; then doit=1; touch SLC/$x/forcecoreg_tried; fi
+   # avoiding the check as we may want to coregister also smaller (or bigger - happened as well) slcs:
+   doit=1; touch SLC/$x/forcecoreg_tried
   fi
  fi
  if [ $doit -eq 1 ]; then
