@@ -195,6 +195,8 @@ def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = Fals
     a=rioxarray.open_rasterio(hgt)
     a=a.sortby(['x','y'])
     medhgt=round(float(a.sel(x=slice(lon1,lon2), y=slice(lat1, lat2)).median()))
+    if np.isnan(medhgt):
+        medhgt = 0
     #medhgt=round(float(a.sel(x=(lon1,lon2), y=(lat1, lat2), method='nearest').median()))
     print('... as {} m'.format(str(medhgt)))
     #
