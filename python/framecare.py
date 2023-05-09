@@ -16,6 +16,8 @@ from shapely.geometry import Polygon
 import matplotlib.pyplot as plt
 import LiCSAR_lib.LiCSAR_misc as misc
 import s1data as s1
+import numpy as np
+
 try:
     gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
 except:
