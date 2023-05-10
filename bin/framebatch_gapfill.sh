@@ -157,6 +157,10 @@ mkdir -p $WORKFRAMEDIR/LOGS
 # ifg_combinations=
 #fi
 frame=`pwd | rev | cut -d '/' -f1 | rev`
+
+if [ $locl == 1 ]; then
+ frame=local_`pwd | rev | cut -d '/' -f2 | rev`_$frame
+fi
 master=`basename geo/20??????.hgt .hgt`
 SCRATCHDIR=$LiCSAR_temp/gapfill_temp
 rmdir $SCRATCHDIR/$frame 2>/dev/null
@@ -754,6 +758,12 @@ fi
   #geocode geo/$master.lt_fine geo/EQA.dem $demwidth geo/$master.hgt $ml_width - 2 0 - - - - - >/dev/null 2>/dev/null
   #rashgt geo/$master.hgt SLC/$master/$master.slc.mli $ml_width
  fi
+ else
+  # check/copy GEOC/geo
+  if [ -d GEOC/geo ]; then
+   mkdir -p $SCRATCHDIR/$frame/GEOC
+   cp -r GEOC/geo $SCRATCHDIR/$frame/GEOC/.
+  fi
  fi
 ##########################################################
  echo "running jobs"
