@@ -187,7 +187,9 @@ def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = Fals
         return False
     subsetdir = os.path.join(os.environ['LiCSAR_procdir'],'subsets',sidpath,frame[:4])
     if os.path.exists(subsetdir):
-        print('the subset directory exists. continuing anyway..')
+        print('the subset directory exists. cancelling - please delete manually. path:') #'continuing anyway..')
+        print(subsetdir)
+        return False
     if not os.path.exists(os.path.join(framedir, 'subsets')):
         os.mkdir(os.path.join(framedir, 'subsets'))
     #
