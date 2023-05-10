@@ -5,7 +5,7 @@
 
 if [ -z $1 ]; then
  echo "Usage e.g.: subset_mk_ifgs.sh $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
- echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frame directory"
+ echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frameid directory"
  echo "NOTE: if you use ifgs.list, please provide FULL PATH"
  exit
 fi
@@ -20,11 +20,12 @@ fi
 cd $1
 subsetpath=`pwd`
 sid=`echo $subsetpath | rev | cut -d '/' -f 2 | rev`
+frameid=`echo $subsetpath | rev | cut -d '/' -f 1 | rev`
 mlipar=`ls SLC/*/*.mli.par`
 if [ -z $mlipar ]; then echo 'mli par of ref epoch does not exist, cancelling'; exit; fi
 
-if [ `ls corners_clip* | wc -l` -gt 1 ]; then echo "more frames here, do it manually please"; exit; fi
-frame=`ls corners_clip* | cut -d '.' -f2`
+#if [ `ls corners_clip* | wc -l` -gt 1 ]; then echo "more frames here, do it manually please"; exit; fi
+#frame=`ls corners_clip* | head -n 1 | cut -d '.' -f2`
 source local_config.py
 #if [ -z $rglks ]; then
 # rglks=`get_value $mlipar range_looks`
@@ -32,7 +33,7 @@ source local_config.py
 #fi
 if [ -z $azlks ]; then echo 'error - probably no local_config.py file, exiting'; exit; fi
 
-tempdir=$BATCH_CACHE_DIR/subsets/$sid/$frame
+tempdir=$BATCH_CACHE_DIR/subsets/$sid/$frameid
 mkdir -p $tempdir/log
 cd $tempdir
 echo "copying needed files"
