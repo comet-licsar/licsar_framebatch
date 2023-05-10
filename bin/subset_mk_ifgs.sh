@@ -41,6 +41,8 @@ for ddir in SLC RSLC tab; do
 done
 cp $subsetpath/local_config.py .
 if [ ! -d geo ]; then cp -r $subsetpath/geo.$resol_m'm' geo; fi
+mkdir GEOC 2>/dev/null
+if [ ! -d GEOC/geo ]; then cp -r $subsetpath/GEOC.meta.$resol_m'm' GEOC/geo; cp GEOC/geo/* GEOC/.; fi   # yes, double copy, but LiCSBAS expects it in different dir than LiCSAR
 
 echo "now this should work"
 framebatch_gapfill.sh -l -P $extra -o 5 180 $rglks $azlks
