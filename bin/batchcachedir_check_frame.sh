@@ -6,6 +6,16 @@ if [ ! -z $2 ]; then PROC=$2; fi
 #cd $BATCH_CACHE_DIR
 todel=0
 
+if [ `pwd` == $LiCSAR_public ]; then echo "NO.."; exit; fi
+if [ `pwd` == $LiCSAR_procdir ]; then echo "NO.."; exit; fi
+# we may have files deleted in scratch...
+if [ -d $frame/geo ]; then
+ if [ -z `ls $frame/geo` ]; then echo "empty frame, deleting"; rm -rf $frame; exit; fi
+else
+ echo "no data, cancel"
+ exit
+fi
+ 
 #first check - bad SLC - too large, i.e. over 20 GB:
 for x in `ls $frame/SLC`; do if [ `ls -al $frame/SLC/$x/$x.slc 2>/dev/null | gawk {'print $5'}` -gt 20066815424 ]; then echo "deleting "$frame/SLC/$x; rm -rf $frame/SLC/$x; fi; done
 
