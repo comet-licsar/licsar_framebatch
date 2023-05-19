@@ -197,7 +197,8 @@ def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = Fals
     print('getting median height')
     hgt=os.path.join(os.environ['LiCSAR_public'], str(int(frame[:3])), frame, 'metadata', frame+'.geo.hgt.tif')
     a=rioxarray.open_rasterio(hgt)
-    a=a.sortby(['x','y'])
+    #a=a.sortby(['x','y'])
+    a=a.where(a>5)
     medhgt=round(float(a.sel(x=slice(lon1,lon2), y=slice(lat1, lat2)).median()))
     if np.isnan(medhgt):
         medhgt = 0
