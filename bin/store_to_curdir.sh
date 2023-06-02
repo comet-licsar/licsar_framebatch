@@ -81,23 +81,6 @@ if [ $QUALCHECK -eq 1 ]; then
  frame_ifg_quality_check.py -l -d $frame
 fi
 
-# do not export those created before 2023 due to update in LUTs:
-if [ `date | rev | gawk {'print $1'} | rev` == 2022 ]; then
-ziplist=`ls $frameDir/backup/*.7z 2>/dev/null`
-if [ `echo $ziplist | wc -w` -gt 0 ]; then
- for x in $ziplist; do
-  xx=`basename $x .7z`;
-  if [ -d $frame/RSLC/$xx ]; then
-   DORSLC=0;
-  fi
- done
-fi
-if [ $DORSLC -eq 0 ]; then
- echo "skipping RSLCs as these were probably coregistered to uncorrected dataset"
-fi
-fi
-
-
 if [ $DORSLC -eq 1 ]; then
  if [ -f $frame/framebatch_01_mk_image.nowait.sh ]; then
   firstrun=`stat $frame/framebatch_01_mk_image.nowait.sh | grep Modify | gawk {'print $2'} | sed 's/-//g'`
@@ -151,43 +134,46 @@ if [ $DORSLC -eq 1 ]; then
   for date in `ls $frame/RSLC/20?????? -d | cut -d '/' -f3`; do
    # if it is not master
    if [ ! $date == $master ]; then
-    #if [ $MOVE -eq 1 ]; then rm $frame/RSLC/$date/$date.rslc 2>/dev/null; fi
-    # if there are 'some' rslc files
-    if [ `ls $frame/RSLC/$date/$date.IW?.rslc 2>/dev/null | wc -l` -gt 0 ]; then
-     echo "checking "$frame"/"$date
-     #if it already doesn't exist in LiCSAR_proc dir, or in LUTs, zip it there
-     if [ ! -d $frameDir/RSLC/$date ] && [ ! -f $frameDir/RSLC/$date.7z ] && [ ! -f $frameDir/LUT/$date.7z ]; then
-      cd $frame/RSLC
-      #cleaning the folder
-      if [ `ls $date/*.lt 2>/dev/null | wc -w` -gt 0 ] && [ `datediff $date $today` -ge 21 ]; then
-       mkdir -p $frameDir/LUT
-       chmod 775 $frameDir/LUT 2>/dev/null
-       chgrp gws_lics_admin $frameDir/LUT 2>/dev/null
-       rm -f $date/*.lt.orbitonly 2>/dev/null
-       #copy results file to logs..
-       chmod 775 $date/*.results
-       cp $date/*.results $frameDir/log/. 2>/dev/null
-       echo "compressing LUT of "$date
-       7za a -mx=1 $frameDir/LUT/$date.7z $date/*.lt $date/*.off >/dev/null 2>/dev/null
-       if [ -f $frameDir/LUT/$date.7z ]; then
-          chmod 775 $frameDir/LUT/$date.7z 2>/dev/null
-          chgrp gws_lics_admin $frameDir/LUT/$date.7z 2>/dev/null
-          rm -f $date/*.lt 2>/dev/null
-       else
-          echo "error in zipping the "$date"/*.lt to "$frameDir"/LUT/"$date".7z - please check manually"
-       fi
-      fi
-      #echo "compressing RSLC from "$date
-      #echo "the RSLC will not get compressed anymore"
-      #time 7za a -mx=1 '-xr!*.lt' $frameDir/RSLC/$date.7z $date >/dev/null 2>/dev/null
-      #if [ $MOVE -eq 1 ]; then rm -r $date; fi
-      cd $thisDir
-      if [ -f $frame/log/coreg_quality_$master'_'$date.log ]; then
-       echo "exporting ESD value"
-       store_ESD.py $frame $frame/log/coreg_quality_$master'_'$date.log
+     # skip if not with POEORB
+    if [ `grep POEORB log/getValidOrbFile_$date.log 2>/dev/null | wc -l` -ge 1 ]; then
+      #if [ $MOVE -eq 1 ]; then rm $frame/RSLC/$date/$date.rslc 2>/dev/null; fi
+      # if there are 'some' rslc files
+      if [ `ls $frame/RSLC/$date/$date.IW?.rslc 2>/dev/null | wc -l` -gt 0 ]; then
+       echo "checking "$frame"/"$date
+       #if it already doesn't exist in LiCSAR_proc dir, or in LUTs, zip it there
+       if [ ! -d $frameDir/RSLC/$date ] && [ ! -f $frameDir/RSLC/$date.7z ] && [ ! -f $frameDir/LUT/$date.7z ]; then
+        cd $frame/RSLC
+        #cleaning the folder
+        if [ `ls $date/*.lt 2>/dev/null | wc -w` -gt 0 ] && [ `datediff $date $today` -ge 21 ]; then
+         mkdir -p $frameDir/LUT
+         chmod 775 $frameDir/LUT 2>/dev/null
+         chgrp gws_lics_admin $frameDir/LUT 2>/dev/null
+         rm -f $date/*.lt.orbitonly 2>/dev/null
+         #copy results file to logs..
+         chmod 775 $date/*.results
+         cp $date/*.results $frameDir/log/. 2>/dev/null
+         echo "compressing LUT of "$date
+         7za a -mx=1 $frameDir/LUT/$date.7z $date/*.lt $date/*.off >/dev/null 2>/dev/null
+         if [ -f $frameDir/LUT/$date.7z ]; then
+            chmod 775 $frameDir/LUT/$date.7z 2>/dev/null
+            chgrp gws_lics_admin $frameDir/LUT/$date.7z 2>/dev/null
+            rm -f $date/*.lt 2>/dev/null
+         else
+            echo "error in zipping the "$date"/*.lt to "$frameDir"/LUT/"$date".7z - please check manually"
+         fi
+        fi
+        #echo "compressing RSLC from "$date
+        #echo "the RSLC will not get compressed anymore"
+        #time 7za a -mx=1 '-xr!*.lt' $frameDir/RSLC/$date.7z $date >/dev/null 2>/dev/null
+        #if [ $MOVE -eq 1 ]; then rm -r $date; fi
+        cd $thisDir
+        if [ -f $frame/log/coreg_quality_$master'_'$date.log ]; then
+         echo "exporting ESD value"
+         store_ESD.py $frame $frame/log/coreg_quality_$master'_'$date.log
+        fi
+        fi
       fi
      fi
-    fi
    fi
   done
  fi

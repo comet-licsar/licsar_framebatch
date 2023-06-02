@@ -239,6 +239,9 @@ fi
 #echo "debu 2"
 
 #initializing the frame dir and LOGS dir
+if [ -d $BATCH_CACHE_DIR/$frame ]; then
+  touchscratch $BATCH_CACHE_DIR/$frame
+fi
 mkdir -p $BATCH_CACHE_DIR/$frame/LOGS
 cd $BATCH_CACHE_DIR/$frame
 logdir=$BATCH_CACHE_DIR/$frame/LOGS
