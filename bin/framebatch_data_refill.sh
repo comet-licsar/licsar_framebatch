@@ -282,35 +282,41 @@ if [ $USE_SSH_DOWN -eq 1 ]; then
     wgetcmd_scihub=`which wget_scihub`
    fi
   else
-   echo "will use login server to download"
-   echo "please apply for hpxfer service in JASMIN website"
-   echo "(as a workaround, will use your home folder to download..will clean afterwards)"
-   sshdown="ssh cems-login1.cems.rl.ac.uk"
-   sshout=~/temp_licsar_down
-   mkdir -p $sshout
-   downspeed=2 #MB/s
-   cp `which wget_alaska` $sshout/.
-   wgetcmd=`$sshout/wget_alaska`
-   sshparams="-q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
-   sshserver=cems-login1.cems.rl.ac.uk
-   if [ $use_scihub -eq 1 ]; then
-    cp `which wget_scihub` $sshout/.
-    sshserver_scihub=$sshserver
-    wgetcmd_scihub=`$sshout/wget_scihub`
-   fi
-   echo "please delete this files as temporary - they were created as workaround to data download. Normally they should be cleaned" > $sshout/README
+   echo "no xfer server is available.. .downloading directly from this node - THIS IS NOT PROPER WAY"
+   USE_SSH_DOWN=0
+   #echo "will use login server to download"
+   #echo "please apply for hpxfer service in JASMIN website"
+   #echo "(as a workaround, will use your home folder to download..will clean afterwards)"
+   #sshdown="ssh cems-login1.cems.rl.ac.uk"
+   #sshout=~/temp_licsar_down
+   #mkdir -p $sshout
+   #downspeed=2 #MB/s
+   #cp `which wget_alaska` $sshout/.
+   #wgetcmd=`$sshout/wget_alaska`
+   #sshparams="-q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+   #sshserver=cems-login1.cems.rl.ac.uk
+   #if [ $use_scihub -eq 1 ]; then
+   # cp `which wget_scihub` $sshout/.
+   # sshserver_scihub=$sshserver
+   # wgetcmd_scihub=`$sshout/wget_scihub`
+   #fi
+   #echo "please delete this files as temporary - they were created as workaround to data download. Normally they should be cleaned" > $sshout/README
   fi
  fi
  alias sshdown=`echo ssh $sshparams $sshserver "'cd "$sshout"; export LiCSAR_configpath=$LiCSAR_configpath; $wgetcmd '"`
  if [ $use_scihub -eq 1 ]; then
   alias sshdown_scihub=`echo ssh $sshparams $sshserver_scihub "'cd "$sshout"; export LiCSAR_configpath=$LiCSAR_configpath; $wgetcmd_scihub '"`
  fi
-else
- #alias sshinst=''
- alias sshdown=wget_alaska
+fi
+
+if [ $USE_SSH_DOWN -eq 0 ]; then
  if [ $use_scihub -eq 1 ]; then
-  alias sshdown_scihub=wget_scihub
+  downit() { cd "$sshout"; wget_scihub "$1"; cd -; }
+ else
+  downit() { cd "$sshout"; wget_alaska "$1"; cd -; }
  fi
+ alias sshdown=downit
+ alias sshdown_scihub=downit
 fi
 
  timetodown=`echo "$filestodown*4500/$downspeed/60/60" | bc`

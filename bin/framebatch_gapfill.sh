@@ -65,9 +65,10 @@ while getopts ":wn:gSaABi:PolbT" option; do
 #      shift
       ;;
   g ) geocode=1; echo "parameter -g set: will do post-processing step - geocoding after the finish";
+      echo "WARNING, this parameter is obsolete (since all data should be already geocoded during mk_ifg/mk_unw)";
 #      shift
       ;;
-  S ) store=1; geocode=1; echo "parameter -S set: will store after geocoding";
+  S ) store=1; echo "parameter -S set: will store after the processing";
 #      shift
       ;;
   P ) prioritise=1; echo "parameter -P set: prioritising through cpom-comet";
@@ -651,24 +652,30 @@ for job in `seq 1 $nojobs`; do
 done
 
 #check if there is nothing to process, then just ... finish
+cancel=0
+if [ ! -f gapfill_job/tmp_ifg_todo ]; then cancel=1; fi
+if [ ! -f gapfill_job/tmp_unw_todo ]; then cancel=1; fi
 if [ `wc -l gapfill_job/tmp_ifg_todo | gawk {'print $1'}` == 0 ] && [ `wc -l gapfill_job/tmp_unw_todo | gawk {'print $1'}` == 0 ]; then
-if [ $dobovl == 1 ] && [ `wc -l gapfill_job/tmp_bovl_todo | gawk {'print $1'}` == 0 ]; then
- echo "there is nothing else to process - gapfilling done"
- if [ $geocode == 1 ]; then
-  echo "starting geocoding job now"
-  echo "this is 04/2021 update - we use geocoded products already for gapfilling"
-  #cd $WORKFRAMEDIR
-  #./framebatch_06_geotiffs_nowait.sh
+ cancel=1
+ if [ $dobovl == 1 ]; then
+  if [ `wc -l gapfill_job/tmp_bovl_todo | gawk {'print $1'}` -gt 0 ]; then
+   cancel=0
+  fi
  fi
- #cleaning
+fi
+
+
+
+if [ $cancel == 1 ]; then
+ echo "there is nothing else to process - gapfilling done"
  rm -r gapfill_job
+ if [ $store == 1 ]; then
+  echo "now storing back to LiCSAR base"
+  cd ..
+  store_to_curdir.sh $frame
+ fi
  exit
 fi
-fi
-
-
-
-
 
 
  #move it for processing in SCRATCHDIR
@@ -819,10 +826,14 @@ fi
 echo "rsync -r $SCRATCHDIR/$frame/GEOC $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "cd $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
-if [ $geocode == 1 ]; then
- echo "echo 'starting geocoding job'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
- echo $WORKFRAMEDIR/framebatch_06_geotiffs.nowait.sh >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
- echo "sleep 60" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+#if [ $geocode == 1 ]; then
+# echo "echo 'starting geocoding job'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+# echo $WORKFRAMEDIR/framebatch_06_geotiffs.nowait.sh >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+# echo "sleep 60" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+#fi
+if [ $store == 1 ]; then
+  echo "echo 'storing to LiCSAR base'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+  echo "cd ..; store_to_curdir.sh $frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 fi
 #echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "echo 'sync done, deleting TEMP folder'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
