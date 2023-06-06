@@ -564,7 +564,7 @@ for x in `ls GEOC/*/*.cc.tif 2>/dev/null | cut -d '/' -f2`; do if [ ! -f GEOC/$x
 #check rslc mosaics
 #rm gapfill_job/tmp_rslcs2mosaic 2>/dev/null
 for x in `cat gapfill_job/tmp_rslcs2copy` $master; do
- if [ ! -f RSLC/$x/$x.rslc ] || [ `ls -l RSLC/$x/$x.rslc | gawk {'print $5'}` -eq 0 ]; then
+ if [ ! -f RSLC/$x/$x.rslc ]; then
   echo $x >> gapfill_job/tmp_rslcs2mosaic
  fi
 done
