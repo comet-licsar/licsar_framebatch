@@ -37,9 +37,15 @@ tempdir=$BATCH_CACHE_DIR/subsets/$sid/$frameid
 mkdir -p $tempdir/log $tempdir/tab
 cd $tempdir
 echo "copying needed files"
-for ddir in SLC RSLC; do
- rsync -r -u -l $subsetpath/$ddir .;
-done
+#for ddir in SLC RSLC; do
+ddir=RSLC
+rsync -r -u -l $subsetpath/$ddir .;
+# fix the master SLC
+m=`ls $subsetpath/SLC | grep 20 | head -n1`
+mkdir -p SLC/$m
+cd SLC/$m; for x in slc slc.mli slc.mli.par slc.par; do ln -s $tempdir/RSLC/$m/$m.r$x $m.$x; done;
+cd $tmpdir
+#done
 cp $subsetpath/local_config.py .
 if [ ! -d geo ]; then cp -r $subsetpath/geo.$resol_m'm' geo; fi
 mkdir GEOC 2>/dev/null
