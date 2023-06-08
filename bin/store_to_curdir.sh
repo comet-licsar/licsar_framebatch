@@ -183,6 +183,7 @@ if [ $DOSUBSETS -eq 1 ]; then
  if [ -d $frameDir/subsets ]; then
   echo "clipping for subsets"
   for subset in `ls $frameDir/subsets`; do
+    echo "subset "$subset
     cornersclip=$frameDir/subsets/$subset/corners_clip.$frame
     subdir=$frameDir/subsets/$subset
     if [ -f $cornersclip ]; then
@@ -199,8 +200,9 @@ if [ $DOSUBSETS -eq 1 ]; then
         if [ -f $frame/RSLC/$sdate/$sdate.rslc ]; then
         if [ ! -d $subdir/RSLC/$sdate ]; then
           echo "clipping "$sdate
-          mkdir -p $subdir/RSLC/$sdate
+          mkdir -p $subdir/RSLC/$sdate;
           SLC_copy $frame/RSLC/$sdate/$sdate.rslc $frame/RSLC/$sdate/$sdate.rslc.par $subdir/RSLC/$sdate/$sdate.rslc $subdir/RSLC/$sdate/$sdate.rslc.par - - $rg1 $rgdiff $azi1 $azidiff - - >/dev/null 2>/dev/null
+          chmod -R 775 $subdir/RSLC/$sdate
           # no need for multilooking here?... 
           #multi_look $outdir/RSLC/$x/$x.rslc $outdir/RSLC/$x/$x.rslc.par $outdir/RSLC/$x/$x.rslc.mli $outdir/RSLC/$x/$x.rslc.mli.par $rgl $azl >/dev/null 2>/dev/null
           # create_geoctiffs_to_pub.sh -M `pwd` $x >/dev/null   # to be improved
