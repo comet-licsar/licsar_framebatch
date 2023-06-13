@@ -513,8 +513,10 @@ for jobid in `cat framebatch_02_coreg.wait.sh | rev | gawk {'print $1'} | rev`; 
   waiting_str=$waiting_str" && ended("$stringg")"
 done
 waiting_string=`echo $waiting_str | cut -c 4-`
-echo "./framebatch_01_mk_image.nowait.sh; ./framebatch_02_coreg.wait.sh; ./framebatch_03_mk_ifg.wait.sh; ./framebatch_04_unwrap.wait.sh" > ./framebatch_x_second_iteration.nowait.sh
-echo "./framebatch_05_gap_filling.wait.sh" >> framebatch_x_second_iteration.nowait.sh
+#echo "./framebatch_01_mk_image.nowait.sh; ./framebatch_02_coreg.wait.sh; ./framebatch_03_mk_ifg.wait.sh; ./framebatch_04_unwrap.wait.sh" > ./framebatch_x_second_iteration.nowait.sh
+#echo "./framebatch_05_gap_filling.wait.sh" >> framebatch_x_second_iteration.nowait.sh
+# 2023/06: but this might fail / jobs not found if they finish to early. so adding only nowait gapfill
+echo "setFrameInactive.py "$frame"; ./framebatch_05_gap_filling.nowait.sh" > framebatch_x_second_iteration.nowait.sh
 echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:30 -n 1 -J it2_"$frame" -o LOGS/it2.out -e LOGS/it2.err ./framebatch_x_second_iteration.nowait.sh" > framebatch_x_second_iteration.wait.sh
 echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:45 -n 1 -J it2p_"$frame" -o LOGS/it2p.out -e LOGS/it2p.err framebatch_postproc_coreg.sh "$frame" 1" > framebatch_x_second_iteration.postproc.wait.sh
 chmod 770 framebatch_x_second_iteration.wait.sh framebatch_x_second_iteration.nowait.sh framebatch_x_second_iteration.postproc.wait.sh
