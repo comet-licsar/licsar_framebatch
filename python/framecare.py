@@ -200,9 +200,10 @@ def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = Fals
     a=a.sortby(['x','y'])
     a=a.where(a>5)
     medhgt=a.sel(x=slice(lon1,lon2), y=slice(lat1, lat2)).median()
-    if np.isnan(medhgt):
-        medhgt = 0
-    medhgt=round(float(medhgt))
+    if np.isnan(medhgt) or medhgt == 0:
+        medhgt = 1
+    else:
+        medhgt=round(float(medhgt))
     #medhgt=round(float(a.sel(x=(lon1,lon2), y=(lat1, lat2), method='nearest').median()))
     print('... as {} m'.format(str(medhgt)))
     #
