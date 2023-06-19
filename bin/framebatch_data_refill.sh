@@ -66,7 +66,8 @@ make_simple_polygon.sh ${frame}-poly.txt
 
 # to get list of files that are missing:
 rm ${frame}_zipfile_names.list ${frame}_scihub.list ${frame}_todown missingFiles 2>/dev/null
-
+# to clean from previous request
+rm ${frame}_db_query.list asf_search.py 2>/dev/null
 
 if [ $use_scihub -eq 1 ]; then
 ## make list from scihub
