@@ -44,8 +44,8 @@ cd $BATCH_CACHE_DIR/$frame
 if [ `ls SLC | wc -l` -lt 2 ]; then
  echo "nothing to process"
  if [ $autocont -eq 1 ]; then
-  echo "running second iteration"
-  ./framebatch_x_second_iteration.nowait.sh
+  echo "running the post-coreg (second) iteration"
+  ./framebatch_x_postcoreg_iteration.nowait.sh
  fi
  exit
 fi
@@ -200,12 +200,12 @@ fi
 
  if [ $autocont -eq 1 ]; then
 # if [ $x == $lastslc ]; then
-  echo "setting second iteration"
+  echo "setting the post-coreg iteration"
   if [ ! $diffprev == 0 ]; then
    echo "framebatch_postproc_coreg.sh "$frame" 1" > postproc_coreg.sh; 
    #extraw='-Ep ./postproc_coreg.sh'
   else
-   echo "./framebatch_x_second_iteration.nowait.sh" > postproc_coreg.sh
+   echo "./framebatch_x_postcoreg_iteration.nowait.sh" > postproc_coreg.sh
    #extraw='-Ep ./framebatch_x_second_iteration.nowait.sh'
   fi
   chmod 777 postproc_coreg.sh

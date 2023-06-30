@@ -117,31 +117,6 @@ if [ -f local_config.py ]; then
   fi
 fi
 
-if [ $checkrslc -eq 1 ]; then
- #to fix situation when RSLCs already exist...
- master=`ls geo/????????.hgt | cut -d '/' -f2 | cut -d '.' -f1`
- for slc in `ls SLC`; do
-  if [ ! $master == $slc ]; then
-    if [ -d RSLC/$slc ]; then
-      #echo "to remove: "$slc
-      rm -rf SLC/$slc
-    fi
-  fi
- done
- if [ -f .processing_it1 ]; then
-  echo "performing check of SLCs"
-  #removing the marker
-  rm .processing_it1
-  numslc=`ls SLC | wc -l` 
-  if [ $numslc -gt 1 ]; then
-   echo "there are "$numslc" SLCs to be coregistered. trying second iteration"
-   ./framebatch_02_coreg.nowait.sh; ./framebatch_03_mk_ifg.wait.sh; ./framebatch_04_unwrap.wait.sh; ./framebatch_05_gap_filling.wait.sh
-   exit
-  else
-   echo "great - all data are coregistered, continuing"
-  fi
- fi
-fi
 
 
 #NBATCH=5
@@ -162,6 +137,36 @@ frame=`pwd | rev | cut -d '/' -f1 | rev`
 if [ $locl == 1 ]; then
  frame=local_`pwd | rev | cut -d '/' -f2 | rev`_$frame
 fi
+
+
+if [ $checkrslc -eq 1 ]; then
+ #to fix situation when RSLCs already exist...
+ master=`ls geo/????????.hgt | cut -d '/' -f2 | cut -d '.' -f1`
+ for slc in `ls SLC`; do
+  if [ ! $master == $slc ]; then
+    if [ -d RSLC/$slc ]; then
+      #echo "to remove: "$slc
+      rm -rf SLC/$slc
+    fi
+  fi
+ done
+ if [ -f .processing_it1 ]; then
+  echo "performing check of SLCs"
+  #removing the marker
+  rm .processing_it1
+  numslc=`ls SLC | wc -l` 
+  if [ $numslc -gt 1 ]; then
+   echo "there are "$numslc" SLCs to be coregistered. trying second iteration"
+   framebatch_postproc_coreg.sh $frame 1
+   #./framebatch_02_coreg.nowait.sh; ./framebatch_03_mk_ifg.wait.sh; ./framebatch_04_unwrap.wait.sh; ./framebatch_05_gap_filling.wait.sh
+   exit
+  else
+   echo "great - all data are coregistered, continuing"
+  fi
+ fi
+fi
+
+
 master=`basename geo/20??????.hgt .hgt`
 SCRATCHDIR=$LiCSAR_temp/gapfill_temp
 rmdir $SCRATCHDIR/$frame 2>/dev/null

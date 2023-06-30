@@ -21,7 +21,7 @@ if [ -z $1 ]; then
  echo "Additional parameters (must be put DIRECTLY AFTER the command, before other/main parameters):"
  echo "-n ............... norun (processing scripts are generated but they will not start automatically)"
  echo "-c ............... perform check if files are in neodc and ingested to licsar database (no download performed)"
- echo "-S ............... store to lics database - CAREFUL WITH THIS (only for admins)"
+ echo "-S ............... store to lics database - only for users in gws_lics_admin"
  #echo "-G ............... update GACOS data after store to lics database"
  echo "-f ............... force processing in case the frame is already running in framebatch"
  #echo "-E ............... after resampling, move to an area for copying to ARC4 EIDP"
@@ -515,11 +515,11 @@ done
 waiting_string=`echo $waiting_str | cut -c 4-`
 #echo "./framebatch_01_mk_image.nowait.sh; ./framebatch_02_coreg.wait.sh; ./framebatch_03_mk_ifg.wait.sh; ./framebatch_04_unwrap.wait.sh" > ./framebatch_x_second_iteration.nowait.sh
 #echo "./framebatch_05_gap_filling.wait.sh" >> framebatch_x_second_iteration.nowait.sh
-# 2023/06: but this might fail / jobs not found if they finish to early. so adding only nowait gapfill
-echo "setFrameInactive.py "$frame"; ./framebatch_05_gap_filling.nowait.sh" > framebatch_x_second_iteration.nowait.sh
-echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:30 -n 1 -J it2_"$frame" -o LOGS/it2.out -e LOGS/it2.err ./framebatch_x_second_iteration.nowait.sh" > framebatch_x_second_iteration.wait.sh
-echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:45 -n 1 -J it2p_"$frame" -o LOGS/it2p.out -e LOGS/it2p.err framebatch_postproc_coreg.sh "$frame" 1" > framebatch_x_second_iteration.postproc.wait.sh
-chmod 770 framebatch_x_second_iteration.wait.sh framebatch_x_second_iteration.nowait.sh framebatch_x_second_iteration.postproc.wait.sh
+# 2023/06: but this might fail / jobs not found if they finish too early. so adding only nowait gapfill
+echo "setFrameInactive.py "$frame"; ./framebatch_05_gap_filling.nowait.sh" > framebatch_x_postcoreg_iteration.nowait.sh
+echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:30 -n 1 -J postcoreg."$frame" -o LOGS/postcoreg.out -e LOGS/postcoreg.err ./framebatch_x_postcoreg_iteration.nowait.sh" > framebatch_x_postcoreg_iteration.wait.sh
+echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:45 -n 1 -J it2_coreg."$frame" -o LOGS/it2_coreg.out -e LOGS/it2_coreg.err framebatch_postproc_coreg.sh "$frame" 1" > framebatch_x_coreg_iteration.wait.sh
+chmod 770 framebatch_x_postcoreg_iteration.wait.sh framebatch_x_postcoreg_iteration.nowait.sh framebatch_x_coreg_iteration.wait.sh
 
 
 #~ if [ $NORUN -eq 0 ]; then
@@ -581,8 +581,8 @@ fi
 
 if [ $NORUN -eq 0 ]; then
  #./framebatch_x_second_iteration.wait.sh
- echo 'warning - testing version for 2nd iteration postprocessing'
- ./framebatch_x_second_iteration.postproc.wait.sh
+ echo 'setting post-proc coreg (new functionality - this will also auto inactivate the frame and run gapfilling afterwards. store script is run through gapfilling)'
+ ./framebatch_x_coreg_iteration.wait.sh
 fi
 
 
@@ -636,7 +636,7 @@ gpextra='-o '
 #fi
 if [ $NORUN -eq 0 ] && [ $STORE -eq 1 ]; then
  gpextra=$gpextra"-S "
- touch .processing_it1
+ #touch .processing_it1
 fi
 if [ $prioritise -eq 1 ]; then
  gpextra=$gpextra"-P "
@@ -679,7 +679,7 @@ chmod 777 framebatch_05_gap_filling.wait.sh
 #so.. more connections now depend on 'luck having to wait for bsub2slurm.sh -x'
 #this definitely needs improvement, yet better 'than nothing'.. i suppose
 if [ $NORUN -eq 0 ]; then
- echo "warning, gapfilling should be auto-started within framebatch.postproc script"
+ echo "gapfilling should be auto-started within framebatch.postproc (coreg) script"
  #./framebatch_05_gap_filling.nowait.sh -w
 else
  echo "To run gapfilling afterwards, use ./framebatch_gapfill.nowait.sh"
@@ -728,16 +728,18 @@ waiting_string=`echo $waiting_str | cut -c 4-`
 #echo "bsub2slurm.sh -w '"$waiting_string"' -J $frame'_geo' -n \$NOPAR -q $bsubquery_multi -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs.sh
 #echo "bsub2slurm.sh -w '"$waiting_string"' -J $frame'_geo' -n \$NOPAR -q $bsubquery_multi -W 08:00 -o LOGS/framebatch_06_geotiffs.out -e LOGS/framebatch_06_geotiffs.err framebatch_LOTUS_geo.sh \$NOPAR $extracmdgeo" >> framebatch_06_geotiffs.sh
 
-if [ $STORE -eq 1 ]; then
- echo "Making the system automatically store the generated data (for auto update of frames)"
- echo "cd $BATCH_CACHE_DIR" >> framebatch_06_geotiffs.nowait.sh
- #echo "echo 'waiting 60 seconds for jobs to synchronize'" >> framebatch_06_geotiffs_nowait.sh
- #echo "sleep 60" >> framebatch_06_geotiffs_nowait.sh
- echo "bsub2slurm.sh -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore 0 $dogacos" >> framebatch_06_geotiffs.nowait.sh #$frame
- echo "bsub2slurm.sh -w '"$waiting_string"' -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore 0 $dogacos" >> framebatch_06_geotiffs.wait.sh #$frame
- #echo "bsub2slurm.sh -w $frame'_geo' -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore" >> framebatch_06_geotiffs_nowait.sh #$frame
- #cd -
-fi
+
+# 2023/06 we will now run store script through gapfilling procedure. thus, no need to store here - anyway we may not need this step anymore at all
+#if [ $STORE -eq 1 ]; then
+# echo "Making the system automatically store the generated data (for auto update of frames)"
+# echo "cd $BATCH_CACHE_DIR" >> framebatch_06_geotiffs.nowait.sh
+# #echo "echo 'waiting 60 seconds for jobs to synchronize'" >> framebatch_06_geotiffs_nowait.sh
+# #echo "sleep 60" >> framebatch_06_geotiffs_nowait.sh
+# echo "bsub2slurm.sh -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore 0 $dogacos" >> framebatch_06_geotiffs.nowait.sh #$frame
+# echo "bsub2slurm.sh -w '"$waiting_string"' -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore 0 $dogacos" >> framebatch_06_geotiffs.wait.sh #$frame
+# #echo "bsub2slurm.sh -w $frame'_geo' -q $bsubquery -n 1 -W 06:00 -o LOGS/framebatch_$frame'_store.out' -e LOGS/framebatch_$frame'_store.err' -J $frame'_ST' store_to_curdir.sh $frame $deleteafterstore" >> framebatch_06_geotiffs_nowait.sh #$frame
+# #cd -
+#fi
 
 #this is not wanted now as i use auto-geotiffing after framebatch_gapfill...
 #if [ $NORUN -eq 0 ]; then
