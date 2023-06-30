@@ -689,7 +689,7 @@ fi
 
 
 ###################################################### Geocoding to tiffs
-echo "Preparing script for geocoding results (will be auto-run by gap_filling routine)"
+echo "Preparing script for geocoding results (2023/06: probably not needed anymore)"
 cat << EOF > framebatch_06_geotiffs.wait.sh
 NOPAR=1
 MAXPAR=10
