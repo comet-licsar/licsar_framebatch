@@ -127,6 +127,15 @@ if [ -f $BATCH_CACHE_DIR/$frame/lmf_locked ]; then echo "the frame is locked - c
 if [ `echo $frame | cut -d '_' -f2` == "SM" ]; then SM=1; echo "processing stripmap frame - WARNING, EXPERIMENTAL FEATURE"; else SM=0; fi
 track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
 if [ ! -d $LiCSAR_procdir/$track/$frame/geo ]; then echo "This frame has not been initialized. Please contact your LiCSAR admin (Milan)"; exit; fi
+# fix empty slc file
+m=`ls $LiCSAR_procdir/$track/$frame/SLC | head -n 1`
+if [ -f $BATCH_CACHE_DIR/$frame/SLC/$m/$m.slc.par ]; then
+ if [ `ls -al $BATCH_CACHE_DIR/$frame/SLC/$m/$m.slc.par | gawk {'print $5'}` -eq 0 ]; then
+   echo "corrupted slc par file of reference epoch, fixing"
+   cp $LiCSAR_procdir/$track/$frame/SLC/$m/$m.slc.par $BATCH_CACHE_DIR/$frame/SLC/$m/$m.slc.par
+   cp $LiCSAR_procdir/$track/$frame/SLC/$m/$m.slc.par $BATCH_CACHE_DIR/$frame/RSLC/$m/$m.rslc.par
+ fi
+fi
 #some older frames would not have this folder
 mkdir $LiCSAR_procdir/$track/$frame/LUT 2>/dev/null
 

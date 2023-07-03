@@ -58,6 +58,15 @@ fi
 mkdir -p coreg_its
 if [ `grep -c comet framebatch_02_coreg.nowait.sh` -gt 0 ]; then que='comet'; else que='short-serial'; fi
 mstr=`get_master`
+# fix empty slc file
+m=$mstr
+if [ -f $BATCH_CACHE_DIR/$frame/SLC/$m/$m.slc.par ]; then
+ if [ `ls -al $BATCH_CACHE_DIR/$frame/SLC/$m/$m.slc.par | gawk {'print $5'}` -eq 0 ]; then
+   echo "corrupted slc par file of reference epoch, fixing"
+   cp $LiCSAR_procdir/$track/$frame/SLC/$m/$m.slc.par $BATCH_CACHE_DIR/$frame/SLC/$m/$m.slc.par
+   cp $LiCSAR_procdir/$track/$frame/SLC/$m/$m.slc.par $BATCH_CACHE_DIR/$frame/RSLC/$m/$m.rslc.par
+ fi
+fi
 ls SLC | sed '/'$mstr'/d' > coreg_its/tmp_reprocess.slc
 #clean first
 for x in `ls RSLC | sed '/'$mstr'/d'`; do 
