@@ -35,9 +35,11 @@ burstsnum=`get_burstsno_frame $frame`
 
 maxmem=16384
 T="02:45"  # 1.5h should be ok, but Sabrina had problems ...
-if [ $burstsnum -gt 45 ]; then maxmem=25000; T="03:30"; fi
-if [ $burstsnum -ge 90 ]; then maxmem=32000; T="04:30"; fi
-if [ $burstsnum -ge 120 ]; then maxmem=48000; T="06:00"; fi
+# 06/2023: JASMIN got slow? 2:45 is not enough anymore!!!!
+T="03:30"
+if [ $burstsnum -gt 45 ]; then maxmem=25000; T="04:30"; fi
+if [ $burstsnum -ge 90 ]; then maxmem=32000; T="05:30"; fi
+if [ $burstsnum -ge 120 ]; then maxmem=48000; T="07:00"; fi
 
 if [ ! -d $BATCH_CACHE_DIR/$frame ]; then echo "this frame is not in your processing, cancelling"; exit; fi
 cd $BATCH_CACHE_DIR/$frame
