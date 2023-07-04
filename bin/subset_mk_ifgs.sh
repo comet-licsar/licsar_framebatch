@@ -44,7 +44,7 @@ rsync -r -u -l $subsetpath/$ddir .;
 m=`ls $subsetpath/SLC | grep 20 | head -n1`
 mkdir -p SLC/$m
 cd SLC/$m; for x in slc slc.mli slc.mli.par slc.par; do ln -s $tempdir/RSLC/$m/$m.r$x $m.$x; done;
-cd $tmpdir
+cd $tempdir
 #done
 cp $subsetpath/local_config.py .
 if [ ! -d geo ]; then cp -r $subsetpath/geo.$resol_m'm' geo; fi
