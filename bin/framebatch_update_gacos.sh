@@ -62,7 +62,7 @@ gacos_archive_to_portal.sh $frame
 
 echo "done, cleaning"
 cd $work_dir
-rm -r $frame $frame.inp
+rm -rf $frame $frame.inp
 
 exit
 
