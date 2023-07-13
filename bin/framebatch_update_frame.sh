@@ -11,11 +11,12 @@ if [ -z $2 ]; then echo "parameters are frame and code (code is either upfill or
     echo "running with parameter -k means Keep the frame in BATCH_CACHE_DIR (not delete it)";
     echo "parameter -u would process upfilling till today"
     echo "parameter -P will run through comet queue"
+    #echo "hidden params: -E, -R"
     exit; fi
 
 storeparam='-S -G'
 extra=''
-while getopts ":kEuP" option; do
+while getopts ":kEuPR" option; do
  case "${option}" in
   k) storeparam=' ';
      ;;
@@ -24,7 +25,9 @@ while getopts ":kEuP" option; do
      ;;
   u) tillnow=1;
      ;;
-  P) extra='-P'
+  P) extra='-P';
+     ;;
+  R) extra='-R';
  esac
 done
 #shift
