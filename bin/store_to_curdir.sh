@@ -98,13 +98,13 @@ if [ $DORSLC -eq 1 ]; then
     ls $frame/RSLC/20?????? -d | cut -d '/' -f3 | tail -n 10 > $BATCH_CACHE_DIR/temp_$frame'_keeprslc'
     master=`ls $frame/geo/20??????.hgt | cut -d '.' -f1 | cut -d '/' -f3`
     mastersize=`grep azimuth_lines $frame/SLC/$master/$master.slc.par | gawk {'print $2'}`
-    sed -i '/'$master'/d' temp_$frame'_keeprslc'
-    for date in `cat temp_$frame'_keeprslc' `; do
+    sed -i '/'$master'/d' $BATCH_CACHE_DIR/temp_$frame'_keeprslc'
+    for date in `cat $BATCH_CACHE_DIR/temp_$frame'_keeprslc' `; do
       if [ ! `grep azimuth_lines $frame/RSLC/$date/$date.rslc.par | gawk {'print $2'}` -eq $mastersize ]; then
-       sed -i '/'$date'/d' temp_$frame'_keeprslc'
+       sed -i '/'$date'/d' $BATCH_CACHE_DIR/temp_$frame'_keeprslc'
       fi
     done
-    for date in `sort -r temp_$frame'_keeprslc' | head -n2`; do
+    for date in `sort -r $BATCH_CACHE_DIR/temp_$frame'_keeprslc' | head -n2`; do
      #let's keep only newer 2 ones - and if the datediff is at least 21 days from the scripts... (precise orbits)
      #if [ $date -gt $master ] && [ `datediff $date $today` -ge 21 ]; then
      if [ $date -gt $master ] && [ `datediff $date $firstrun` -ge 21 ] && [ `datediff $date $today` -ge 21 ]; then
@@ -123,7 +123,7 @@ if [ $DORSLC -eq 1 ]; then
     if [ `ls $frameDir/RSLC/*7z 2>/dev/null | wc -l` -gt 2 ]; then
      #delete more rslc 7z files than last 2 dates
      ls $frameDir/RSLC/*7z > $BATCH_CACHE_DIR/temp_$frame'_keeprslc2'
-     for todel in `head -n-2 temp_$frame'_keeprslc2'`; do
+     for todel in `head -n-2 $BATCH_CACHE_DIR/temp_$frame'_keeprslc2'`; do
       rm -f $todel
      done
     fi
@@ -135,7 +135,8 @@ if [ $DORSLC -eq 1 ]; then
    # if it is not master
    if [ ! $date == $master ]; then
      # skip if not with POEORB
-    if [ `grep POEORB log/getValidOrbFile_$date.log 2>/dev/null | wc -l` -ge 1 ]; then
+    #if [ `grep POEORB $frame/log/getValidOrbFile_$date.log 2>/dev/null | wc -l` -ge 1 ]; then
+    # BUT WE MAY GET SITUATION OF NO SUCH LOG FILE!!!! THUS SKIPPING THIS CHECK
       #if [ $MOVE -eq 1 ]; then rm $frame/RSLC/$date/$date.rslc 2>/dev/null; fi
       # if there are 'some' rslc files
       if [ `ls $frame/RSLC/$date/$date.IW?.rslc 2>/dev/null | wc -l` -gt 0 ]; then
@@ -173,7 +174,7 @@ if [ $DORSLC -eq 1 ]; then
         fi
         fi
       fi
-     fi
+     # fi
    fi
   done
  fi
