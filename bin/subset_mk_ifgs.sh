@@ -36,10 +36,7 @@ if [ -z $azlks ]; then echo 'error - probably no local_config.py file, exiting';
 tempdir=$BATCH_CACHE_DIR/subsets/$sid/$frameid
 mkdir -p $tempdir/log $tempdir/tab
 cd $tempdir
-echo "copying needed files"
-#for ddir in SLC RSLC; do
-ddir=RSLC
-rsync -r -u -l $subsetpath/$ddir .;
+echo "copying needed core files"
 # fix the master SLC
 m=`ls $subsetpath/SLC | grep 20 | head -n1`
 mkdir -p SLC/$m
@@ -51,5 +48,10 @@ if [ ! -d geo ]; then cp -r $subsetpath/geo.$resol_m'm' geo; fi
 mkdir GEOC 2>/dev/null
 if [ ! -d GEOC/geo ]; then cp -r $subsetpath/GEOC.meta.$resol_m'm' GEOC/geo; cp GEOC/geo/* GEOC/.; fi   # yes, double copy, but LiCSBAS expects it in different dir than LiCSAR
 
-echo "now this should work"
+echo "copying existing clipped RSLCs"
+#for ddir in SLC RSLC; do
+ddir=RSLC
+rsync -r -u -l $subsetpath/$ddir .;
+
+echo "now sending jobs to generate ifgs"
 framebatch_gapfill.sh -l -P $extra -o 5 180 $rglks $azlks
