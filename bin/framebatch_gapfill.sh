@@ -684,7 +684,8 @@ fi
 
 
  #move it for processing in SCRATCHDIR
- if [ `echo $BATCH_CACHE_DIR | grep -c scratch` -eq 1 ]; then 
+ #if [ `echo $BATCH_CACHE_DIR | grep -c scratch` -eq 1 ]; then 
+ if [ `echo $WORKFRAMEDIR | cut -d '/' -f3` == `echo $SCRATCHDIR | cut -d '/' -f3` ]; then
   echo "BATCH_CACHE_DIR is in scratch - making only links (faster)"
   links=1
  else
@@ -828,7 +829,12 @@ if [ `echo $waitText | wc -w` -gt 0 ]; then
   waitcmd='-w "'$waitText'"'
 fi
 #echo "chmod -R 777 $SCRATCHDIR/$frame" > $WORKFRAMEDIR/gapfill_job/copyjob.sh
-echo "rsync -r $SCRATCHDIR/$frame/GEOC $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+if [ $links == 1 ]; then
+ echo "mv -n $SCRATCHDIR/$frame/GEOC/* $WORKFRAMEDIR/GEOC/." >> $WORKFRAMEDIR/gapfill_job/copyjob.sh # for fully new ifgs
+ echo "for x in \`ls $SCRATCHDIR/$frame/GEOC\`; do mv -n $SCRATCHDIR/$frame/GEOC/\$x/*.??? $WORKFRAMEDIR/GEOC/\$x/.; done" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+else
+ echo "rsync -r $SCRATCHDIR/$frame/GEOC $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+fi
 echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "cd $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #if [ $geocode == 1 ]; then
