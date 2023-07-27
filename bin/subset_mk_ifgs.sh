@@ -54,5 +54,6 @@ echo "copying existing clipped RSLCs"
 ddir=RSLC
 rsync -r -u -l $subsetpath/$ddir .;
 
-echo "now sending jobs to generate ifgs"
+echo "now sending jobs to generate ifgs using command:"
+echo "framebatch_gapfill.sh -l -P "$extra" -o 5 180" $rglks $azlks
 framebatch_gapfill.sh -l -P $extra -o 5 180 $rglks $azlks
