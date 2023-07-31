@@ -83,6 +83,13 @@ fi
 if [ -z $rg ]; then rg=20; fi
 if [ -z $az ]; then az=4; fi
 
+if [ ! -f tab/$mstr'_tab' ]; then
+ for i in 1 2 3; do
+   if [ -f SLC/$mstr/$mstr.IW$i.slc ]; then
+     echo "./RSLC/"$mstr/$mstr.IW$i.rslc "./RSLC/"$mstr/$mstr.IW$i.rslc.par "./RSLC/"$mstr/$mstr.IW$i.rslc.TOPS_par >> tab/$mstr'_tab'
+   fi
+  done
+fi
 # check / fix mosaic
 if [ ! -f RSLC/$mstr/$mstr.rslc ]; then
  if [ ! -f RSLC/$mstr/$mstr.rslc.lock ]; then
