@@ -198,6 +198,7 @@ for x in `cat coreg_its/tmp_reprocess.slc | sort -r`; do
   fi
   if [ $force == 1 ]; then
    echo "using only one SLC to force-coregister (avoid 180 days check): "$x
+   cat coreg_its/tmp_reprocess.slc | sed '/'$x'/d' > coreg_its/noncoreg
    break  #we want to link only one such SLC for processing
   fi
  else  # if not 'doit'
@@ -216,10 +217,10 @@ if [ -f coreg_its/noncoreg ]; then
 fi
 fi
 
- if [ $autocont -eq 1 ]; then
+if [ $autocont -eq 1 ]; then
 # if [ $x == $lastslc ]; then
   echo "setting the post-coreg iteration"
-  if [ ! $diffprev == 0 ]; then
+  if [ ! $diffprev == 0 ]; then   # so if there are still some SLCs left to coreg, run the iteration...
    echo "framebatch_postproc_coreg.sh "$frame" 1" > postproc_coreg.sh; 
    #extraw='-Ep ./postproc_coreg.sh'
   else
