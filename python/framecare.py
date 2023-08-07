@@ -1013,7 +1013,7 @@ def get_number_of_ifgs(framename):
     return filenumber
 
 
-def get_epochs(framename, return_mli_tifs = False):
+def get_epochs(framename, return_mli_tifs = False, return_as_dt = False):
     pubdir = os.environ['LiCSAR_public']
     track = str(int(framename[0:3]))
     pubpath = os.path.join(pubdir,track,framename)
@@ -1027,6 +1027,11 @@ def get_epochs(framename, return_mli_tifs = False):
         return glob.glob(epochspath + "/**/*.geo.mli.tif", recursive = True)
     else:
         epochslist = glob.glob1(epochspath,'2???????')
+        if return_as_dt:
+            es = []
+            for e in epochslist:
+                es.append(dt.datetime.strptime(e, '%Y%m%d').date())
+                return es
         return epochslist
 
 
