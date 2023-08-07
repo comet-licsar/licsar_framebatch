@@ -1031,7 +1031,7 @@ def get_epochs(framename, return_mli_tifs = False, return_as_dt = False):
             es = []
             for e in epochslist:
                 es.append(dt.datetime.strptime(e, '%Y%m%d').date())
-                return es
+            return es
         return epochslist
 
 

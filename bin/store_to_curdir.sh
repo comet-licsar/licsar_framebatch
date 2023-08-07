@@ -135,10 +135,16 @@ if [ $DORSLC -eq 1 ]; then
    # if it is not master
    if [ ! $date == $master ]; then
      # skip if not with POEORB
-    #if [ `grep POEORB $frame/log/getValidOrbFile_$date.log 2>/dev/null | wc -l` -ge 1 ]; then
+     copydis=1
+     if [ -f $frame/log/getValidOrbFile_$date.log ]; then
+       if [ ! `grep POEORB $frame/log/getValidOrbFile_$date.log 2>/dev/null | wc -l` -ge 1 ]; then
+         copydis=0;
+       fi
+     fi
     # BUT WE MAY GET SITUATION OF NO SUCH LOG FILE!!!! THUS SKIPPING THIS CHECK
       #if [ $MOVE -eq 1 ]; then rm $frame/RSLC/$date/$date.rslc 2>/dev/null; fi
       # if there are 'some' rslc files
+     if [ $copydis -eq 1 ]; then
       if [ `ls $frame/RSLC/$date/$date.IW?.rslc 2>/dev/null | wc -l` -gt 0 ]; then
        echo "checking "$frame"/"$date
        #if it already doesn't exist in LiCSAR_proc dir, or in LUTs, zip it there
@@ -174,7 +180,7 @@ if [ $DORSLC -eq 1 ]; then
         fi
         fi
       fi
-     # fi
+     fi
    fi
   done
  fi
