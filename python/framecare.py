@@ -1452,7 +1452,13 @@ def get_satids_of_burst(burstid, expected = ['S1A','S1B']):
     return b
 
 
-def get_all_frames():
+def get_all_frames(only_initialised = False, merge = False):
+    """Will get geopandas for all LiCSAR frames
+
+    Args:
+        only_initialised (bool): will return only frames that are initialised
+        merge (bool): if True, it will output in one table only, by default returns asc and desc frames separately
+    """
     asc_gpd = gpd.geodataframe.GeoDataFrame()
     desc_gpd = gpd.geodataframe.GeoDataFrame()
     for i in range(1,175+1):
@@ -1461,6 +1467,9 @@ def get_all_frames():
         frames = lq.get_frames_in_orbit(i, 'D')
         frames = lq.sqlout2list(frames)
         for frame in frames:
+            if only_initialised:
+                if not os.path.exists(os.path.join(os.environ['LiCSAR_public'], str(int(frame[:3])), frame)):
+                    continue
             a = frame2geopandas(frame)
             if type(a) != type(None):
                 desc_gpd = desc_gpd.append(a)
@@ -1468,10 +1477,18 @@ def get_all_frames():
         frames = lq.get_frames_in_orbit(i, 'A')
         frames = lq.sqlout2list(frames)
         for frame in frames:
+            if only_initialised:
+                if not os.path.exists(os.path.join(os.environ['LiCSAR_public'], str(int(frame[:3])), frame)):
+                    continue
             a = frame2geopandas(frame)
             if type(a) != type(None):
                 asc_gpd = asc_gpd.append(a)
-    return asc_gpd, desc_gpd
+    if merge:
+        framesgpd = asc_gpd.append(desc_gpd)
+        framesgpd = framesgpd.reset_index(drop=True)
+        return framesgpd
+    else:
+        return asc_gpd, desc_gpd
 
 
 def manual_check_master_files(frame, master):
