@@ -1468,7 +1468,7 @@ def get_all_frames(only_initialised = False, merge = False):
         frames = lq.sqlout2list(frames)
         for frame in frames:
             if only_initialised:
-                if not os.path.exists(os.path.join(os.environ['LiCSAR_public'], str(int(frame[:3])), frame)):
+                if not os.path.exists(os.path.join(os.environ['LiCSAR_public'], str(int(frame[:3])), frame, 'metadata', 'metadata.txt')):
                     continue
             a = frame2geopandas(frame)
             if type(a) != type(None):
@@ -1478,7 +1478,7 @@ def get_all_frames(only_initialised = False, merge = False):
         frames = lq.sqlout2list(frames)
         for frame in frames:
             if only_initialised:
-                if not os.path.exists(os.path.join(os.environ['LiCSAR_public'], str(int(frame[:3])), frame)):
+                if not os.path.exists(os.path.join(os.environ['LiCSAR_public'], str(int(frame[:3])), frame, 'metadata', 'metadata.txt')):
                     continue
             a = frame2geopandas(frame)
             if type(a) != type(None):
