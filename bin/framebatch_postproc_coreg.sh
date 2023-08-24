@@ -62,6 +62,7 @@ if [ `grep -c comet framebatch_02_coreg.nowait.sh` -gt 0 ]; then que='comet'; el
 mstr=`get_master`
 # fix empty slc file
 m=$mstr
+track=`track_from_frame $frame`
 if [ -f $BATCH_CACHE_DIR/$frame/SLC/$m/$m.slc.par ]; then
  if [ `ls -al $BATCH_CACHE_DIR/$frame/SLC/$m/$m.slc.par | gawk {'print $5'}` -eq 0 ]; then
    echo "corrupted slc par file of reference epoch, fixing"
