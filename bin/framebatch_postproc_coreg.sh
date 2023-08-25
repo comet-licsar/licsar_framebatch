@@ -92,24 +92,30 @@ if [ ! -f tab/$mstr'_tab' ]; then
   done
 fi
 # check / fix mosaic
-if [ ! -f RSLC/$mstr/$mstr.rslc ]; then
- if [ ! -f RSLC/$mstr/$mstr.rslc.lock ]; then
+if [ ! -f SLC/$mstr/$mstr.slc ]; then
+ if [ ! -f SLC/$mstr/$mstr.slc.lock ]; then
   echo "need to regenerate master mosaic, one moment please"
-  touch RSLC/$mstr/$mstr.rslc.lock
+  touch SLC/$mstr/$mstr.slc.lock
   rm ./tab/$mstr'_tab' 2>/dev/null
   for i in 1 2 3; do
    if [ -f SLC/$mstr/$mstr.IW$i.slc ]; then
-     echo "./RSLC/"$mstr/$mstr.IW$i.rslc "./RSLC/"$mstr/$mstr.IW$i.rslc.par "./RSLC/"$mstr/$mstr.IW$i.rslc.TOPS_par >> tab/$mstr'_tab'
+     echo "./SLC/"$mstr/$mstr.IW$i.slc "./SLC/"$mstr/$mstr.IW$i.slc.par "./SLC/"$mstr/$mstr.IW$i.slc.TOPS_par >> tab/$mstr'_tab'
    fi
   done
   #createSLCtab ./RSLC/$mstr/$mstr rslc $miniw $maxiw > tab/$mstr'_tab'
-  SLC_mosaic_S1_TOPS ./tab/$mstr'_tab' RSLC/$mstr/$mstr.rslc RSLC/$mstr/$mstr.rslc.par $rg $az 1
-  rm RSLC/$mstr/$mstr.rslc.lock
+  SLC_mosaic_S1_TOPS ./tab/$mstr'_tab' SLC/$mstr/$mstr.slc SLC/$mstr/$mstr.slc.par $rg $az 1
+  rm SLC/$mstr/$mstr.slc.lock
  else
   echo "warning, lock file found, maybe in process, in parallel? that should not happen, exiting"
   echo "if you are sure all should go well, just remove file "RSLC/$mstr/$mstr.rslc.lock
   exit
  fi
+fi
+if [ ! -f RSLC/$mstr/$mstr.rslc ]; then
+ ln -s `pwd`/SLC/$mstr/$mstr.slc `pwd`/RSLC/$mstr/$mstr.rslc
+fi
+if [ ! -f RSLC/$mstr/$mstr.rslc.par ]; then
+ ln -s `pwd`/SLC/$mstr/$mstr.slc.par `pwd`/RSLC/$mstr/$mstr.rslc.par
 fi
 
 # checking and maybe regenerating master mli - otherwise it would get done in parallel! (not wanted)
@@ -118,7 +124,12 @@ if [ ! -f $mmli ]; then
  echo 'multilooking reference epoch SLC'
  multilookSLC $mstr $rg $az >/dev/null 2>/dev/null
 fi
-
+if [ ! -f RSLC/$mstr/$mstr.rslc.mli ]; then
+ ln -s `pwd`/SLC/$mstr/$mstr.slc.mli `pwd`/RSLC/$mstr/$mstr.rslc.mli
+fi
+if [ ! -f RSLC/$mstr/$mstr.rslc.mli.par ]; then
+ ln -s `pwd`/SLC/$mstr/$mstr.slc.mli.par `pwd`/RSLC/$mstr/$mstr.rslc.mli.par
+fi
 
 ls RSLC > coreg_its/tmp.rslc
 extraw=''
