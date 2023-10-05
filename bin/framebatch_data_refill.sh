@@ -261,7 +261,8 @@ if [ $USE_SSH_DOWN -eq 1 ]; then
    #wgetcmd_scihub="~/.wget_scihub"
    #sshserver_scihub=jasmin-xfer2.ceda.ac.uk
    sshserver_scihub=xfer2.jasmin.ac.uk
-   wgetcmd_scihub=`which wget_scihub`
+   #wgetcmd_scihub=`which wget_scihub`  # 2023 - change from scihub
+   wgetcmd_scihub=`which wget_cdse`
   fi
  else
   echo "You do not have access to (fast) XFER3 server, please request hpxfer service via CEDA web portal"
@@ -280,7 +281,8 @@ if [ $USE_SSH_DOWN -eq 1 ]; then
    if [ $use_scihub -eq 1 ]; then
     #cp `which wget_scihub` ~/.wget_scihub
     sshserver_scihub=$sshserver
-    wgetcmd_scihub=`which wget_scihub`
+    #wgetcmd_scihub=`which wget_scihub`
+    wgetcmd_scihub=`which wget_cdse`
    fi
   else
    echo "no xfer server is available.. .downloading directly from this node - THIS IS NOT PROPER WAY"
