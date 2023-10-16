@@ -24,14 +24,22 @@ if [ -f $list_added'.lock' ]; then
  echo "the store process is locked, trying again in 5 seconds"
  sleep 5
  numpostlines=`ls -al $list_added | gawk {'print $5'}`
- if [ ! $numpostlines == $numprevlines ]; then
-   echo "the lock seems not valid, continuing"
- else
+ while [ ! $numpostlines == $numprevlines ]; do
+   numprevlines=`ls -al $list_added | gawk {'print $5'}`
+   echo "someone is storing the frame at this moment, waiting iteratively, in 30 sec steps"
+   sleep 30
+   numpostlines=`ls -al $list_added | gawk {'print $5'}`
+ done
+ #if [ ! $numpostlines == $numprevlines ]; then
+ #  echo "the lock seems not valid, continuing"
+ #else
    # if it is active, just create new outfile
-   numm=`ls $list_added.{0-9} 2>/dev/null | wc -l`
-   list_added=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/updates/`date +'%Y%m%d'`.$frame.added.$numm
-   touch $list_added'.lock'
- fi
+   #numm=`ls $list_added.{0-9} 2>/dev/null | wc -l`
+   #list_added=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/updates/`date +'%Y%m%d'`.$frame.added.$numm
+   #touch $list_added'.lock'
+   # but this would cause multiple writes... so cancelling instead
+ #  echo "error, someone is storing the frame at this moment, please repeat a bit later"
+ #fi
 else
  # locking the log file
  touch $list_added'.lock'
