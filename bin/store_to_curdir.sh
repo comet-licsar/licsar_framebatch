@@ -18,8 +18,24 @@ if [ ! -d $frame ]; then echo "framedir does not exist - are you be in the \$BAT
 
 #check for changed frame IDs
 framechanges=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/frameid_changes.txt
-list_added=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/updates/`date +'%Y%m%d'`.added
-
+list_added=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/updates/`date +'%Y%m%d'`.$frame.added
+if [ -f $list_added'.lock' ]; then
+ numprevlines=`ls -al $list_added | gawk {'print $5'}`
+ echo "the store process is locked, trying again in 5 seconds"
+ sleep 5
+ numpostlines=`ls -al $list_added | gawk {'print $5'}`
+ if [ ! $numpostlines == $numprevlines ]; then
+   echo "the lock seems not valid, continuing"
+ else
+   # if it is active, just create new outfile
+   numm=`ls $list_added.{0-9} 2>/dev/null | wc -l`
+   list_added=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/updates/`date +'%Y%m%d'`.$frame.added.$numm
+   touch $list_added'.lock'
+ fi
+else
+ # locking the log file
+ touch $list_added'.lock'
+fi
 if [ ! -f $list_added ]; then touch $list_added; chmod 777 $list_added; fi
 
 if [ `grep -c ^$frame $framechanges` -gt 0 ]; then
@@ -496,5 +512,8 @@ if [ $DOGACOS -eq 1 ]; then
  echo "requesting GACOS data " #"- in the background, please run in tmux or keep session alive for HOURS"
  framebatch_update_gacos.sh $frame # >/dev/null 2>/dev/null &
 fi
+
+# deleting log file lock
+rm $list_added'.lock'
 
 echo "done"
