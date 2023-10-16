@@ -521,7 +521,11 @@ if [ $DOGACOS -eq 1 ]; then
  framebatch_update_gacos.sh $frame # >/dev/null 2>/dev/null &
 fi
 
-# deleting log file lock
+# deleting log file lock and empty log file
+if [ `ls -al $list_added | gawk {'print $5'}` == 0 ]; then
+ echo "nothing changed in the public directory"
+ rm $list_added
+fi
 rm $list_added'.lock'
 
 echo "done"
