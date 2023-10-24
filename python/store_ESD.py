@@ -19,24 +19,22 @@ ccazi = 0.0
 for ccl in ccazis:
     ccazi = ccazi+float(ccl.split()[2])
 
+
+'''
+2023/10: we now use lics_ScanSAR_coreg.py:
+lics_ScanSAR_coreg.py ./tab/20160907_tab 20160907 ./tab/20150116_tab 20150116 ./tab/20150116R_tab ./geo/20160907.hgt 20 4 --it1 2 --use_existing --no_int --wdir . --RSLC3_tab ./tab/20150209_tab --RSLC3_ID 20150209 > ./log/S1_coreg_TOPS_20160907_20150116.log 2> ./log/S1_coreg_TOPS_20160907_20150116.err
+
+'''
 ccrgs = misc.grep_full('dr = ', logfile)
 ccrg = 0.0
 for ccl in ccrgs:
     ccrg = ccrg+float(ccl.split()[2])
-'''
-keyword='matching_iteration_'
-match_it=`grep -c $keyword $c`
-let no=$match_it/2
-if [ $match_it -eq 0 ]; then
- #another version without '_'
- keyword='matching iteration '
 
-cc=`grep "intensity_matching" $c | head -n1 | cut -d ':' -f2 | gawk {'print $1'}`
- ver=i
 
-'''
 #now daz is SD shift + ICC shift in azimuth
 daz = esd + ccazi
+# 2023/10: ML: but we now use a 'iono-resistant' trick, so daz should be just 'esd'
+daz = esd
 
 rslc3 = misc.grep1line('Spectral diversity estimation',logfile).split(':')[-1]
 if not rslc3:
