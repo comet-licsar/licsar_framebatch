@@ -123,6 +123,8 @@ echo 'Processing in your BATCH_CACHE_DIR that is '$BATCH_CACHE_DIR
 
 echo "DEBUG - COMET QUEUE IS NOW DOWN (2023-11-06). Setting to only standard queue"
 prioritise=0
+prioritise_nrt=0
+
 #startup variables
 frame=$1
 if [ -f $BATCH_CACHE_DIR/$frame/lmf_locked ]; then echo "the frame is locked - cancelling (delete lmf_locked file)"; exit; fi
