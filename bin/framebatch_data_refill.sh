@@ -56,48 +56,58 @@ if [ `echo $frame | cut -d '_' -f2` == 'SM' ]; then mode='SM'; fi
 cd $BATCH_CACHE_DIR/$frame
 chmod 777 $BATCH_CACHE_DIR/$frame 2>/dev/null
 chmod 777 $BATCH_CACHE_DIR/$frame/* 2>/dev/null
-if [ -z `ls $curdir/$tr/$frame/*xy` ]; then echo 'no polygonfile (.xy) generated. stopping'; exit; fi
-xyfile=`ls $curdir/$tr/$frame/*xy | head -n1 | rev | cut -d '/' -f1 | rev`
-cp $curdir/$tr/$frame/$xyfile .
-chmod 777 $BATCH_CACHE_DIR/$frame/$xyfile 2>/dev/null
-mv $xyfile ${frame}-poly.txt
-make_simple_polygon.sh ${frame}-poly.txt
-
+if [ -z `ls $curdir/$tr/$frame/*xy` ]; then 
+  echo 'no polygonfile (.xy) generated. probably not needed anyway';
+else   # probably not needed anymore
+ xyfile=`ls $curdir/$tr/$frame/*xy | head -n1 | rev | cut -d '/' -f1 | rev`
+ cp $curdir/$tr/$frame/$xyfile .
+ chmod 777 $BATCH_CACHE_DIR/$frame/$xyfile 2>/dev/null
+ mv $xyfile ${frame}-poly.txt
+ make_simple_polygon.sh ${frame}-poly.txt
+fi
 
 # to get list of files that are missing:
 rm ${frame}_zipfile_names.list ${frame}_scihub.list ${frame}_todown missingFiles 2>/dev/null
 # to clean from previous request
-rm ${frame}_db_query.list asf_search.py 2>/dev/null
+rm ${frame}_db_query.list s1_search.py 2>/dev/null
 
+# 2023/11: CDSE change -> will not use query_sentinel.sh anymore
 if [ $use_scihub -eq 1 ]; then
-## make list from scihub
- echo "getting scihub data"
- if [ ! -z $enddate ]; then
-   #the way of query_sentinel.sh misses the latest data (so increasing enddate by 1 day to the future)
-   enddate_str=`echo $enddate | sed 's/-//g'`
-   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date -d $enddate_str'+1day' +'%Y%m%d'` $mode >/dev/null 2>/dev/null
-  else
-   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date -d 'tomorrow' +'%Y%m%d'` $mode >/dev/null 2>/dev/null
- fi
- echo "identified "`cat ${frame}_zipfile_names.list | wc -l`" images"
- echo "getting their expected CEMS path"
- zips2cemszips.sh ${frame}_zipfile_names.list ${frame}_scihub.list >/dev/null
-
+ flagasf='False'
+ echo 'getting CDSE data'
 else
+ flagasf='True'
+ echo 'getting ASF data'
+fi
+
+## make list from scihub
+# echo "getting scihub data"
+# if [ ! -z $enddate ]; then
+#   #the way of query_sentinel.sh misses the latest data (so increasing enddate by 1 day to the future)
+#   enddate_str=`echo $enddate | sed 's/-//g'`
+#   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date -d $enddate_str'+1day' +'%Y%m%d'` $mode >/dev/null 2>/dev/null
+#  else
+#   query_sentinel.sh $tr $dir ${frame}.xy `echo $startdate | sed 's/-//g'` `date -d 'tomorrow' +'%Y%m%d'` $mode >/dev/null 2>/dev/null
+# fi
+# echo "identified "`cat ${frame}_zipfile_names.list | wc -l`" images"
+# echo "getting their expected CEMS path"
+# zips2cemszips.sh ${frame}_zipfile_names.list ${frame}_scihub.list >/dev/null
+
+#else
 # 2023: ok, ASF OFTEN changes the filenames, i.e. scihub vs ASF differs (last 4 letters)
 # found by Pedro, fixed by Milan.. we really should fully rearrange all those historic shell scripts
-echo 'getting ASF data'
+#echo 'getting ASF data'
 #
 startdate_str=`echo $startdate | sed 's/-//g'`
 enddate_str=`echo $enddate | sed 's/-//g'`
-cat << EOF > asf_search.py
+cat << EOF > s1_search.py
 from s1data import *
-a=get_images_for_frame('$frame', '$startdate_str', '$enddate_str', sensType='$mode');
+a=get_images_for_frame('$frame', '$startdate_str', '$enddate_str', sensType='$mode', asf = $flagasf);
 a=get_neodc_path_images(a);
 for b in a:
     print(b)
 EOF
-python3 asf_search.py | grep neodc > ${frame}_scihub.list
+python3 s1_search.py | grep neodc > ${frame}_scihub.list
 
 fi
  sort -o ${frame}_scihub2.list ${frame}_scihub.list
