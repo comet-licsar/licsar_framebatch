@@ -109,7 +109,7 @@ for b in a:
 EOF
 python3 s1_search.py | grep neodc > ${frame}_scihub.list
 
-fi
+
  sort -o ${frame}_scihub2.list ${frame}_scihub.list
  mv ${frame}_scihub2.list ${frame}_scihub.list
 ## make list from nla
