@@ -35,7 +35,7 @@ for frame in `cat $inputfile`; do
   lastepoch=`ls $LiCSAR_public/$tr/$frame/interferograms/2*_2* -d | tail -n1 | rev | cut -d '_' -f1 | rev`
   # start date will include at least last three images to process..
   startdate=`date -d $lastepoch'-37 days' +%Y-%m-%d`
-  licsar_make_frame.sh -S -N $frame 0 1 $startdate $enddate #>$BATCH_CACHE_DIR/volc/auto_volc_$frame.log 2>$BATCH_CACHE_DIR/volc/auto_volc_$frame.err
+  licsar_make_frame.sh -S -N -f -P $frame 0 1 $startdate $enddate #>$BATCH_CACHE_DIR/volc/auto_volc_$frame.log 2>$BATCH_CACHE_DIR/volc/auto_volc_$frame.err
  fi
 done
 
