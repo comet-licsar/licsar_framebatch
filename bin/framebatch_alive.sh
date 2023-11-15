@@ -27,7 +27,8 @@ for frame in `cat $inputfile`; do
 
  if [ $onlyPOD == 1 ]; then
   nohup framebatch_update_frame.sh $frame upfill &
-  sleep 900
+  #sleep 900
+  sleep 400
  else
   tr=`echo $frame | cut -d '_' -f1 | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
   master=`ls $LiCSAR_procdir/$tr/$frame/SLC | head -n1`
