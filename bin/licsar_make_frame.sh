@@ -121,9 +121,9 @@ if [ ! -d $LiCSAR_temp ]; then mkdir -p $LiCSAR_temp; fi
 basefolder=$BATCH_CACHE_DIR
 echo 'Processing in your BATCH_CACHE_DIR that is '$BATCH_CACHE_DIR
 
-echo "DEBUG - COMET QUEUE IS NOW DOWN (2023-11-06). Setting to only standard queue"
-prioritise=0
-prioritise_nrt=0
+#echo "DEBUG - COMET QUEUE IS NOW DOWN (2023-11-06). Setting to only standard queue"
+#prioritise=0
+#prioritise_nrt=0
 
 #startup variables
 frame=$1

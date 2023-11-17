@@ -9,10 +9,18 @@ if not userid:
     print('frame is already inactive')
     exit()
 
+print('Deactivating frame '+frame+' and removing related fields from framebatch database')
+polyID = get_polyid(frame)
+set_inactive(polyID)
 
-if userid == os.environ['USER']:
-    print('Deactivating frame '+frame+' and removing related fields from framebatch database')
-    polyID = get_polyid(frame)
-    set_inactive(polyID)
-else:
-    print('this frame is active under different user: '+userid+'. Cancelling deactivation.')
+
+'''
+# this below should be nice to have, but sometimes tricky..
+if not (os.environ['USER'] == 'earmla'):
+    if userid == os.environ['USER']:
+        print('Deactivating frame '+frame+' and removing related fields from framebatch database')
+        polyID = get_polyid(frame)
+        set_inactive(polyID)
+    else:
+        print('this frame is active under different user: '+userid+'. Cancelling deactivation.')
+'''
