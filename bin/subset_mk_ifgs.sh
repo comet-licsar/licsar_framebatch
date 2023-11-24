@@ -45,6 +45,8 @@ cd SLC/$m; for x in slc slc.mli slc.mli.par slc.par; do ln -s $tempdir/RSLC/$m/$
 cd $tempdir
 #done
 cp $subsetpath/local_config.py .
+echo $subsetpath/corners_clip.* | rev | cut -d '.' -f1 | rev > sourceframe
+
 if [ ! -d geo ]; then cp -r $subsetpath/geo.$resol_m'm' geo; fi
 mkdir GEOC 2>/dev/null
 if [ ! -d GEOC/geo ]; then cp -r $subsetpath/GEOC.meta.$resol_m'm' GEOC/geo; cp GEOC/geo/* GEOC/.; fi   # yes, double copy, but LiCSBAS expects it in different dir than LiCSAR
