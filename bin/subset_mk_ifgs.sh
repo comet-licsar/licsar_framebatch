@@ -4,7 +4,9 @@
 # just run in the subsets dir
 
 if [ -z $1 ]; then
- echo "Usage e.g.: subset_mk_ifgs.sh $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
+ echo "Usage e.g.: subset_mk_ifgs.sh [-P] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
+ echo "parameter -P will run through comet queue"
+ echo "----"
  echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frameid directory"
  echo "NOTE: if you use ifgs.list, please provide FULL PATH. Also note, the ifgs.list should contain pairs in the form of e.g.:"
  echo "20180101_20180303"
@@ -12,9 +14,22 @@ if [ -z $1 ]; then
 fi
 
 extra=''
+
+while getopts ":PR" option; do
+ case "${option}" in
+  P) extra='-P ';
+     ;;
+  R) extra='-R ';
+ esac
+done
+#shift
+shift $((OPTIND -1))
+
+if [ -z $1 ]; then echo "please check provided parameters"; exit; fi
+
 if [ ! -z $2 ]; then
- echo "using file "$2" as input for ifgs - please use full path"
- ifglist=$2
+ echo "using file "$2" as input for ifgs"
+ ifglist=`realpath $2`
  extra='-i '$ifglist
 fi
 
@@ -57,5 +72,5 @@ ddir=RSLC
 rsync -r -u -l $subsetpath/$ddir .;
 
 echo "now sending jobs to generate ifgs using command:"
-echo "framebatch_gapfill.sh -l -P "$extra" -o 5 180" $rglks $azlks
-framebatch_gapfill.sh -l -P $extra -o 5 180 $rglks $azlks
+echo "framebatch_gapfill.sh -l "$extra" -o 5 180" $rglks $azlks
+framebatch_gapfill.sh -l $extra -o 5 180 $rglks $azlks
