@@ -324,7 +324,7 @@ fi
 
 if [ $USE_SSH_DOWN -eq 0 ]; then
  if [ $use_scihub -eq 1 ]; then
-  downit() { cd "$sshout"; wget_scihub "$1"; cd -; }
+  downit() { cd "$sshout"; wget_cdse "$1"; cd -; }
  else
   downit() { cd "$sshout"; wget_alaska "$1"; cd -; }
  fi
