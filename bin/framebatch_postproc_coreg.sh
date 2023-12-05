@@ -25,7 +25,11 @@ done
 shift $((OPTIND -1))
 
 frame=$1
-
+if [ `echo $frame | cut -d '_' -f2` == 'SM' ]; then
+  echo "Stripmap - not ready here, please check manually or just rerun licsar_make_frame"
+  force=1
+  exit
+fi
 if [ ! -z $2 ]; then 
   #this is a hidden switch. it means that after the last coreg job, we will run second iteration of licsar_make_frame. testing..
   autocont=1

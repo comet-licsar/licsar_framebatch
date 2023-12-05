@@ -345,7 +345,8 @@ chmod 777 $step.sql
   #extrabsub='-x'
   #else
   #if [ $bsubquery == "cpom-comet" ]; then
-  burstsnum=`get_burstsno_frame $frame`
+  burstsnum=`get_burstsno_frame $frame 2>/dev/null`
+  if [ -z $burstsnum ]; then echo burstsnum=1; fi  # for SM
    if [ $step == "framebatch_02_coreg" ]; then # || [ $step == "framebatch_04_unwrap" ]; then
     #maxmem=25000
     maxmem=16384
