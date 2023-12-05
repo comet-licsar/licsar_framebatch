@@ -26,16 +26,17 @@ shift $((OPTIND -1))
 
 frame=$1
 if [ `echo $frame | cut -d '_' -f2` == 'SM' ]; then
-  echo "Stripmap - not ready here, please check manually or just rerun licsar_make_frame"
+  echo "Stripmap - might not work ..better just rerun licsar_make_frame"
   force=1
-  exit
+  #exit
 fi
 if [ ! -z $2 ]; then 
   #this is a hidden switch. it means that after the last coreg job, we will run second iteration of licsar_make_frame. testing..
   autocont=1
 fi
 
-burstsnum=`get_burstsno_frame $frame`
+burstsnum=`get_burstsno_frame $frame 2>/dev/null`
+if [ -z $burstsnum ]; then burstsnum=1; fi
 
 maxmem=16384
 T="02:45"  # 1.5h should be ok, but Sabrina had problems ...
