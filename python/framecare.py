@@ -62,10 +62,48 @@ procdir = os.environ['LiCSAR_procdir']
 #sid='SAREZ'
 #fc.subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid)
 
-def get_frame_path(frame):
-    """Will get expected path for the frame"""
+
+# bovls solution. Kudos to Muhammet Nergizci, 2023:
+def extract_burst_overlaps(frame, jsonpath=os.getcwd()):
+    # Read GeoJSON data
+    data_temp = gpd.read_file(os.path.join(jsonpath, frame + '.bovls.geojson'))
+    #
+    # Change CRS to EPSG:4326
+    data_temp = data_temp.to_crs(epsg=4326)
+    #
+    # Extract subswath information
+    if frame.startswith('00'):
+        data_temp['swath'] = data_temp.burstID.str[4]
+    elif frame.startswith('0'):
+        data_temp['swath'] = data_temp.burstID.str[5]
+    else:
+        data_temp['swath'] = data_temp.burstID.str[6]
+    #
+    # Divide frame into subswaths
+    data_temp = data_temp.sort_values(by=['burstID']).reset_index(drop=True)
+    gpd_overlaps = None
+    swathdict = dict()
+    # ML: a fix to handle less than 3 swaths
+    for swath in data_temp.swath.unique():
+        swdata = data_temp[data_temp.swath == swath]
+        # Divide burst overlaps into odd and even numbers
+        a1 = swdata.iloc[::2]
+        b1 = swdata.iloc[1::2]
+        # Find burst overlaps
+        sw_overlaps = gpd.overlay(a1, b1, how='intersection')
+        swathdict[int(swath)] = sw_overlaps
+        if type(gpd_overlaps) == type(None):
+            gpd_overlaps = sw_overlaps
+        else:
+            gpd_overlaps = pd.concat([gpd_overlaps, sw_overlaps], ignore_index=True)
+    return gpd_overlaps, swathdict
+
+
+def get_frame_path(frame, dirtype = 'procdir'):
+    """Will get expected path for the frame.
+       dirtype is either 'procdir' or 'public' """
     track=int(frame[:3])
-    framepath = os.path.join(os.environ['LiCSAR_procdir'],str(track),frame)
+    framepath = os.path.join(os.environ['LiCSAR_'+dirtype],str(track),frame)
     return framepath
 
 
