@@ -32,6 +32,10 @@ shift $((OPTIND -1))
 
 if [ ! -z $vid ]; then
  echo "Running processing for volclip ID "$vid
+else
+ echo "error finding volclip ID, cancelling"
+ exit
+fi
 #if [ -z $1 ]; then echo "please check provided parameters"; exit; fi
 
 #volcid=$1
