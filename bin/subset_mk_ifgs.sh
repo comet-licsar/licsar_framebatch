@@ -4,8 +4,9 @@
 # just run in the subsets dir
 
 if [ -z $1 ]; then
- echo "Usage e.g.: subset_mk_ifgs.sh [-P] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
+ echo "Usage e.g.: subset_mk_ifgs.sh [-P] [-s foo.sh] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
  echo "parameter -P will run through comet queue"
+ echo "parameter -s foo.sh .. will run foo.sh script after end of generation of ifgs"
  echo "----"
  echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frameid directory"
  echo "NOTE: if you use ifgs.list, please provide FULL PATH. Also note, the ifgs.list should contain pairs in the form of e.g.:"
@@ -14,12 +15,17 @@ if [ -z $1 ]; then
 fi
 
 extra=''
+shscript=''
 
-while getopts ":PR" option; do
+while getopts ":PRs:" option; do
  case "${option}" in
-  P) extra='-P ';
+  P ) extra='-P ';
      ;;
-  R) extra='-R ';
+  R ) extra='-R ';
+     ;;
+  s ) shscript=$OPTARG; echo "will run this script afterwards: "$shscript;
+#      shift
+      ;;
  esac
 done
 #shift
@@ -56,7 +62,7 @@ echo "copying needed core files"
 # fix the master SLC
 m=`ls $subsetpath/SLC | grep 20 | head -n1`
 mkdir -p SLC/$m
-cd SLC/$m; for x in slc slc.mli slc.mli.par slc.par; do ln -s $tempdir/RSLC/$m/$m.r$x $m.$x; done;
+cd SLC/$m; for x in slc slc.mli slc.mli.par slc.par; do if [ ! -f $m.$x ]; then ln -s $tempdir/RSLC/$m/$m.r$x $m.$x; fi; done;
 cd $tempdir
 #done
 cp $subsetpath/local_config.py .
@@ -71,6 +77,10 @@ echo "copying existing clipped RSLCs"
 ddir=RSLC
 rsync -r -u -l $subsetpath/$ddir .;
 
+if [ ! -z $shscript ]; then
+  chmod 777 $shscript 2>/dev/null
+  extra=$extra" -s "$shscript
+fi
 echo "now sending jobs to generate ifgs using command:"
-echo "framebatch_gapfill.sh -l "$extra" -o 5 180" $rglks $azlks
-framebatch_gapfill.sh -l $extra -o 5 180 $rglks $azlks
+echo "framebatch_gapfill.sh -l -T -n 5 "$extra" -o 5 480" $rglks $azlks
+framebatch_gapfill.sh -l -T -n 5 $extra -o 5 480 $rglks $azlks

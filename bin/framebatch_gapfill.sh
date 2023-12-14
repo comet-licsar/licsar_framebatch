@@ -30,6 +30,7 @@ source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 #and just after this was done, this auto-checker detected it as problematic and deleted those wonderful ifgs!!
 #it is all the no-ESD test that is performed over whole image, and not only at the edges of bursts. so rather keep =0
 qualcheck=0
+shscript=''
 
 if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_looks] [azimuth_looks]";
                    echo "NBATCH.... number of interferograms to generate per computing job (licsar defaults to 5)";
@@ -46,9 +47,10 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -A or -B .. do only S1A/S1B combinations"
                    echo "parameter -l ... use local processing strategy - e.g. volc responder 2.0"
                    echo "parameter -b ... will do burst overlap ddiff ifgs"
+                   echo "parameter -s foo.sh ... run a shell script foo.sh automatically after ifg-gapfilling"
                    exit; fi
 
-while getopts ":wn:gSaABi:PolbT" option; do
+while getopts ":wn:gSaABi:Pos:lbT" option; do
  case "${option}" in
   A) A=1; echo "S1A only";
       ;;
@@ -79,6 +81,9 @@ while getopts ":wn:gSaABi:PolbT" option; do
   T ) tienshan=1; echo "arranging ifg connections strategy for Tien Shan";
       ;;
   i ) ifglist=$OPTARG; echo "adding ifgs from the text file "$ifglist;
+#      shift
+      ;;
+  s ) shscript=$OPTARG; echo "will run this script afterwards: "$shscript;
 #      shift
       ;;
   esac
@@ -849,6 +854,10 @@ fi
 #echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "echo 'sync done, deleting TEMP folder'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 echo "rm -rf $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+if [ ! -z $shscript ]; then
+  chmod 777 $shscript 2>/dev/null
+  echo "sh "$shscript >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+fi
 echo "chmod -R 777 "$WORKFRAMEDIR >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 chmod 777 $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #workaround for 'Empty job. Job not submitted'
