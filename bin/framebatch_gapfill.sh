@@ -56,7 +56,7 @@ while getopts ":wn:gSaABi:Pos:lbT" option; do
       ;;
   B) B=1; echo "S1B only";
       ;;
-  b) dobovl=1;
+  b) dobovl=1; echo "will generate (filtered) bovl ifgs";
       ;;
   l) locl=1; checkrslc=0; tienshan=0; checkMosaic=0;
       ;;
@@ -101,6 +101,10 @@ if [ -f local_config.py ]; then
   if [ `grep ^tienshan local_config.py | cut -d '=' -f2 | sed 's/ //g'` -eq 1 ] 2>/dev/null; then
    echo "setting to Tien Shan frames processing"
    tienshan=1
+  fi
+  if [ `grep ^bovl local_config.py | cut -d '=' -f2 | sed 's/ //g'` -eq 1 ] 2>/dev/null; then
+   echo "do bovl ifgs";
+   dobovl=1;
   fi
   max_ifg_comb=`grep ^max_ifg_comb local_config.py | cut -d '=' -f2 | sed 's/ //g'`
   if [ $max_ifg_comb -gt 0 ] 2>/dev/null; then
