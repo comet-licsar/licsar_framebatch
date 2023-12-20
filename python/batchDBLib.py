@@ -224,7 +224,8 @@ def get_master(frameName):
 def get_user(frameName):
     conn = engine.connect()
     #query to get user that started processing of the given frame
-    userIDQry = select([jobs.c.user]).select_from(
+    #userIDQry = select([jobs.c.user]).select_from(
+    userIDQry=select(jobs.c.user).select_from(
             polygs.join(jobs,onclause=polygs.c.polyid==jobs.c.polyid)).where(
             polygs.c.polyid_name==frameName)
     userID = conn.execute(userIDQry).fetchone()
