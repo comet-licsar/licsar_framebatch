@@ -21,7 +21,8 @@ from sqlalchemy.pool import NullPool
 ################################################################################
 engine = create_engine(
     #'mysql+pymysql://{usr}:{psswd}@{hst}/{dbname}?charset=utf8'.format(
-    'mysql+pymysql://{usr}:{psswd}@{hst}/{dbname}'.format(
+    #'mysql+pymysql://{usr}:{psswd}@{hst}/{dbname}'.format(
+    'mysql+pymysql://{usr}:{psswd}@{hst}/{dbname}?charset=utf-8'.format(
         usr=config.get('DB','User'),
         psswd=config.get('DB','Password'),
         hst=config.get('DB','Host'),

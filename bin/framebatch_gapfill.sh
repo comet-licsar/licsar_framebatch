@@ -325,7 +325,7 @@ done
 if [ $tienshan -eq 1 ]; then
     echo "preparing Tien Shan connections"
     # Pick month to start connections from. Default to May unless stated
-    if [ `grep -c startmonth $LiCSAR_procdir/$track/$frame/local_config.py` -gt 0 ]; then
+    if [ `grep -c startmonth $LiCSAR_procdir/$track/$frame/local_config.py 2>/dev/null` -gt 0 ]; then
        startmonth=`grep ^startmonth $LiCSAR_procdir/$track/$frame/local_config.py | cut -d '=' -f2 | sed 's/ //g'`
     else
        startmonth=5
