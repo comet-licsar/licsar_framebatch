@@ -278,21 +278,26 @@ function prepare_job_script {
  rm $step'.nowait.sh' 2>/dev/null
  rm $step.list 2>/dev/null
 # mysql command is much faster, but it is not available in every server:
-if [ ! -z `which mysql 2>/dev/null` ]; then
- mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/$stepsql.sql | grep $USER | grep $frame | sort -n > $step.list
- echo "mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/$stepsql.sql | grep $USER | grep $frame | sort -n" > $step.sql
-else
- cat << EOF > getit.py
+# 12/2023: on LOTUS nodes, the mysql is now in different version and it does not work -- so, switching fully to python solution
+#if [ ! -z `which mysql 2>/dev/null` ]; then
+# mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/$stepsql.sql | grep $USER | grep $frame | sort -n > $step.list
+# echo "mysql -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldbname < $SQLPath/$stepsql.sql | grep $USER | grep $frame | sort -n" > $step.sql
+#else
+cat << EOF > getit.py
 #!/usr/bin/env python
 import pandas as pd
 from batchDBLib import engine
 from configLib import config
+from sqlalchemy import text
 sqlPath = config.get('Config','SQLPath')
 QryFile = open(sqlPath+'/$stepsql.sql','r')
 if QryFile:
     Qry = QryFile.read()
-    DatFrm = pd.read_sql_query(Qry,engine)
-    DatFrm = DatFrm.query('Frame == "$frame" and User == "$USER"')
+    Qry = Qry.split('WHERE')[0]+'WHERE polygs.polyid_name = "$frame" and jobs.user = "$USER" and polygs.active = TRUE;'
+    with engine.connect() as conn:
+        DatFrm = pd.read_sql_query(text(Qry),conn)
+    #
+    # DatFrm = DatFrm.query('Frame == "$frame" and User == "$USER"')
     try:
         DatFrm.to_csv('$step.list', header=False, index=False, sep='\t', mode='w')
     except:
@@ -311,7 +316,7 @@ EOF
  #wc -l $step.list
  cat $step.list | grep $USER | grep $frame | sort -n > $step.list2
  mv $step.list2 $step.list 
-fi
+#fi
 chmod 777 $step.sql
 
  for jobid in `cat $step.list | gawk {'print $1'} | sort -un`; do
