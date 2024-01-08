@@ -19,9 +19,12 @@ import s1data as s1
 import numpy as np
 
 try:
-    gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
+    #gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
+    fiona.drvsupport.supported_drivers['KML'] = 'rw'
+    fiona.drvsupport.supported_drivers['LIBKML'] = 'rw'
 except:
     print('WARNING: cannot load KML support')
+
 import rioxarray
 
 pubdir = os.environ['LiCSAR_public']
