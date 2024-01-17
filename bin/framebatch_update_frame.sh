@@ -8,7 +8,7 @@ DAYSTOLERANCE=61
 #DAYSTOLERANCE=961
 #STORE_AND_DELETE=1
 if [ -z $2 ]; then echo "parameters are frame and code (code is either upfill or backfill.. or gapfill)"; 
-    echo "running with parameter -k means Keep the frame in BATCH_CACHE_DIR (not delete it)";
+    echo "running with parameter -k means Keep the frame in BATCH_CACHE_DIR (not store it automatically to the public dir)";
     echo "parameter -u would process upfilling till today"
     echo "parameter -P will run through comet queue"
     #echo "hidden params: -E, -R"
