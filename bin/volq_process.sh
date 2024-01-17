@@ -45,7 +45,8 @@ for subfr in `ls $vidpath`; do
   # prepare licsbas script
   mkdir -p $procpath
   echo "cd "$procpath"; " > $procpath/l2l.sh
-  echo "licsar2licsbas.sh -M 2 -F -g -u -W -T -d -n 4 -s " >> $procpath/l2l.sh
+  #echo "licsar2licsbas.sh -M 2 -F -g -u -W -T -d -n 4 -s " >> $procpath/l2l.sh
+  echo "licsar2licsbas.sh -M 5 -g -u -W -T -d -n 4 -s " >> $procpath/l2l.sh
   chmod 777 $procpath/l2l.sh
   subset_mk_ifgs.sh $extra -s $procpath/l2l.sh $vidpath/$subfr
   # subset_mk_ifgs.sh $extra $vidpath/$subfr
