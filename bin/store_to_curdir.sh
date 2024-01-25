@@ -322,9 +322,11 @@ if [ $DOGEOC -eq 1 ]; then
     mkdir -p $pubDir_ifgs/$geoifg 2>/dev/null
     chmod 775 $pubDir_ifgs/$geoifg 2>/dev/null
     #chgrp gws_lics_admin $pubDir_ifgs/$geoifg 2>/dev/null
-    
-    # update this for unfiltered ones..
-    for toexp in bovldiff.adf.mm.tif bovldiff.adf.tif bovldiff.adf.png bovldiff.adf.cc.tif cc.png cc.tif cc.full.png diff.png diff.full.png diff_unfiltered.png diff_unfiltered.full.png diff_unfiltered_pha.tif diff_pha.tif unw.png unw.full.png unw.tif disp_blk.png; do
+
+    for toexp in bovldiff.adf.mm.tif bovldiff.adf.tif bovldiff.adf.png bovldiff.adf.cc.tif
+        azi.tif azi.png rng.tif rng.png tracking_corr.tif
+        cc.png cc.tif cc.full.png diff.png diff.full.png diff_unfiltered.png diff_unfiltered.full.png diff_unfiltered_pha.tif
+        diff_pha.tif unw.png unw.full.png unw.tif disp_blk.png; do
        if [ -f $frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
          GOON=1
          if [ $GEOC_OVERWRITE == 0 ]; then
