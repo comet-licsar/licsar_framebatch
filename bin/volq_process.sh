@@ -48,7 +48,9 @@ for subfr in `ls $vidpath`; do
   #echo "licsar2licsbas.sh -M 2 -F -g -u -W -T -d -n 4 -s " >> $procpath/l2l.sh
   #echo "licsar2licsbas.sh -M 5 -F -g -u -W -T -d -n 4 -s " >> $procpath/l2l.sh
   # 2024/01 - using GAMMA's ADF2 - should be better than goldstein (i hope)
-  echo "licsar2licsbas.sh -M 3 -F -g -u -W -T -d -n 4 " >> $procpath/l2l.sh
+  #echo "licsar2licsbas.sh -M 3 -F -g -u -W -T -d -n 4 " >> $procpath/l2l.sh
+  # 2024/01/31 - NOPE! ADF2 is horrible! using smooth, and from unfiltered - best results over Fogo! (or cascade, but that takes too long)
+  echo "licsar2licsbas.sh -M 3 -s -g -u -W -T -d -n 4 " >> $procpath/l2l.sh
   chmod 777 $procpath/l2l.sh
   subset_mk_ifgs.sh $extra -s $procpath/l2l.sh $vidpath/$subfr
   # subset_mk_ifgs.sh $extra $vidpath/$subfr
