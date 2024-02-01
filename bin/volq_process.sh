@@ -45,10 +45,10 @@ if [ $lowres == 1 ]; then
   echo "running for lowres only"
   procpath=$BATCH_CACHE_DIR/subsets/$vid/lowres
   mkdir -p $procpath; cd $procpath
-  cliparea=`python3 -c "import volcdb; print(volcdb.get_licsbas_clipstring_volclip("$vid"))"`
+  cliparea=`python3 -c "import volcdb; print(volcdb.get_licsbas_clipstring_volclip("$vid"))" | tail -n 1`
   for frame in `python3 -c "from volcdb import *; volc=get_volcano_from_vid("$vid"); print(get_volcano_frames(volc))" | tail -n 1 | sed 's/\,//g' | sed "s/'//g" | sed 's/\[//' | sed 's/\]//'`; do
     echo $frame
-    licsar2licsbas.sh -M 1 -s -g -u -W -T -d -n 4 -G $cliparea $frame
+    licsar2licsbas.sh -M 1 -s -g -u -W -T -d -n 4 -G $cliparea $extra $frame
   done
 exit
 fi
@@ -65,7 +65,7 @@ for subfr in `ls $vidpath`; do
   # 2024/01 - using GAMMA's ADF2 - should be better than goldstein (i hope)
   #echo "licsar2licsbas.sh -M 3 -F -g -u -W -T -d -n 4 " >> $procpath/l2l.sh
   # 2024/01/31 - NOPE! ADF2 is horrible! using smooth, and from unfiltered - best results over Fogo! (or cascade, but that takes too long)
-  echo "licsar2licsbas.sh -M 3 -s -g -u -W -T -d -n 4 " >> $procpath/l2l.sh
+  echo "licsar2licsbas.sh -M 3 -s -g -u -W -T -d -n 4 "$extra >> $procpath/l2l.sh
   chmod 777 $procpath/l2l.sh
   subset_mk_ifgs.sh $extra -s $procpath/l2l.sh $vidpath/$subfr
   # subset_mk_ifgs.sh $extra $vidpath/$subfr
