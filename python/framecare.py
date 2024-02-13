@@ -68,12 +68,18 @@ procdir = os.environ['LiCSAR_procdir']
 
 # bovls solution. Kudos to Muhammet Nergizci, 2023:
 def extract_burst_overlaps(frame, jsonpath=os.getcwd()):
+    bovlfile = os.path.join(jsonpath, frame + '.bovls.geojson')
+    if not os.path.exists(bovlfile):
+        print('extracting burst polygons from LiCSInfo database')
+        gpd_bursts = fc.frame2geopandas(frame, use_s1burst=True)
+        gpd_bursts.to_file(bovlfile, driver='GeoJSON')
+
     # Read GeoJSON data
-    data_temp = gpd.read_file(os.path.join(jsonpath, frame + '.bovls.geojson'))
-    #
+    data_temp = gpd.read_file(bovlfile)
+
     # Change CRS to EPSG:4326
     data_temp = data_temp.to_crs(epsg=4326)
-    #
+
     # Extract subswath information
     if frame.startswith('00'):
         data_temp['swath'] = data_temp.burstID.str[4]
@@ -81,7 +87,7 @@ def extract_burst_overlaps(frame, jsonpath=os.getcwd()):
         data_temp['swath'] = data_temp.burstID.str[5]
     else:
         data_temp['swath'] = data_temp.burstID.str[6]
-    #
+
     # Divide frame into subswaths
     data_temp = data_temp.sort_values(by=['burstID']).reset_index(drop=True)
     gpd_overlaps = None
