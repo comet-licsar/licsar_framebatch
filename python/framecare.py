@@ -1530,6 +1530,8 @@ def get_all_frames(only_initialised = False, merge = False):
             a = frame2geopandas(frame)
             if type(a) != type(None):
                 asc_gpd = asc_gpd.append(a)
+    asc_gpd = asc_gpd.set_geometry('geometry')
+    desc_gpd = desc_gpd.set_geometry('geometry')
     if merge:
         framesgpd = asc_gpd.append(desc_gpd)
         framesgpd = framesgpd.reset_index(drop=True)
@@ -1559,7 +1561,7 @@ def manual_check_master_files(frame, master):
     print("os.system('arch2DB.py -f {} >/dev/null 2>/dev/null'.format(fullpath))")
 
 
-def export_all_frames_to_kmls(kmldirpath = '/gws/nopw/j04/nceo_geohazards_vol1/public/shared/frames/'):
+def export_all_frames_to_kmls(kmldirpath = '/gws/nopw/j04/nceo_geohazards_vol1/public/shared/test/bursts'): #'/gws/nopw/j04/nceo_geohazards_vol1/public/shared/frames/'):
     asc_gpd, desc_gpd = get_all_frames()
     if os.path.exists(os.path.join(kmldirpath,'ascending.kml')):
         os.remove(os.path.join(kmldirpath,'ascending.kml'))
