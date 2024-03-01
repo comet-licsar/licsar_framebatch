@@ -7,6 +7,7 @@ if [ -z $1 ]; then
  echo "by running with the optional parameter 1, it would perform iterative processing to hopefully coregister all SLCs"
  echo "other parameters:"
  echo "-f ..... force override the 180 days gap limitation (that could cause wrong SD estimate)"
+ echo "-F ..... full-force override (not recommended due to azimuth errors)"
  exit; fi
 
 
@@ -18,6 +19,9 @@ while getopts ":f" option; do
   f) force=1;
      #autocont=1;
      extracoregparms='-E';
+     #shift
+     ;;
+  F) extracoregparms='-E';
      #shift
      ;;
  esac
