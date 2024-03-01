@@ -14,7 +14,7 @@ if [ -z $1 ]; then
 force=0
 autocont=0
 extracoregparms=''
-while getopts ":f" option; do
+while getopts ":fF" option; do
  case "${option}" in
   f) force=1;
      #autocont=1;
