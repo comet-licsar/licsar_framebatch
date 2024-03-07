@@ -1610,7 +1610,24 @@ def epoch_has_all_frame_bursts(epoch, frame):
         return False
 
 
+def subset_get_coords_from_sourcecmd(clipcmd):
+    ''' Returns coordinates and resol from clip (subset) sourcecmd.txt file
+
+    :param clipcmd: path to the sourcecmd.txt file
+    :return: minlon, maxlon, minlat, maxlat, resol_deg
+    '''
+    clipstr = grep1line('clip_slc.sh', clipcmd)
+    clipstr = clipstr.split(' ')
+    return float(clipstr[2]), float(clipstr[3]), float(clipstr[4]), float(clipstr[5]), float(clipstr[7])
+
+
 def delete_frame(frame):
+    ''' This will delete given frame from LiCSAR system:
+    - physically all data in LiCSAR_procdir and public
+    - including from frames.csv files
+    - from the LiCSInfo database
+    - from the related subsets (it will check for other possible frames, so better to first generate substitute frame, and then to delete this one)
+    '''
     #print('cannot use this anymore, in CentOS7 - please contact admin to delete frame '+frame)
     #return False
     polyid = lq.get_frame_polyid(frame)[0][0]
@@ -1620,6 +1637,79 @@ def delete_frame(frame):
     #cmd_mysql='mysql -h ..... licsar_batch ' # see lics_mysql.sh
     os.system('setFrameInactive.py {0}'.format(frame))
     track=str(int(frame[0:3]))
+    procdir = os.path.join(os.environ['LiCSAR_procdir'], track, frame)
+    clipdir = os.path.join(procdir, 'subsets')
+    if os.path.exists(clipdir):
+        for clip in os.listdir(clipdir): # TOCHECK
+            try:
+                clipath = os.readlink(os.path.join(clipdir, clip))
+            except:
+                continue
+            try:
+                ## get polygon for the given subset folder
+                clipcmd = os.path.join(clipath, 'sourcecmd.txt')
+                if os.path.exists(clipcmd):
+                    # get the coords
+                    lon1, lon2, lat1, lat2, resol_deg = subset_get_coords_from_sourcecmd(clipcmd)
+                    # get it as polygon
+                    lon1, lon2 = sorted([lon1, lon2])
+                    lat1, lat2 = sorted([lat1, lat2])
+                    lonlats = [(lon1, lat1), (lon1, lat2), (lon2, lat2), (lon2, lat1), (lon1, lat1)]
+                    polygon = Polygon(lonlats)
+                    resol_m = int(round(resol_deg * 111111))
+                    is_volc = False
+                    if clipath.split('/')[-3] == 'volc':
+                        is_volc = True
+                    frames = lq.get_frames_in_polygon(lon1, lon2, lat1, lat2)
+                    frames = lq.sqlout2list(frames)
+                    framesok = []
+                    for fr in frames:
+                        frdir = os.path.join(os.environ['LiCSAR_procdir'], str(int(fr[:3])), fr)
+                        if (int(fr[:3]) in [int(track)-1, int(track), int(track)+1]) and (fr[3] == frame[3]):
+                            if os.path.exists(frdir):
+                                framesok.append(fr)
+                    framesok2 = []
+                    for fr in framesok:
+                        framepoly = lq.get_polygon_from_frame(fr)
+                        if framepoly.contains(polygon):
+                            framesok2.append(fr)
+                    if len(framesok2) == 0:   # this means, no full overlap found, using only partial overlap
+                        framesok2 = framesok
+                    if len(framesok2)>1:
+                        # choose the newer one
+                        framesok2_crdate = []
+                        for fr in framesok2:
+                            frdir = os.path.join(os.environ['LiCSAR_procdir'], str(int(fr[:3])), fr)
+                            try:
+                                mtime = os.path.getmtime(os.path.join(frdir, 'geo', 'EQA.dem'))
+                            except:
+                                mtime = 0
+                            framesok2_crdate.append(mtime)
+                        i = np.array(framesok2_crdate).argmax()
+                        finfr = framesok2[i]
+                        framesok2 = [finfr]
+                    # delete the subset clip
+                    print('deleting subset from '+clipath)
+                    os.system('rm -rf '+clipath)
+                    if os.path.exists(clipath): # can happen due to permissions
+                        os.system('mv '+clipath+' '+clipath+'.backup')
+                    if len(framesok2) == 1:
+                        # found frame to clip!
+                        fr = framesok2[0]
+                        print('initialising subset with the (new) frame '+fr)
+                        subset_initialise_corners(fr, lon1, lon2, lat1, lat2, sid=str(clip), is_volc=is_volc,
+                                                     resol_m=resol_m)
+                    else:
+                        print('no substitute frame found for the subset')
+                # now delete the clipath data
+            except:
+                print('error rearranging subset '+clip)
+            if os.path.exists(clipath):
+                print('deleting subset from ' + clipath)
+                os.system('rm -rf ' + clipath)
+                if os.path.exists(clipath):  # can happen due to permissions
+                    os.system('mv ' + clipath + ' ' + clipath + '.backup')
+    #
     os.system('rm -rf $LiCSAR_procdir/{0}/{1} $LiCSAR_public/{0}/{1}'.format(track,frame))
     os.system("sed -i '/{}/d' /gws/nopw/j04/nceo_geohazards_vol1/public/shared/frames/frames.csv".format(frame))
     os.system("sed -i '/{}/d' /gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/EQ/eqframes.csv".format(frame))
