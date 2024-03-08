@@ -1711,6 +1711,8 @@ def delete_frame(frame):
                     os.system('mv ' + clipath + ' ' + clipath + '.backup')
     #
     os.system('rm -rf $LiCSAR_procdir/{0}/{1} $LiCSAR_public/{0}/{1} $BATCH_CACHE_DIR/{1}'.format(track,frame))
+    os.system('mv $LiCSAR_procdir/{0}/{1} $LiCSAR_procdir/{0}/todel.{1} 2>/dev/null'.format(track, frame))
+    os.system('mv $LiCSAR_public/{0}/{1} $LiCSAR_public/{0}/todel.{1} 2>/dev/null'.format(track, frame))
     os.system("sed -i '/{}/d' /gws/nopw/j04/nceo_geohazards_vol1/public/shared/frames/frames.csv".format(frame))
     os.system("sed -i '/{}/d' /gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/EQ/eqframes.csv".format(frame))
     #polyid = lq.get_frame_polyid(frame)[0][0]
