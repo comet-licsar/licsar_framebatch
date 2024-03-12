@@ -4,6 +4,7 @@ curdir=$LiCSAR_procdir
 SLCdir=$LiCSAR_SLC
 USE_SSH_DOWN=1 #if the wget error is related to SSL blocking, set this to 1 -- however JASMIN prefers to have it always =1 (to use xfer servers for download)
 use_cdse=0 #being used only for the latest data... like.. the current or previous day
+trycdse=0
 CHECKONLY=0
 MAXIMAGES=100 # if more images are requested to download, stop it
 NOCHECKMAX=0
@@ -13,10 +14,11 @@ if [ -z $2 ]; then
  echo "e.g. 007D_05286_131310 2014-10-10"
  echo "optional parameter -c: will do only check if data are ingested in licsar db"
  echo "optional parameter -A: will not check for max number of images to download: max number is "$MAXIMAGES
+ echo "optional temporary parameter -f: will try CDSE when needed. By default use only ASF since CDSE was ultra slow"
  exit
 fi
 
-while getopts ":cA" option; do
+while getopts ":cAf" option; do
  case "${option}" in
   c ) CHECKONLY=1;
       echo "Checking if files are properly ingested to licsar database";
@@ -24,6 +26,10 @@ while getopts ":cA" option; do
       ;;
   A ) NOCHECKMAX=1;
       echo "overriding check for max images";
+      shift
+      ;;
+  f ) trycdse=1;
+      echo "overriding CDSE blocker. Download might take long";
       shift
       ;;
 esac
@@ -39,7 +45,11 @@ if [ ! -z $3 ]; then
  enddate=$3;
  #if [ `date -d $enddate +'%Y%m%d'` -gt `date +'%Y%m%d'` ]; then enddate=`date +'%Y-%m-%d'`; fi
  if [ $enddate == `date +'%Y-%m-%d'` ] || [ `date -d $enddate +'%Y%m%d'` -gt `date +'%Y%m%d'` ] || [ $enddate == `date -d 'tomorrow' +'%Y-%m-%d'` ] || [ $enddate == `date -d 'yesterday' +'%Y-%m-%d'` ]; then
-  if [ -f ~/.cdse_credentials ]; then use_cdse=1; echo "using CDSE"; fi
+  if [ $trycdse == 1 ]; then
+    if [ -f ~/.cdse_credentials ]; then use_cdse=1; echo "using CDSE"; fi
+  else
+    echo "WARNING - issues with CDSE download speed - not using CDSE but WE SHOULD HERE. Temporary solution. To force CDSE, rerun framebatch_data_refill.sh with -f"
+  fi
  fi
 else
  enddate=`date -d 'tomorrow' +'%Y-%m-%d'`;
