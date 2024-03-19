@@ -1620,6 +1620,15 @@ def subset_get_coords_from_sourcecmd(clipcmd):
     clipstr = clipstr.split(' ')
     return float(clipstr[2]), float(clipstr[3]), float(clipstr[4]), float(clipstr[5]), float(clipstr[7])
 
+"""
+def post_init_frame(frame, volc_full_overlap=True):
+    '''additional operations after the frame gets initialised:
+    - find volclips and init them
+    - ...
+    '''
+    print('checking volcanoes in given frame')
+    init_volcs_in_frame(frame, full_overlap=volc_full_overlap)
+"""
 
 def delete_frame(frame):
     ''' This will delete given frame from LiCSAR system:
