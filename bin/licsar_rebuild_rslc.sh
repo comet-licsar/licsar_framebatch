@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ -z $2 ]; then echo "usage: licsar_rebuild_rslc.sh FRAME DATE"; exit; fi
-
+echo "(this script will regenerate RSLC for given epoch date - it will delete existing related data in your BATCHDIR. Use e.g. for RSLCs that have missing bursts)"
 echo "warning, this will delete all files that use the RSLC. cancel me in 5 sec"
 sleep 5
 
