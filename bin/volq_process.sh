@@ -3,7 +3,7 @@
 # this is to process the volcid - ifgs and licsbas
 
 if [ -z $1 ]; then
- echo "Usage e.g.: volq_process.sh [-P] [-l] -i volclip_id (or -n volcname or -v volcID)"
+ echo "Usage e.g.: volq_process.sh [-P] [-l] [-L] -i volclip_id (or -n volcname or -v volcID)"
  #echo "Usage e.g.: subset_mk_ifgs.sh [-P] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
  echo "parameter -P will run through comet queue"
  echo "parameter -L will run in LiCSAR regime (frame processing - update)"
@@ -91,4 +91,12 @@ for subfr in `ls $vidpath`; do
   chmod 777 $procpath/l2l.sh
   subset_mk_ifgs.sh $extra -s $procpath/l2l.sh $vidpath/$subfr
   # subset_mk_ifgs.sh $extra $vidpath/$subfr
+done
+
+
+volcid=`python3 -c "import volcdb; volcdb.get_volcano_from_vid("$vid")" 2>/dev/null`
+mkdir -p $BATCH_CACHE_DIR/subsets/per_volcano/$volcid
+cd $BATCH_CACHE_DIR/subsets/per_volcano/$volcid
+for subfr in `ls $vidpath`; do
+  ln -s $BATCH_CACHE_DIR/subsets/$vid/$subfr;
 done
