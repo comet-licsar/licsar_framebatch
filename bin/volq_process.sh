@@ -6,21 +6,27 @@ if [ -z $1 ]; then
  echo "Usage e.g.: volq_process.sh [-P] [-l] -i volclip_id (or -n volcname or -v volcID)"
  #echo "Usage e.g.: subset_mk_ifgs.sh [-P] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
  echo "parameter -P will run through comet queue"
+ echo "parameter -L will run in LiCSAR regime (frame processing - update)"
+ echo "-- for LiCSBAS regime:"
  echo "parameter -l means to run from lowres"
- echo "----"
+ #echo "----"
  echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frameid directory"
+ echo "---"
  #echo "NOTE: if you use ifgs.list, please provide FULL PATH. Also note, the ifgs.list should contain pairs in the form of e.g.:"
  #echo "20180101_20180303"
  exit
 fi
 
 extra=''
+regime='licsbas'
 lowres=0
-while getopts ":PRln:i:v:" option; do
+while getopts ":PRlLn:i:v:" option; do
  case "${option}" in
   P) extra='-P ';
      ;;
   i ) vid=$OPTARG;
+     ;;
+  L ) regime='licsar';
      ;;
   n ) vid=`python3 -c "import volcdb; volcid=int(volcdb.find_volcano_by_name('"$OPTARG"').volc_id); print(volcdb.get_volclip_vids(volcid)[0])" | tail -n 1`;
      ;;
@@ -40,6 +46,20 @@ else
  exit
 fi
 #if [ -z $1 ]; then echo "please check provided parameters"; exit; fi
+
+if [ $regime == 'licsar' ]; then
+  tempfile=$BATCH_CACHE_DIR/$vid.frames
+  python3 -c "import volcdb; vid="$vid"; volcid=volcdb.get_volcano_from_vid(vid); print(volcdb.get_volcano_frames(volcid))"> $tempfile
+  for x in `grep '\[' $tempfile | sed "s/'//g" | sed 's/\[//' | sed 's/\]//' | sed 's/\,//'`; do
+     echo "running background process for frame "$frame
+     nohup framebatch_update_frame.sh -u $extra $x upfill > $tempfile.log.$x &
+     sleep 15
+  done
+  rm $tempfile 2>/dev/null
+  exit
+fi
+
+# if regime is not licsar, it is licsbas regime.. continuing
 
 if [ $lowres == 1 ]; then
   echo "running for lowres only"

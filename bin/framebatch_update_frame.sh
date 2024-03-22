@@ -5,12 +5,14 @@ PROCESSING=1
 tillnow=0
 #tolerance of days to either only autodownload or use nla + waiting
 DAYSTOLERANCE=61
+extra=""
 #DAYSTOLERANCE=961
 #STORE_AND_DELETE=1
 if [ -z $2 ]; then echo "parameters are frame and code (code is either upfill or backfill.. or gapfill)"; 
     echo "running with parameter -k means Keep the frame in BATCH_CACHE_DIR (not store it automatically to the public dir)";
     echo "parameter -u would process upfilling till today"
     echo "parameter -P will run through comet queue"
+    #echo "parameter -N will run licsar_make_frame with -N (process only if newer data exists)" # we will have it on by default for upfill
     #echo "hidden params: -E, -R"
     exit; fi
 
@@ -25,9 +27,9 @@ while getopts ":kEuPR" option; do
      ;;
   u) tillnow=1;
      ;;
-  P) extra='-P';
+  P) extra=$extra' -P';
      ;;
-  R) extra='-R';
+  R) extra=$extra' -R';
  esac
 done
 #shift
@@ -35,6 +37,7 @@ shift $((OPTIND -1))
 
 frame=$1
 code=$2
+if [ $code == 'upfill' ]; then extra=$extra' -N'; fi
 #if [ ! -z $2 ]; then PROCESSING=0; fi
 maxwaithours=168
 batchesdir='/gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current/batches'
