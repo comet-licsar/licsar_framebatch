@@ -1718,13 +1718,17 @@ def delete_frame(frame):
                 os.system('rm -rf ' + clipath)
                 if os.path.exists(clipath):  # can happen due to permissions
                     os.system('mv ' + clipath + ' ' + clipath + '.backup')
-    #
-    os.system('rm -rf $LiCSAR_procdir/{0}/{1} $LiCSAR_public/{0}/{1} $BATCH_CACHE_DIR/{1}'.format(track,frame))
-    os.system('echo {0} >> /gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/volc-portal/processing_scripts/excluded_frames/excluded_frames_extras'.format(frame))
-    os.system('mv $LiCSAR_procdir/{0}/{1} $LiCSAR_procdir/{0}/todel.{1} 2>/dev/null'.format(track, frame))
-    os.system('mv $LiCSAR_public/{0}/{1} $LiCSAR_public/{0}/todel.{1} 2>/dev/null'.format(track, frame))
-    os.system("sed -i '/{}/d' /gws/nopw/j04/nceo_geohazards_vol1/public/shared/frames/frames.csv".format(frame))
-    os.system("sed -i '/{}/d' /gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/EQ/eqframes.csv".format(frame))
+    else:
+        print('no subsets for this frame')
+    if os.path.exists(procdir):
+        os.system('rm -rf $LiCSAR_procdir/{0}/{1} $LiCSAR_public/{0}/{1} $BATCH_CACHE_DIR/{1}'.format(track,frame))
+        os.system('echo {0} >> /gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/volc-portal/processing_scripts/excluded_frames/excluded_frames_extras'.format(frame))
+        os.system('mv $LiCSAR_procdir/{0}/{1} $LiCSAR_procdir/{0}/todel.{1} 2>/dev/null'.format(track, frame))
+        os.system('mv $LiCSAR_public/{0}/{1} $LiCSAR_public/{0}/todel.{1} 2>/dev/null'.format(track, frame))
+        os.system("sed -i '/{}/d' /gws/nopw/j04/nceo_geohazards_vol1/public/shared/frames/frames.csv".format(frame))
+        os.system("sed -i '/{}/d' /gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/EQ/eqframes.csv".format(frame))
+    else:
+        print('this frame was probably not initialised. Deleting only from database')
     #polyid = lq.get_frame_polyid(frame)[0][0]
     sql = "delete from licsar_batch.polygs2master where polyid={};".format(polyid)
     rc = lq.do_query(sql, 1)
