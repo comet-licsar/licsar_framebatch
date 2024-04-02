@@ -94,7 +94,7 @@ for subfr in `ls $vidpath`; do
 done
 
 
-volcid=`python3 -c "import volcdb; volcdb.get_volcano_from_vid("$vid")" 2>/dev/null`
+volcid=`python3 -c "import volcdb; volcdb.get_volcano_from_vid("$vid")" 2>/dev/null | tail -n 1`
 mkdir -p $BATCH_CACHE_DIR/subsets/per_volcano/$volcid
 cd $BATCH_CACHE_DIR/subsets/per_volcano/$volcid
 for subfr in `ls $vidpath`; do
