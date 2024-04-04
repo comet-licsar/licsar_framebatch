@@ -4,7 +4,7 @@ curdir=$LiCSAR_procdir
 SLCdir=$LiCSAR_SLC
 USE_SSH_DOWN=1 #if the wget error is related to SSL blocking, set this to 1 -- however JASMIN prefers to have it always =1 (to use xfer servers for download)
 use_cdse=0 #being used only for the latest data... like.. the current or previous day
-trycdse=0
+trycdse=1 # back on by default now
 CHECKONLY=0
 MAXIMAGES=100 # if more images are requested to download, stop it
 NOCHECKMAX=0
