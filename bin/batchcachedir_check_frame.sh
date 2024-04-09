@@ -10,7 +10,7 @@ if [ `pwd` == $LiCSAR_public ]; then echo "NO.."; exit; fi
 if [ `pwd` == $LiCSAR_procdir ]; then echo "NO.."; exit; fi
 # we may have files deleted in scratch...
 if [ -d $frame/geo ]; then
- if [ -z `ls $frame/geo` ]; then echo "empty frame, deleting"; rm -rf $frame; exit; fi
+ if [ `ls $frame/geo | wc -l` == 0 ]; then echo "empty frame, deleting"; rm -rf $frame; exit; fi
 else
  echo "no data, cancel"
  exit
