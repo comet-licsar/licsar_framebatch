@@ -530,4 +530,9 @@ if [ `ls -al $list_added | gawk {'print $5'}` == 0 ]; then
 fi
 rm $list_added'.lock'
 
+# exceptions
+if [ $frame == '140D_SM_FGBR_S4' ]; then
+  echo "exception - checking the geocoding if ok - epochs and GACOS might be still bad.. to improve"
+  fix_geocoding_frame.sh 140D_SM_FGBR_S4
+fi
 echo "done"
