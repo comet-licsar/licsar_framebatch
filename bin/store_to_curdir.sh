@@ -522,6 +522,7 @@ fi
 if [ $DOGACOS -eq 1 ]; then
  echo "requesting GACOS data " #"- in the background, please run in tmux or keep session alive for HOURS"
  framebatch_update_gacos.sh $frame # >/dev/null 2>/dev/null &
+ DOLONGRAMPS=1
 fi
 
 # deleting log file lock and empty log file
