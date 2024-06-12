@@ -540,7 +540,7 @@ fi
 # SET and ionosphere
 if [ $DOLONGRAMPS -eq 1 ]; then
  echo "additionally, extracting extra terms for correction (SET and IONO)"
- python3 -c "from iono_corr import *; make_all_frame_epochs('"$frame"')"
+ python3 -c "from iono_correct import *; make_all_frame_epochs('"$frame"')"
  # and now SET (bigger files.. unfortunately)
  create_LOS_tide_frame_allepochs $frame
 fi
