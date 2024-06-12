@@ -69,6 +69,7 @@ GEOC_OVERWRITE=0
 IFG_OVERWRITE=0
 DELETEAFTER=0
 DELETESLCS=0
+DOLONGRAMPS=1
 QUALCHECK=0
 store_logs=1 #for autodelete only
 updated=0
@@ -534,5 +535,13 @@ rm $list_added'.lock'
 if [ $frame == '140D_SM_FGBR_S4' ]; then
   echo "exception - checking the geocoding if ok - epochs and GACOS might be still bad.. to improve"
   fix_geocoding_frame.sh 140D_SM_FGBR_S4
+fi
+
+# SET and ionosphere
+if [ $DOLONGRAMPS -eq 1 ]; then
+ echo "additionally, extracting extra terms for correction (SET and IONO)"
+ python3 -c "from iono_corr import *; make_all_frame_epochs('"$frame"')"
+ # and now SET (bigger files.. unfortunately)
+ create_LOS_tide_frame_allepochs $frame
 fi
 echo "done"
