@@ -788,14 +788,34 @@ def get_bidtanxs_from_xy_file(intxt, relorb = None):
     return bidtanxs
 
 
-def make_bperp_file(frame, bperp_file):
-    """Creates baselines file for given frame, by requesting info from ASF"""
+def make_bperp_file(frame, bperp_file, donotstore = False):
+    """Creates baselines file for given frame, by requesting info from ASF
+    """
+    #if preload_if_exists: try preloading and then just filling missing dates"""
+    #if preload_if_exists:
+    #    try:
+    #        prevbp = pd.read_csv(bperp_file, header=None, sep = ' ')
+    #        prevbp.columns = ['ref_date', 'date', 'bperp', 'btemp']
+    #        
     mid = get_master(frame, asfilenames = True)
     if not mid:
         return False
-    mid=mid[0].split('.')[0]
-    bpd = s1.get_bperps_asf(mid)
-    bpd.to_csv(bperp_file, sep = ' ', index = False, header = False)
+    bpd = False
+    for midf in mid:
+        midf=midf.split('.')[0]
+        bpd1 = s1.get_bperps_asf(midf)
+        if type(bpd) == type(False):
+            bpd = bpd1
+        else:
+            try:
+                bpd = pd.concat([bpd, bpd1]).reset_index(drop=True)
+                bpd = bpd.drop_duplicates()
+            except:
+                pass
+    if not donotstore:
+        bpd.to_csv(bperp_file, sep = ' ', index = False, header = False)
+    else:
+        return bpd
 
 
 def get_master(frame, asfilenames = False, asdate = False, asdatetime = False, metafile = None):
