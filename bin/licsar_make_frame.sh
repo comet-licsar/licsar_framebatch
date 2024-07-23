@@ -36,6 +36,7 @@ fi
 #export BATCH_CACHE_DIR=/work/scratch-nopw/licsar/earmla
 source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 
+revisittime=12 # for S1A-only period
 sensorgapfill=''
 NORUN=0
 neodc_check=0
@@ -118,8 +119,6 @@ if [ ! -d $LiCSAR_temp ]; then mkdir -p $LiCSAR_temp; fi
 
 #if [ ! -d /work/scratch/licsar/$USER ]; then mkdir /work/scratch/licsar/$USER; fi
 
-basefolder=$BATCH_CACHE_DIR
-echo 'Processing in your BATCH_CACHE_DIR that is '$BATCH_CACHE_DIR
 
 #echo "DEBUG - COMET QUEUE IS NOW DOWN (2023-11-06). Setting to only standard queue"
 #prioritise=0
@@ -127,6 +126,20 @@ echo 'Processing in your BATCH_CACHE_DIR that is '$BATCH_CACHE_DIR
 
 #startup variables
 frame=$1
+
+# priority check for the possibly new data
+if [ $only_new_rslc -gt 0 ]; then
+if [ `get_frame_days_since_last_done_epoch $frame` -lt $revisittime ]; then
+  echo "the frame "$frame" is fully up-to-date. Skipping"; exit
+fi
+fi
+
+
+
+basefolder=$BATCH_CACHE_DIR
+echo 'Processing in your BATCH_CACHE_DIR that is '$BATCH_CACHE_DIR
+
+
 if [ -f $BATCH_CACHE_DIR/$frame/lmf_locked ]; then echo "the frame is locked - cancelling (delete lmf_locked file)"; exit; fi
 if [ `echo $frame | cut -d '_' -f2` == "SM" ]; then SM=1; echo "processing stripmap frame - WARNING, EXPERIMENTAL FEATURE"; else SM=0; fi
 track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
