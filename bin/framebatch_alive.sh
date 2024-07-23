@@ -3,7 +3,7 @@
 inputfile=$1
 #onlyPOD should be 1 for 21 days delay or 0 for having up-to-today updates (using restituted orbits)
 onlyPOD=$2
-forcee=0
+forcee='-f' # set to '' if we don't want to force-process
 
 totalno=`wc -l $inputfile | gawk {'print $1'}`
 echo "there are "$totalno" frames to update"
