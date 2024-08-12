@@ -66,6 +66,76 @@ procdir = os.environ['LiCSAR_procdir']
 #fc.subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid)
 
 
+
+
+# estimation of bperp based on overlapping burst ID:
+from orbit_lib import *
+try:
+    import nvector as nv
+except:
+    print('warning, nvector not loaded - bperp estimation will not work')
+
+
+def get_first_common_time(frame, date):
+    ''' ML 2024 - sorry for short description
+    this will get first time acquired in both frame and first file related to the given frame epoch. For bperp calculation..
+    date=dt.datetime.strptime(date,'%Y%m%d').date()
+    '''
+    epochfile1 = get_frame_files_date(frame,date)[0][1]
+    s1ab = epochfile1.split('_')[0]
+    epochstart = get_time_of_file(epochfile1)
+    epochbursts = sqlout2list(get_bursts_in_file(epochfile1))
+    epochbursts.sort()
+    epochfirstburst = epochbursts[0]
+    framebursts = sqlout2list(get_bidtanxs_in_frame(frame))
+    framebursts.sort()
+    for e in epochbursts:
+        if e in framebursts:
+            break
+    commonburst = e
+    diffinseconds = (int(commonburst.split('_')[-1])-int(epochfirstburst.split('_')[-1]))*0.1 + 2.75/2  # adding half of the burst time as will work with central common point
+    epochcommontime = epochstart+dt.timedelta(seconds=diffinseconds)
+    # but need to get also avg range, so:
+    polyy=get_polygon_from_bidtanx(commonburst)
+    commonpoint = nv.GeoPoint(longitude=polyy.centroid.x, latitude=polyy.centroid.y)
+    return commonburst, epochcommontime, s1ab, commonpoint
+
+
+def get_bperp_estimates(frame, epochs = None):
+    ''' ML 2024 - sorry for short description
+    epochs should be a list, like.. epochs = ['20141122']
+    if none, we will get all epochs
+    in any case, returning both epochs and bperps
+    '''
+    print('WARNING - not complete yet .. for some reason gives too bad estimates')
+    if type(epochs) == type(None):
+        print('getting all epochs for the frame '+frame)
+        epochs = get_epochs(frame)
+    primepoch = get_master(frame, asdate = True)
+    pb, pt, ps1ab, pcp = get_first_common_time(frame, primepoch)
+    porbit = get_orbit_filenames_for_datetime(pt, producttype='POEORB',s1ab=ps1ab)[-1]
+    porbitxr = load_eof(porbit)
+    ploc = get_coords_in_time(porbitxr, pt, method='cubic', return_as_nv = True)
+    bperps = []
+    for e in epochs:
+        eb, et, es1ab, ecp = get_first_common_time(frame, dt.datetime.strptime(e,'%Y%m%d').date())
+        epdbt = (int(eb.split('_')[-1])-int(pb.split('_')[-1]))*0.1
+        primetime, epochtime = pt+dt.timedelta(seconds=epdbt), et
+        eorbit = get_orbit_filenames_for_datetime(et, producttype='POEORB',s1ab=es1ab)[-1]
+        eorbitxr = load_eof(eorbit)
+        #
+        ploc = get_coords_in_time(porbitxr, primetime, method='cubic', return_as_nv = True)
+        eloc = get_coords_in_time(eorbitxr, epochtime, method='cubic', return_as_nv = True)
+        # following http://doris.tudelft.nl/usermanual/node182.html  :
+        B = nv.diff_positions(ploc, eloc).length
+        #Bpar = ploc.z - eloc.z   # but Bpar is w.r.t. range to surface (need inc angle)
+        Bpar = nv.diff_positions(ploc, ecp).length - nv.diff_positions(eloc, ecp).length
+        Bperp = np.sqrt(B*B - Bpar*Bpar)   # ok, but for the sign i need to get slant range etc.
+        bperps.append(Bperp)
+    return epochs, bperps
+
+
+
 # bovls solution. Kudos to Muhammet Nergizci, 2023:
 def extract_burst_overlaps(frame, jsonpath=os.getcwd()):
     bovlfile = os.path.join(jsonpath, frame + '.bovls.geojson')
