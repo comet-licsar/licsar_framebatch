@@ -97,7 +97,7 @@ def get_first_common_time(frame, date):
     epochcommontime = epochstart+dt.timedelta(seconds=diffinseconds)
     # but need to get also avg range, so:
     polyy=get_polygon_from_bidtanx(commonburst)
-    commonpoint = nv.GeoPoint(longitude=polyy.centroid.x, latitude=polyy.centroid.y)
+    commonpoint = nv.GeoPoint(longitude=polyy.centroid.x, latitude=polyy.centroid.y, degrees=True)
     return commonburst, epochcommontime, s1ab, commonpoint
 
 
@@ -129,7 +129,17 @@ def get_bperp_estimates(frame, epochs = None):
         # following http://doris.tudelft.nl/usermanual/node182.html  :
         B = nv.diff_positions(ploc, eloc).length
         #Bpar = ploc.z - eloc.z   # but Bpar is w.r.t. range to surface (need inc angle)
-        Bpar = nv.diff_positions(ploc, ecp).length - nv.diff_positions(eloc, ecp).length
+        #Bpar = nv.diff_positions(ploc, ecp).length - nv.diff_positions(eloc, ecp).length  # still not the proper geometry
+        # actually could have used this - more correct is below - but the diff was very small (0.1 m)
+        aa = nv.diff_positions(eloc, ecp).length
+        cc = nv.diff_positions(ploc, ecp).length
+        a = 2
+        b = -2*cc
+        c = cc*cc - aa*aa - B*B
+        D = b*b - 4*a*c
+        x1 = (-b+np.sqrt(D))/(2*a)
+        x2 = (-b-np.sqrt(D))/(2*a)
+        Bpar = np.min([x1,x2])
         Bperp = np.sqrt(B*B - Bpar*Bpar)   # ok, but for the sign i need to get slant range etc.
         bperps.append(Bperp)
     return epochs, bperps
