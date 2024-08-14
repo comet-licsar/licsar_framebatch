@@ -127,12 +127,12 @@ def get_bperp_estimates(frame, epochs = None):
         ploc = get_coords_in_time(porbitxr, primetime, method='cubic', return_as_nv = True)
         eloc = get_coords_in_time(eorbitxr, epochtime, method='cubic', return_as_nv = True)
         # following http://doris.tudelft.nl/usermanual/node182.html  :
-        B = nv.diff_positions(ploc, eloc).length
+        B = nv.delta_E(ploc, eloc).length
         #Bpar = ploc.z - eloc.z   # but Bpar is w.r.t. range to surface (need inc angle)
         #Bpar = nv.diff_positions(ploc, ecp).length - nv.diff_positions(eloc, ecp).length  # still not the proper geometry
         # actually could have used this - more correct is below - but the diff was very small (0.1 m)
-        aa = nv.diff_positions(eloc, ecp).length
-        cc = nv.diff_positions(ploc, ecp).length
+        aa = nv.delta_E(eloc, ecp).length
+        cc = nv.delta_E(ploc, ecp).length
         a = 2
         b = -2*cc
         c = cc*cc - aa*aa - B*B
