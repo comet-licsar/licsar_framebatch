@@ -99,6 +99,13 @@ if [ ! -d $pubDir_meta ]; then
  exit
 fi
 
+# check if this was not any previously reinitialised frame
+if [ -f $frame/geo/offsets ]; then
+if [ `diff $frameDir/geo/offsets $frame/geo/offsets | wc -l ` -gt 0 ]; then
+   echo "The frame has been reinitialised and your data are obsolete now - skipping store command, please contact earmla"; exit;
+fi
+fi
+
 mkdir $pubDir_ifgs 2>/dev/null
 
 if [ $QUALCHECK -eq 1 ]; then
