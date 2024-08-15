@@ -3,13 +3,13 @@
 # this is to process the volcid - ifgs and licsbas
 
 if [ -z $1 ]; then
- echo "Usage e.g.: volq_process.sh [-M 1] [-P] [-l] [-L] -i volclip_id (or -n volcname or -v volcID)"
+ echo "Usage e.g.: volq_process.sh [-M 3] [-P] [-l] [-L] -i volclip_id (or -n volcname or -v volcID)"
  #echo "Usage e.g.: subset_mk_ifgs.sh [-P] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
  echo "parameter -P will run through comet queue"
  echo "parameter -L will run in LiCSAR regime (frame processing - update)"
  echo "-- for LiCSBAS regime:"
  echo "parameter -l means to run from lowres"
- echo "parameter -M X means target multilook factor (only for hires regime)"
+ echo "parameter -M X means target multilook factor (only for hires regime - by default -M 3)"
  #echo "----"
  echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frameid directory"
  echo "---"
@@ -21,7 +21,7 @@ fi
 extra=''
 regime='licsbas'
 lowres=0
-ml=1
+ml=3
 while getopts ":PRlLn:i:M:v:" option; do
  case "${option}" in
   P) extra='-P ';
