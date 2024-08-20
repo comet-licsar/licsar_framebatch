@@ -167,7 +167,7 @@ def estimate_bperps(frame='002A_05136_020502', epochs=['20150202'], return_epoch
             dtime_sec = ptime.timestamp() - primepochdt.timestamp()
             #
             # add this difference to the given epoch (convert it to the central time)
-            central_etime = etime + pd.Timedelta(seconds=dptime_sec)
+            central_etime = etime + pd.Timedelta(seconds=dtime_sec)
             central_etimes.append(central_etime)
         if return_epochsdt:
             return Bperps, central_etimes
