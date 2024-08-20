@@ -924,6 +924,32 @@ def make_bperp_file(frame, bperp_file, asfonly = False, donotstore = False):
                 bpd = bpd.drop_duplicates()
             except:
                 pass
+    # clean it
+    torem = bpd[bpd.bperp == 0]
+    torem = torem[torem.btemp != 0]
+    bpd = bpd.drop(torem.index)
+    #
+    if not asfonly:
+        # get missing epochs:
+        allepochs = get_epochs(frame)
+        missingepochs = []
+        for e in allepochs:
+            if e not in bpd.date:
+                missingepochs.append(e)
+        if missingepochs:
+            print('ASF missed '+str(len(missingepochs))+' epochs for Bperp estimation. Using a bit coarser but still POD-based approach')
+            bperps = estimate_bperps(frame, missingepochs, return_epochsdt=False)
+            mdates = []
+            btemps = []
+            m = get_master(frame)
+            for e in missingepochs:
+                mdates.append(m)
+                btemps.append(datediff(m, e))   # function from LiCSAR_misc
+            pdict = {'ref_date': mdates, 'date': missingepochs, 'bperp': bperps, 'btemp': btemps}
+            bpd2 = pd.DataFrame(pdict)
+            bpd = pd.concat([bpd, bpd2]).reset_index(drop=True)
+            bpd = bpd.sort_values('btemp').reset_index(drop=True)
+    #
     if not donotstore:
         bpd.to_csv(bperp_file, sep = ' ', index = False, header = False)
     else:
