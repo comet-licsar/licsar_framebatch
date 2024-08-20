@@ -898,8 +898,10 @@ def get_bidtanxs_from_xy_file(intxt, relorb = None):
     return bidtanxs
 
 
-def make_bperp_file(frame, bperp_file, donotstore = False):
-    """Creates baselines file for given frame, by requesting info from ASF
+def make_bperp_file(frame, bperp_file, asfonly = False, donotstore = False):
+    """Creates baselines file for given frame, by requesting info from ASF,
+    and (new in 2024/08, as ASF has too many gaps over winters in N hemisphere - ML),
+    if missing, estimate them directly from frame data
     """
     #if preload_if_exists: try preloading and then just filling missing dates"""
     #if preload_if_exists:
