@@ -26,6 +26,12 @@ except:
     print('WARNING: cannot load KML support')
 
 import rioxarray
+# for estimation of bperp based on overlapping burst ID:
+from orbit_lib import *
+try:
+    import nvector as nv
+except:
+    print('warning, nvector not loaded - bperp estimation will not work')
 
 pubdir = os.environ['LiCSAR_public']
 procdir = os.environ['LiCSAR_procdir']
@@ -68,14 +74,6 @@ procdir = os.environ['LiCSAR_procdir']
 
 
 
-# estimation of bperp based on overlapping burst ID:
-from orbit_lib import *
-try:
-    import nvector as nv
-except:
-    print('warning, nvector not loaded - bperp estimation will not work')
-
-
 def get_first_common_time(frame, date):
     ''' ML 2024 - sorry for short description
     this will get first time acquired in both frame and first file related to the given frame epoch. For bperp calculation..
@@ -101,48 +99,80 @@ def get_first_common_time(frame, date):
     return commonburst, epochcommontime, s1ab, commonpoint
 
 
-def get_bperp_estimates(frame, epochs = None):
-    ''' ML 2024 - sorry for short description
-    epochs should be a list, like.. epochs = ['20141122']
-    if none, we will get all epochs
-    in any case, returning both epochs and bperps
+def estimate_bperps(frame='002A_05136_020502', epochs=['20150202'], return_epochsdt=True):
+    ''' Estimate Bperps based on orbit files. Working for LiCSAR frames (thanks to the burst database information).
+    If epochs is None, it will estimate this for all processed frame epochs.
+    if return_epochsdt, it will return also central time for each epoch.
+    I enjoyed this. ML
     '''
-    print('WARNING - not complete yet .. for some reason gives too bad estimates')
     if type(epochs) == type(None):
-        print('getting all epochs for the frame '+frame)
+        print('getting all epochs for the frame ' + frame)
         epochs = get_epochs(frame)
-    primepoch = get_master(frame, asdate = True)
-    pb, pt, ps1ab, pcp = get_first_common_time(frame, primepoch)
-    porbit = get_orbit_filenames_for_datetime(pt, producttype='POEORB',s1ab=ps1ab)[-1]
+    # Getting base data for prime epoch
+    primepochdt = get_master(frame,
+                             asdatetime=True)  # this dt is center time of the frame - will use it to get tdelta, so we can have quite accurate center time for given epoch
+    pb, pt, ps1ab, pcp = get_first_common_time(frame, primepochdt.date())
+    porbit = get_orbit_filenames_for_datetime(pt, producttype='POEORB', s1ab=ps1ab)[-1]
     porbitxr = load_eof(porbit)
-    ploc = get_coords_in_time(porbitxr, pt, method='cubic', return_as_nv = True)
-    bperps = []
+    H = getHeading(porbitxr, pt, spacing=1)
+    # ploc = get_coords_in_time(porbitxr, pt, method='cubic', return_as_nv = True)
+    #
+    Bperps = []
+    central_etimes = []
+    # Do this for every epoch:
+    # e = epochs[0]
     for e in epochs:
-        eb, et, es1ab, ecp = get_first_common_time(frame, dt.datetime.strptime(e,'%Y%m%d').date())
-        epdbt = (int(eb.split('_')[-1])-int(pb.split('_')[-1]))*0.1
-        primetime, epochtime = pt+dt.timedelta(seconds=epdbt), et
-        eorbit = get_orbit_filenames_for_datetime(et, producttype='POEORB',s1ab=es1ab)[-1]
+        ## first get base data for that epoch
+        eb, et, es1ab, ecp = get_first_common_time(frame, dt.datetime.strptime(e, '%Y%m%d').date())
+        epdbt = (int(eb.split('_')[-1]) - int(
+            pb.split('_')[-1])) * 0.1  # difference in seconds from first prime (frame) burst. Coarse info!
+        primetime, epochtime = pt + dt.timedelta(seconds=epdbt), et  # both are coarse estimates
+        eorbit = get_orbit_filenames_for_datetime(et, producttype='POEORB', s1ab=es1ab)[-1]
         eorbitxr = load_eof(eorbit)
         #
-        ploc = get_coords_in_time(porbitxr, primetime, method='cubic', return_as_nv = True)
-        eloc = get_coords_in_time(eorbitxr, epochtime, method='cubic', return_as_nv = True)
-        # following http://doris.tudelft.nl/usermanual/node182.html  :
+        # get real ploc (prime epoch sat location when observing mid-burst)
+        # satalt = get_sat_altitude_above_point(latlon_sat[0], latlon_sat[1], porbitxr, pt)
+        ploc, ptime = get_satpos_observing_point(porbitxr, ecp,
+                                                 primetime)  # nv.GeoPoint(latitude = latlon_sat[0], longitude=latlon_sat[1], z=satalt)
+        #
+        # same for epochtime
+        # eloc = get_coords_in_time(eorbitxr, epochtime, method='cubic', return_as_nv = True)
+        eloc, etime = get_satpos_observing_point(eorbitxr, ecp, epochtime)
+        # print(eloc, etime)
+        #
+        # calculate Bperp (based on doris manual, and some own thinking)
         B = nv.delta_E(ploc, eloc).length
-        #Bpar = ploc.z - eloc.z   # but Bpar is w.r.t. range to surface (need inc angle)
-        #Bpar = nv.diff_positions(ploc, ecp).length - nv.diff_positions(eloc, ecp).length  # still not the proper geometry
+        # Bpar = ploc.z - eloc.z   # but Bpar is w.r.t. range to surface (need inc angle)
+        # Bpar = nv.diff_positions(ploc, ecp).length - nv.diff_positions(eloc, ecp).length  # still not the proper geometry
         # actually could have used this - more correct is below - but the diff was very small (0.1 m)
         aa = nv.delta_E(eloc, ecp).length
         cc = nv.delta_E(ploc, ecp).length
         a = 2
-        b = -2*cc
-        c = cc*cc - aa*aa - B*B
-        D = b*b - 4*a*c
-        x1 = (-b+np.sqrt(D))/(2*a)
-        x2 = (-b-np.sqrt(D))/(2*a)
-        Bpar = np.min([x1,x2])
-        Bperp = np.sqrt(B*B - Bpar*Bpar)   # ok, but for the sign i need to get slant range etc.
-        bperps.append(Bperp)
-    return epochs, bperps
+        b = -2 * cc
+        c = cc * cc - aa * aa - B * B
+        D = b * b - 4 * a * c
+        x1 = (-b + np.sqrt(D)) / (2 * a)
+        x2 = (-b - np.sqrt(D)) / (2 * a)
+        Bpar = np.min(np.abs([x1, x2]))  # that's fine as we need only abs value..
+        Bperp = np.sqrt(B * B - Bpar * Bpar)
+        #
+        # get sign.. should investigate alpha-H-90 for right looking sat, thus cosinus
+        alpha = ploc.distance_and_azimuth(eloc, long_unroll=True, degrees=True)[1]
+        Bperpsign = -1 * np.sign(np.cos(np.deg2rad(alpha - H)))  # check sign - OK
+        #
+        Bperp = np.int8(Bperpsign * Bperp)
+        Bperps.append(Bperp)
+        if return_epochsdt:
+            # get the diff from the central time of prime epoch
+            dtime_sec = ptime.timestamp() - primepochdt.timestamp()
+            #
+            # add this difference to the given epoch (convert it to the central time)
+            central_etime = etime + pd.Timedelta(seconds=dptime_sec)
+            central_etimes.append(central_etime)
+        if return_epochsdt:
+            return Bperps, central_etimes
+        else:
+            return Bperps
 
 
 
