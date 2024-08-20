@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import LiCSAR_lib.LiCSAR_misc as misc
 import s1data as s1
 import numpy as np
+import time
 
 try:
     #gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
@@ -105,9 +106,11 @@ def estimate_bperps(frame='002A_05136_020502', epochs=['20150202'], return_epoch
     if return_epochsdt, it will return also central time for each epoch.
     I enjoyed this. ML
     '''
+    start = time.time()
     if type(epochs) == type(None):
         print('getting all epochs for the frame ' + frame)
         epochs = get_epochs(frame)
+    print('estimating Bperp for '+str(len(epochs))+' epochs.')
     # Getting base data for prime epoch
     primepochdt = get_master(frame,
                              asdatetime=True)  # this dt is center time of the frame - will use it to get tdelta, so we can have quite accurate center time for given epoch
@@ -169,10 +172,15 @@ def estimate_bperps(frame='002A_05136_020502', epochs=['20150202'], return_epoch
             # add this difference to the given epoch (convert it to the central time)
             central_etime = etime + pd.Timedelta(seconds=dtime_sec)
             central_etimes.append(central_etime)
-        if return_epochsdt:
-            return Bperps, central_etimes
-        else:
-            return Bperps
+    elapsed_time = time.time() - start
+    hour = int(elapsed_time / 3600)
+    minite = int(np.mod((elapsed_time / 60), 60))
+    sec = int(np.mod(elapsed_time, 60))
+    print("\nElapsed time: {0:02}h {1:02}m {2:02}s".format(hour, minite, sec))
+    if return_epochsdt:
+        return Bperps, central_etimes
+    else:
+        return Bperps
 
 
 
