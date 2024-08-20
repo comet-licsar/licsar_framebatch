@@ -100,11 +100,14 @@ def get_first_common_time(frame, date):
     return commonburst, epochcommontime, s1ab, commonpoint
 
 
-def estimate_bperps(frame='002A_05136_020502', epochs=['20150202'], return_epochsdt=True):
+def estimate_bperps(frame, epochs = None, return_epochsdt=True):
     ''' Estimate Bperps based on orbit files. Working for LiCSAR frames (thanks to the burst database information).
-    If epochs is None, it will estimate this for all processed frame epochs.
+    Epochs is list as e.g. ['20150202',...]. If epochs is None, it will estimate this for all processed frame epochs.
     if return_epochsdt, it will return also central time for each epoch.
     I enjoyed this. ML
+
+    e.g. estimate_bperps(frame='002A_05136_020502', epochs=['20150202'], return_epochsdt=True)
+    Note: ETA of processing time is about s/epoch
     '''
     start = time.time()
     if type(epochs) == type(None):
@@ -130,7 +133,17 @@ def estimate_bperps(frame='002A_05136_020502', epochs=['20150202'], return_epoch
         epdbt = (int(eb.split('_')[-1]) - int(
             pb.split('_')[-1])) * 0.1  # difference in seconds from first prime (frame) burst. Coarse info!
         primetime, epochtime = pt + dt.timedelta(seconds=epdbt), et  # both are coarse estimates
-        eorbit = get_orbit_filenames_for_datetime(et, producttype='POEORB', s1ab=es1ab)[-1]
+        try:
+            eorbit = get_orbit_filenames_for_datetime(et, producttype='POEORB', s1ab=es1ab)[-1]
+        except:
+            print('ERROR getting orbit files for epoch '+e+'. Trying RESORBs.')
+            try:
+                eorbit = get_orbit_filenames_for_datetime(et, producttype='RESORB', s1ab=es1ab)[-1]
+            except:
+                print('... this also did not work. Skipping')
+                Bperps.append(0)
+                central_etimes.append(np.nan)
+                continue
         eorbitxr = load_eof(eorbit)
         #
         # get real ploc (prime epoch sat location when observing mid-burst)
