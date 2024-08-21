@@ -107,13 +107,13 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True):
     I enjoyed this. ML
 
     e.g. estimate_bperps(frame='002A_05136_020502', epochs=['20150202'], return_epochsdt=True)
-    Note: ETA of processing time is about s/epoch
+    Note: ETA of processing time is about 2 s/epoch
     '''
     start = time.time()
     if type(epochs) == type(None):
         print('getting all epochs for the frame ' + frame)
         epochs = get_epochs(frame)
-    print('estimating Bperp for '+str(len(epochs))+' epochs.')
+    print('estimating Bperp for '+str(len(epochs))+' epochs. ETA '+str(round(len(epochs)*1.9))+' sec')
     # Getting base data for prime epoch
     primepochdt = get_master(frame,
                              asdatetime=True)  # this dt is center time of the frame - will use it to get tdelta, so we can have quite accurate center time for given epoch
@@ -174,7 +174,19 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True):
         #
         # get sign.. should investigate alpha-H-90 for right looking sat, thus cosinus
         alpha = ploc.distance_and_azimuth(eloc, long_unroll=True, degrees=True)[1]
-        Bperpsign = -1 * np.sign(np.cos(np.deg2rad(alpha - H)))  # check sign - OK
+        #Bperpsign = -1 * np.sign(np.cos(np.deg2rad(alpha - H)))  # check sign - OK... but maybe not???
+        # doing the lame way:
+        anglediff = alpha - H - 90
+        if (anglediff >= 0 ) and (anglediff < 180):
+            Bperpsign = 1
+        elif (anglediff >= -180 ) and (anglediff < 0):
+            Bperpsign = -1
+        elif (anglediff >= 180 ) and (anglediff < 360):
+            Bperpsign = -1
+        elif (anglediff >= -360 ) and (anglediff < -180):
+            Bperpsign = 1
+        else:
+            print('unexpected angle - contact earmla to fix this')
         #
         Bperp = np.int8(Bperpsign * Bperp)
         Bperps.append(Bperp)
@@ -955,7 +967,7 @@ def make_bperp_file(frame, bperp_file, asfonly = False, donotstore = False):
         allepochs = get_epochs(frame)
         missingepochs = []
         for e in allepochs:
-            if e not in bpd.date:
+            if e not in bpd.date.values:
                 missingepochs.append(e)
         if missingepochs:
             print('ASF missed '+str(len(missingepochs))+' epochs for Bperp estimation. Using a bit coarser but still POD-based approach')
@@ -971,6 +983,7 @@ def make_bperp_file(frame, bperp_file, asfonly = False, donotstore = False):
             bpd = pd.concat([bpd, bpd2]).reset_index(drop=True)
             bpd = bpd.sort_values('btemp').reset_index(drop=True)
     #
+    bpd['bperp']=bpd.bperp.astype(np.int8)
     if not donotstore:
         bpd.to_csv(bperp_file, sep = ' ', index = False, header = False)
     else:
