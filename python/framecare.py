@@ -105,7 +105,7 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True):
     Epochs is list as e.g. ['20150202',...]. If epochs is None, it will estimate this for all processed frame epochs.
     if return_epochsdt, it will return also central time for each epoch.
     I enjoyed this. ML
-
+    #### info from http://doris.tudelft.nl/usermanual/node182.html helped but there seems to be issue with sign!
     e.g. estimate_bperps(frame='002A_05136_020502', epochs=['20150202'], return_epochsdt=True)
     Note: ETA of processing time is about 2 s/epoch
     '''
@@ -174,7 +174,8 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True):
         #
         # get sign.. should investigate alpha-H-90 for right looking sat, thus cosinus
         alpha = ploc.distance_and_azimuth(eloc, long_unroll=True, degrees=True)[1]
-        #Bperpsign = -1 * np.sign(np.cos(np.deg2rad(alpha - H)))  # check sign - OK... but maybe not???
+        Bperpsign = -1 * np.sign(np.cos(np.deg2rad(alpha - H)))  # check sign - OK... but maybe not???
+        '''
         # doing the lame way:
         anglediff = alpha - H - 90
         if (anglediff >= 0 ) and (anglediff < 180):
@@ -187,7 +188,8 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True):
             Bperpsign = 1
         else:
             print('unexpected angle - contact earmla to fix this')
-        #
+        # but this got SAME RESULT :)
+        '''
         Bperp = np.int8(Bperpsign * Bperp)
         Bperps.append(Bperp)
         if return_epochsdt:
