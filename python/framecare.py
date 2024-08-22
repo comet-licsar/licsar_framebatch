@@ -203,7 +203,7 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True):
             #
             # add this difference to the given epoch (convert it to the central time)
             central_etime = etime + pd.Timedelta(seconds=dtime_sec)
-            central_etimes.append(central_etime)
+            central_etimes.append(alpha) #central_etime)
     elapsed_time = time.time() - start
     hour = int(elapsed_time / 3600)
     minite = int(np.mod((elapsed_time / 60), 60))
