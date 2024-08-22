@@ -173,10 +173,10 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True):
         Bperp = np.sqrt(B * B - Bpar * Bpar)
         #
         # get sign.. should investigate alpha-H-90 for right looking sat, thus cosinus
-        alpha = ploc.distance_and_azimuth(eloc, long_unroll=True, degrees=True)[1]
+        alpha = ploc.distance_and_azimuth(eloc, long_unroll=True, degrees=True)[2] # TODO CHECK, was: 1
         #Bperpsign = -1 * np.sign(np.cos(np.deg2rad(alpha - H)))  # check sign - OK... but maybe not???
-        # improve by adding the 90 deg just for clarity:
-        Bperpsign = -1 * np.sign(np.sin(np.deg2rad(H + 90 - alpha)))   # this SHOULD be correct... but maybe the below actually is?
+        # improve by adding the 90 deg just for clarity: # TODO CHECK BELOW, WAS * -1
+        Bperpsign = np.sign(np.sin(np.deg2rad(H + 90 - alpha)))   # this SHOULD be correct... but maybe the below actually is?
         #diffangle = np.deg2rad(H + 90 - alpha)
         #Bperpsign = -1 * np.sign(np.sin(diffangle) * np.cos(diffangle))  # ok, this would mean if the sat is behind ploc in slant, it would have opposite phase meaning.. cross-sight.. makes sense?
         #
