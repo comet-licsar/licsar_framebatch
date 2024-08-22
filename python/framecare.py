@@ -100,7 +100,7 @@ def get_first_common_time(frame, date):
     return commonburst, epochcommontime, s1ab, commonpoint
 
 
-def estimate_bperps(frame, epochs = None, return_epochsdt=True):
+def estimate_bperps(frame, epochs = None, return_epochsdt=True, return_alphas = False):
     ''' Estimate Bperps based on orbit files. Working for LiCSAR frames (thanks to the burst database information).
     Epochs is list as e.g. ['20150202',...]. If epochs is None, it will estimate this for all processed frame epochs.
     if return_epochsdt, it will return also central time for each epoch.
@@ -108,6 +108,8 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True):
     #### info from http://doris.tudelft.nl/usermanual/node182.html helped but there seems to be issue with sign!
     e.g. estimate_bperps(frame='002A_05136_020502', epochs=['20150202'], return_epochsdt=True)
     Note: ETA of processing time is about 2 s/epoch
+
+    return_alphas only if return_epochsdt..
     '''
     start = time.time()
     if type(epochs) == type(None):
@@ -120,11 +122,14 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True):
     pb, pt, ps1ab, pcp = get_first_common_time(frame, primepochdt.date())
     porbit = get_orbit_filenames_for_datetime(pt, producttype='POEORB', s1ab=ps1ab)[-1]
     porbitxr = load_eof(porbit)
-    H = getHeading(porbitxr, pt, spacing=1)
+    #H = getHeading(porbitxr, pt, spacing=1) # ok but that's on satellite level... let's use frame info instead?
+    metaf = os.path.join(get_frame_path(frame, 'public'), 'metadata', 'metadata.txt')
+    H = float(misc.grep1line('heading', metaf).split('=')[-1]) # TODO ChECK which should be used actually
     # ploc = get_coords_in_time(porbitxr, pt, method='cubic', return_as_nv = True)
     #
     Bperps = []
     central_etimes = []
+    alphas = []
     # Do this for every epoch:
     # e = epochs[0]
     for e in epochs:
@@ -157,7 +162,7 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True):
         # print(eloc, etime)
         #
         # calculate Bperp (based on doris manual, and some own thinking)
-        B = nv.delta_E(ploc, eloc).length
+        B = nv.delta_E(ploc, eloc).length #
         # Bpar = ploc.z - eloc.z   # but Bpar is w.r.t. range to surface (need inc angle)
         # Bpar = nv.diff_positions(ploc, ecp).length - nv.diff_positions(eloc, ecp).length  # still not the proper geometry
         # actually could have used this - more correct is below - but the diff was very small (0.1 m)
@@ -173,10 +178,10 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True):
         Bperp = np.sqrt(B * B - Bpar * Bpar)
         #
         # get sign.. should investigate alpha-H-90 for right looking sat, thus cosinus
-        alpha = ploc.distance_and_azimuth(eloc, long_unroll=True, degrees=True)[2] # TODO CHECK, was: 1
+        alpha = ploc.distance_and_azimuth(eloc, long_unroll=True, degrees=True)[2] # no big diff between 1 and 2, should be 2 i think
         #Bperpsign = -1 * np.sign(np.cos(np.deg2rad(alpha - H)))  # check sign - OK... but maybe not???
-        # improve by adding the 90 deg just for clarity: # TODO CHECK BELOW, WAS * -1
-        Bperpsign = np.sign(np.sin(np.deg2rad(H + 90 - alpha)))   # this SHOULD be correct... but maybe the below actually is?
+        # improve by adding the 90 deg just for clarity:
+        Bperpsign = -1 * np.sign(np.sin(np.deg2rad(H + 90 - alpha)))   # this SHOULD be correct... unless GaMMA switches sign!  thinking if the below actually is more ok?
         #diffangle = np.deg2rad(H + 90 - alpha)
         #Bperpsign = -1 * np.sign(np.sin(diffangle) * np.cos(diffangle))  # ok, this would mean if the sat is behind ploc in slant, it would have opposite phase meaning.. cross-sight.. makes sense?
         #
@@ -205,13 +210,18 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True):
             central_etime = etime + pd.Timedelta(seconds=dtime_sec)
             central_etimes.append(central_etime)
             # debug only: central_etimes.append(alpha)
+            if return_alphas:
+                alphas.append(alpha)
     elapsed_time = time.time() - start
     hour = int(elapsed_time / 3600)
     minite = int(np.mod((elapsed_time / 60), 60))
     sec = int(np.mod(elapsed_time, 60))
     print("\nElapsed time: {0:02}h {1:02}m {2:02}s".format(hour, minite, sec))
     if return_epochsdt:
-        return Bperps, central_etimes
+        if not return_alphas:
+            return Bperps, central_etimes
+        else:
+            return Bperps, central_etimes, alphas
     else:
         return Bperps
 
