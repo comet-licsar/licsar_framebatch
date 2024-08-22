@@ -122,9 +122,9 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True, return_alphas = 
     pb, pt, ps1ab, pcp = get_first_common_time(frame, primepochdt.date())
     porbit = get_orbit_filenames_for_datetime(pt, producttype='POEORB', s1ab=ps1ab)[-1]
     porbitxr = load_eof(porbit)
-    #H = getHeading(porbitxr, pt, spacing=1) # ok but that's on satellite level... let's use frame info instead?
-    metaf = os.path.join(get_frame_path(frame, 'public'), 'metadata', 'metadata.txt')
-    H = float(misc.grep1line('heading', metaf).split('=')[-1]) # TODO ChECK which should be used actually
+    H = getHeading(porbitxr, pt, spacing=1) # ok but that's on satellite level... let's use frame info instead?
+    #metaf = os.path.join(get_frame_path(frame, 'public'), 'metadata', 'metadata.txt')
+    #H = float(misc.grep1line('heading', metaf).split('=')[-1]) # TODO ChECK which should be used actually
     # ploc = get_coords_in_time(porbitxr, pt, method='cubic', return_as_nv = True)
     #
     Bperps = []
