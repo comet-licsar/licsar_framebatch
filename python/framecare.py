@@ -176,9 +176,9 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True):
         alpha = ploc.distance_and_azimuth(eloc, long_unroll=True, degrees=True)[1]
         #Bperpsign = -1 * np.sign(np.cos(np.deg2rad(alpha - H)))  # check sign - OK... but maybe not???
         # improve by adding the 90 deg just for clarity:
-        #Bperpsign = -1 * np.sign(np.sin(np.deg2rad(H + 90 - alpha)))
-        diffangle = np.deg2rad(H + 90 - alpha)
-        Bperpsign = -1 * np.sign(np.sin(diffangle) * np.cos(diffangle))  # ok, this would mean if the sat is behind ploc in slant, it would have opposite phase meaning.. cross-sight.. makes sense?
+        Bperpsign = -1 * np.sign(np.sin(np.deg2rad(H + 90 - alpha)))   # this SHOULD be correct... but maybe the below actually is?
+        #diffangle = np.deg2rad(H + 90 - alpha)
+        #Bperpsign = -1 * np.sign(np.sin(diffangle) * np.cos(diffangle))  # ok, this would mean if the sat is behind ploc in slant, it would have opposite phase meaning.. cross-sight.. makes sense?
         #
         '''
         # doing the lame way:
@@ -203,7 +203,8 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True):
             #
             # add this difference to the given epoch (convert it to the central time)
             central_etime = etime + pd.Timedelta(seconds=dtime_sec)
-            central_etimes.append(alpha) #central_etime)
+            central_etimes.append(central_etime)
+            # debug only: central_etimes.append(alpha)
     elapsed_time = time.time() - start
     hour = int(elapsed_time / 3600)
     minite = int(np.mod((elapsed_time / 60), 60))
