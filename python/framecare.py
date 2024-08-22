@@ -181,7 +181,8 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True, return_alphas = 
         alpha = ploc.distance_and_azimuth(eloc, long_unroll=True, degrees=True)[2] # no big diff between 1 and 2, should be 2 i think
         #Bperpsign = -1 * np.sign(np.cos(np.deg2rad(alpha - H)))  # check sign - OK... but maybe not???
         # improve by adding the 90 deg just for clarity:
-        Bperpsign = -1 * np.sign(np.sin(np.deg2rad(H + 90 - alpha)))   # this SHOULD be correct... unless GaMMA switches sign!  thinking if the below actually is more ok?
+        #Bperpsign = -1 * np.sign(np.sin(np.deg2rad(H + 90 - alpha)))   # this SHOULD be correct... but GaMMA switches sign! (opposite to doris standard)
+        Bperpsign = np.sign(np.sin(np.deg2rad(H + 90 - alpha)))
         #diffangle = np.deg2rad(H + 90 - alpha)
         #Bperpsign = -1 * np.sign(np.sin(diffangle) * np.cos(diffangle))  # ok, this would mean if the sat is behind ploc in slant, it would have opposite phase meaning.. cross-sight.. makes sense?
         #
