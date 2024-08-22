@@ -176,7 +176,7 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True):
         alpha = ploc.distance_and_azimuth(eloc, long_unroll=True, degrees=True)[1]
         #Bperpsign = -1 * np.sign(np.cos(np.deg2rad(alpha - H)))  # check sign - OK... but maybe not???
         # improve by adding the 90 deg just for clarity:
-        Bperpsign = -1 * np.sign(np.sin(np.deg2rad(alpha - H - 90)))
+        Bperpsign = -1 * np.sign(np.sin(np.deg2rad(H + 90 - alpha)))
         '''
         # doing the lame way:
         anglediff = alpha - H - 90
