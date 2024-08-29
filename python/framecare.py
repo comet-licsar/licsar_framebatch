@@ -1710,6 +1710,17 @@ def get_satids_of_burst(burstid, expected = ['S1A','S1B']):
     return b
 
 
+def get_frames_gpd(framelist):
+    ''' framelist must be list of frame IDs'''
+    fgpd = gpd.geodataframe.GeoDataFrame()
+    for frame in framelist:
+        a = frame2geopandas(frame)
+        fgpd = fgpd.append(a)
+    fgpd = fgpd.set_geometry('geometry')
+    fgpd = fgpd.reset_index(drop=True)
+    return fgpd
+
+
 def get_all_frames(only_initialised = False, merge = False):
     """Will get geopandas for all LiCSAR frames
 

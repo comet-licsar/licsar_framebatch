@@ -53,13 +53,14 @@ dogacos=0
 dogacos=1  # will do this now
 tienshan=0
 
-if [ $USER == 'earmla' ]; then 
- prioritise=1
-else
+#
+#if [ $USER == 'earmla' ]; then
+# prioritise=1
+#else
  echo "Note: your query will go through a general queue"
- echo "(but you may use -P parameter to run through comet queue..)"
+# echo "(but you may use -P parameter to run through comet queue..)"
  prioritise=0
-fi
+# fi
 
 while getopts ":cnSEfNPRGAB" option; do
  case "${option}" in
