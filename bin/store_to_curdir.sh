@@ -341,6 +341,19 @@ if [ $DOGEOC -eq 1 ]; then
           if [ -f $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp ]; then GOON=0; fi
          fi
          if [ $GOON == 1 ]; then
+         # prelb issue
+         if [ -L $frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
+           if [ -f $frame/GEOC/$geoifg/$geoifg.geo.$toexp.prelb.tif ]; then
+             echo "WARNING, you are mixing LiCSAR processed data with LiCSBAS processing - solving for "$geoifg
+             rm $frame/GEOC/$geoifg/$geoifg.geo.$toexp
+             mv $frame/GEOC/$geoifg/$geoifg.geo.$toexp.prelb.tif $frame/GEOC/$geoifg/$geoifg.geo.$toexp
+           else
+             echo "The "$geoifg.geo.$toexp" is a link instead of file - skipping"
+             GOON=0
+           fi
+         fi
+         fi
+         if [ $GOON == 1 ]; then
          #this condition is to NOT TO OVERWRITE the GEOC results. But it makes sense to overwrite them 'always'
          #if [ ! -f $public/$tr/$frame/products/$geoifg/$geoifg.geo.$toexp ]; then
           if [ $MOVE -eq 1 ]; then 
