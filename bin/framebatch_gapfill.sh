@@ -17,6 +17,7 @@ prioritise=0
 checkrslc=1
 ifg_combinations=4
 tienshan=0
+volcs_south=0
 checkMosaic=1
 locl=0
 dobovl=0
@@ -101,6 +102,10 @@ if [ -f local_config.py ]; then
   if [ `grep ^tienshan local_config.py | cut -d '=' -f2 | sed 's/ //g'` -eq 1 ] 2>/dev/null; then
    echo "setting to Tien Shan frames processing"
    tienshan=1
+  fi
+  if [ `grep ^volcs_south local_config.py | cut -d '=' -f2 | sed 's/ //g'` -eq 1 ] 2>/dev/null; then
+   echo "setting to S American volcanoes strategy"
+   volcs_south=1
   fi
   if [ `grep ^bovl local_config.py | cut -d '=' -f2 | sed 's/ //g'` -eq 1 ] 2>/dev/null; then
    echo "do bovl ifgs";
@@ -321,6 +326,29 @@ for FIRST in `cat gapfill_job/tmp_rslcs`; do
   fi
  done 
 done
+
+
+if [ $volcs_south -eq 1 ]; then
+  echo "preparing S American volcs connections (all Dec-Feb up to 1 yr)"
+  rm gapfill_job/tmp_selrslcs 2>/dev/null
+  for rslc in `cat gapfill_job/tmp_rslcs`; do
+    if [ ${rslc:4:2} == '12' ] || [ ${rslc:4:2} == '01' ] || [ ${rslc:4:2} == '02' ]; then
+      echo $rslc >> gapfill_job/tmp_selrslcs
+    fi
+  done
+  for rslc in `cat gapfill_job/tmp_selrslcs`; do
+    for rslc2 in `cat gapfill_job/tmp_selrslcs`; do
+      if [ $rslc2 -gt $rslc ]; then
+       if [ `datediff $rslc $rslc2` -lt 90 ]; then
+        echo $rslc'_'$rslc2 >> gapfill_job/tmp_ifg_all2
+       elif [ `datediff $rslc $rslc2` -lt 456 ]; then
+        echo $rslc'_'$rslc2 >> gapfill_job/tmp_ifg_all2
+       fi
+      fi
+    done
+  done
+fi
+
 
 if [ $tienshan -eq 1 ]; then
     echo "preparing Tien Shan connections"
@@ -635,6 +663,7 @@ for job in `seq 1 $nojobs`; do
   sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_bovl_todo | sort -u > gapfill_job/bovljob_$job
   if [ `wc -l gapfill_job/bovljob_$job | gawk {'print $1'}` -eq 0 ]; then rm gapfill_job/bovljob_$job; else
    echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_bovl_ifg.sh " >> gapfill_job/bovljob_$job.sh
+   # TODO: echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_sbovl_ifg.sh " >> gapfill_job/bovljob_$job.sh
   fi
   chmod 777 gapfill_job/bovljob_$job.sh
   waitText=$waitText" && ended('"$frame"_bovl_"$job"')"
