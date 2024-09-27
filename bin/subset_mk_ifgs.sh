@@ -76,6 +76,8 @@ echo "copying existing clipped RSLCs"
 #for ddir in SLC RSLC; do
 ddir=RSLC
 rsync -r -u -l $subsetpath/$ddir .;
+# fix issue with different multilooking of ref epoch:
+rm *LC/$m/*mli*
 
 if [ ! -z $shscript ]; then
   chmod 777 $shscript 2>/dev/null
