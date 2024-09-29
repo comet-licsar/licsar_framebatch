@@ -137,7 +137,7 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True, return_alphas = 
         try:
             eb, et, es1ab, ecp = get_first_common_time(frame, dt.datetime.strptime(e, '%Y%m%d').date())
         except:
-            print('error getting first_common_time for epoch '+e'. Setting to 0 and skipping.')
+            print('error getting first_common_time for epoch '+e+'. Setting to 0 and skipping.')
             Bperps.append(0)
             central_etimes.append(np.nan)
             continue
