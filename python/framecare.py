@@ -134,7 +134,13 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True, return_alphas = 
     # e = epochs[0]
     for e in epochs:
         ## first get base data for that epoch
-        eb, et, es1ab, ecp = get_first_common_time(frame, dt.datetime.strptime(e, '%Y%m%d').date())
+        try:
+            eb, et, es1ab, ecp = get_first_common_time(frame, dt.datetime.strptime(e, '%Y%m%d').date())
+        except:
+            print('error getting first_common_time for epoch '+e'. Setting to 0 and skipping.')
+            Bperps.append(0)
+            central_etimes.append(np.nan)
+            continue
         epdbt = (int(eb.split('_')[-1]) - int(
             pb.split('_')[-1])) * 0.1  # difference in seconds from first prime (frame) burst. Coarse info!
         primetime, epochtime = pt + dt.timedelta(seconds=epdbt), et  # both are coarse estimates
