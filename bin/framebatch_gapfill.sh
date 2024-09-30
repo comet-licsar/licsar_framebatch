@@ -47,7 +47,7 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -T ... Tien Shan strategy - do connections starting May etc."
                    echo "parameter -A or -B .. do only S1A/S1B combinations"
                    echo "parameter -l ... use local processing strategy - e.g. volc responder 2.0"
-                   echo "parameter -b ... will do burst overlap ddiff ifgs"
+                   echo "parameter -b ... will do burst overlap ddiff ifgs AND SBOVLS (added by M. Nergizci)"
                    echo "parameter -s foo.sh ... run a shell script foo.sh automatically after ifg-gapfilling"
                    exit; fi
 
@@ -584,7 +584,7 @@ cat gapfill_job/tmp_ifg_all2 | sort -u > gapfill_job/tmp_ifg_all # this is the i
 if [ $dobovl -eq 1 ]; then
  cp gapfill_job/tmp_ifg_all gapfill_job/tmp_bovl_todo
  for x in `ls GEOC/*/*.cc.tif 2>/dev/null | cut -d '/' -f2`; do
-  if [  -f GEOC/$x/$x.geo.bovldiff.tif ]; then
+  if [ -f GEOC/$x/$x.geo.sbovldiff.adf.mm.tif ]; then
    sed -i '/'$x'/d' gapfill_job/tmp_bovl_todo
   fi
  done
@@ -662,8 +662,10 @@ for job in `seq 1 $nojobs`; do
  if [ $dobovl == 1 ]; then
   sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_bovl_todo | sort -u > gapfill_job/bovljob_$job
   if [ `wc -l gapfill_job/bovljob_$job | gawk {'print $1'}` -eq 0 ]; then rm gapfill_job/bovljob_$job; else
+  # TODO: last check - if bovl exists and only sbovls are to be regenerated, no need to do bovl
    echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_bovl_ifg.sh " >> gapfill_job/bovljob_$job.sh
-   # TODO: echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_sbovl_ifg.sh " >> gapfill_job/bovljob_$job.sh
+   echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_soi.py " >> gapfill_job/bovljob_$job.sh
+   echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_sbovl_ifg.py " >> gapfill_job/bovljob_$job.sh
   fi
   chmod 777 gapfill_job/bovljob_$job.sh
   waitText=$waitText" && ended('"$frame"_bovl_"$job"')"
@@ -732,7 +734,7 @@ fi
  fi
  echo "There are "`wc -l gapfill_job/tmp_ifg_todo | gawk {'print $1'}`" interferograms to process and "`wc -l gapfill_job/tmp_unw_todo | gawk {'print $1'}`" to unwrap."
  if [ $dobovl == 1 ]; then
-  echo "(and "`wc -l gapfill_job/tmp_bovl_todo | gawk {'print $1'}`" burst overlap ifgs to generate)"
+  echo "(and "`wc -l gapfill_job/tmp_bovl_todo | gawk {'print $1'}`" subswath+burst overlap ifgs (sbovls) to generate)"
  fi
  #if [ -d $SCRATCHDIR/$frame ]; then echo "..cleaning scratchdir"; rm -rf $SCRATCHDIR/$frame; fi
  mkdir -p $SCRATCHDIR/$frame/RSLC
