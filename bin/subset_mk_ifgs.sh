@@ -43,8 +43,8 @@ cd $1
 subsetpath=`pwd`
 sid=`echo $subsetpath | rev | cut -d '/' -f 2 | rev`
 frameid=`echo $subsetpath | rev | cut -d '/' -f 1 | rev`
-mlipar=`ls SLC/*/*.mli.par`
-if [ -z $mlipar ]; then echo 'mli par of ref epoch does not exist, cancelling'; exit; fi
+#mlipar=`ls SLC/*/*.mli.par`
+#if [ -z $mlipar ]; then echo 'mli par of ref epoch does not exist, cancelling'; exit; fi
 
 #if [ `ls corners_clip* | wc -l` -gt 1 ]; then echo "more frames here, do it manually please"; exit; fi
 #frame=`ls corners_clip* | head -n 1 | cut -d '.' -f2`
