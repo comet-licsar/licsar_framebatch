@@ -106,6 +106,8 @@ if [ -f local_config.py ]; then
   if [ `grep ^volcs_south local_config.py | cut -d '=' -f2 | sed 's/ //g'` -eq 1 ] 2>/dev/null; then
    echo "setting to S American volcanoes strategy"
    volcs_south=1
+   if [ $tienshan == 1 ]; then echo "disabling the Tien Shan strategy"; fi
+   tienshan=0
   fi
   if [ `grep ^bovl local_config.py | cut -d '=' -f2 | sed 's/ //g'` -eq 1 ] 2>/dev/null; then
    echo "do bovl ifgs";
