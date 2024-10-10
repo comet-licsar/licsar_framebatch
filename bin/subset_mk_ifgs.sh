@@ -7,6 +7,7 @@ if [ -z $1 ]; then
  echo "Usage e.g.: subset_mk_ifgs.sh [-P] [-s foo.sh] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
  echo "parameter -P will run through comet queue"
  echo "parameter -s foo.sh .. will run foo.sh script after end of generation of ifgs"
+ echo "parameter -N will skip standard unwrapping (useful if reunw is planned)"
  echo "----"
  echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frameid directory"
  echo "NOTE: if you use ifgs.list, please provide FULL PATH. Also note, the ifgs.list should contain pairs in the form of e.g.:"
@@ -17,11 +18,13 @@ fi
 extra=''
 shscript=''
 
-while getopts ":PRs:" option; do
+while getopts ":PRNs:" option; do
  case "${option}" in
   P ) extra='-P ';
      ;;
   R ) extra='-R ';
+     ;;
+  N ) extra='-N ';
      ;;
   s ) shscript=$OPTARG; echo "will run this script afterwards: "$shscript;
 #      shift

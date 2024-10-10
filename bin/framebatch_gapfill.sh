@@ -21,6 +21,7 @@ volcs_south=0
 checkMosaic=1
 locl=0
 dobovl=0
+dounw=1
 # for S1A or S1B only
 A=0
 B=0
@@ -49,9 +50,10 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -l ... use local processing strategy - e.g. volc responder 2.0"
                    echo "parameter -b ... will do burst overlap ddiff ifgs AND SBOVLS (added by M. Nergizci)"
                    echo "parameter -s foo.sh ... run a shell script foo.sh automatically after ifg-gapfilling"
+                   echo "parameter -N ... this will SKIP unwrapping (useful if you plan using LiCSBAS02to05_unwrap)"
                    exit; fi
 
-while getopts ":wn:gSaABi:Pos:lbT" option; do
+while getopts ":wn:gSaABi:Pos:lbTN" option; do
  case "${option}" in
   A) A=1; echo "S1A only";
       ;;
@@ -86,6 +88,8 @@ while getopts ":wn:gSaABi:Pos:lbT" option; do
       ;;
   s ) shscript=$OPTARG; echo "will run this script afterwards: "$shscript;
 #      shift
+      ;;
+  N ) dounw=0; echo "skipping standard unwrapping";
       ;;
   esac
 done
@@ -693,7 +697,9 @@ for job in `seq 1 $nojobs`; do
  #echo "LiCSAR_04_unwrap.py -d . -f $frame -T gapfill_job/unwjob_$job.log -l gapfill_job/unwjob_$job" > gapfill_job/unwjob_$job.sh
  echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -I "`pwd`" " > gapfill_job/unwjob_$job.sh
  echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -C "`pwd`" " >> gapfill_job/unwjob_$job.sh
- echo "cat gapfill_job/unwjob_$job | parallel -j 1 unwrap_geo.sh $frame" >> gapfill_job/unwjob_$job.sh
+ if [ $dounw == 1 ]; then
+   echo "cat gapfill_job/unwjob_$job | parallel -j 1 unwrap_geo.sh $frame" >> gapfill_job/unwjob_$job.sh
+ fi
  waitText=$waitText" && ended('"$frame"_unw_"$job"')"
  chmod 777 gapfill_job/unwjob_$job.sh
 done
