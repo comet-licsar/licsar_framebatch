@@ -139,6 +139,7 @@ def get_rslc_list(frame, lutBool = False):
     frameDir = os.path.join(procdir,track,frame)
     rslclist = []
     if os.path.isdir(frameDir):
+        m = fnmatch.filter(os.listdir(frameDir+'/SLC'), '20??????')[0] # should be only one there..
         rslcs = fnmatch.filter(os.listdir(frameDir+'/RSLC'), '20??????')
         rslcs7z = fnmatch.filter(os.listdir(frameDir+'/RSLC'), '20??????.7z')
         #add lut table here?
@@ -153,6 +154,7 @@ def get_rslc_list(frame, lutBool = False):
         for rslc in rslcs:
             if rslc not in rslclist:
                 rslclist.append(rslc)
+        rslclist.append(m)
         rslclist.sort()
     return rslclist
 
