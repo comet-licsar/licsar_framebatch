@@ -137,8 +137,6 @@ if [ -f local_config.py ]; then
   fi
 fi
 
-
-
 #NBATCH=5
 NBATCH=$1
 WORKFRAMEDIR=`pwd`
@@ -659,7 +657,6 @@ l03extra=' -f '$frame
 else l03extra='';
 fi
 
-
 for job in `seq 1 $nojobs`; do
  let nifg=$nifgmax+1
  let nifgmax=$nifgmax+$NBATCH
@@ -669,8 +666,8 @@ for job in `seq 1 $nojobs`; do
   sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_bovl_todo | sort -u > gapfill_job/bovljob_$job
   if [ `wc -l gapfill_job/bovljob_$job | gawk {'print $1'}` -eq 0 ]; then rm gapfill_job/bovljob_$job; else
   # TODO: last check - if bovl exists and only sbovls are to be regenerated, no need to do bovl
+   echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_soi.py -p " >> gapfill_job/bovljob_$job.sh
    echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_bovl_ifg.sh " >> gapfill_job/bovljob_$job.sh
-   echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_soi.py " >> gapfill_job/bovljob_$job.sh
    echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_sbovl_ifg.py " >> gapfill_job/bovljob_$job.sh
   fi
   chmod 777 gapfill_job/bovljob_$job.sh
@@ -826,7 +823,8 @@ fi
    cp -r GEOC/geo $SCRATCHDIR/$frame/GEOC/.
   fi
  fi
-##########################################################
+###############################################
+#now we can start jobs..
  echo "running jobs"
  cd $SCRATCHDIR/$frame
  #weird error - mk_ifg is reading SLC tabs instead of rslc?? (need debug).. quick fix here:
@@ -842,6 +840,16 @@ if [ `echo $waitTextmosaic | wc -w` -gt 0 ]; then
 else
  waitcmdmosaic='';
 fi
+fi
+
+##adding sboi mosaiciking steps
+if [ $dobovl == 1 ]; then
+#first run mosaicking
+ waitTextcreate_soi="ended('"$frame"_soi_00')"
+ waitcmdcreate_soi="-w \""$waitTextcreate_soi"\""
+ bsub2slurm.sh -q $bsubquery -n 1 -W 24:00 -M 16000 -J $frame"_soi_00" create_soi_00.py >/dev/null
+else
+ waitcmdcreate_soi='';
 fi
 
 #now we can start jobs..
@@ -863,7 +871,7 @@ for job in `seq 1 $nojobs`; do
   echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 08:00 -M 16000 -J $frame'_unw_'$job -e gapfill_job/$frame'_unw_'$job.err -o gapfill_job/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh >> bjobs.sh
  fi
  if [ -f gapfill_job/bovljob_$job.sh ]; then
-  echo bsub2slurm.sh -q $bsubquery -n 1 -W 08:00 -M 16000 -J $frame'_bovl_'$job -e gapfill_job/$frame'_bovl_'$job.err -o gapfill_job/$frame'_bovl_'$job.out gapfill_job/bovljob_$job.sh >> bjobs.sh
+  echo bsub2slurm.sh -q $bsubquery -n 1 -W 08:00 -M 16000 -J $frame'_bovl_'$job -e gapfill_job/$frame'_bovl_'$job.err -o gapfill_job/$frame'_bovl_'$job.out $waitcmdcreate_soi gapfill_job/bovljob_$job.sh >> bjobs.sh
  fi
 done
 chmod 777 bjobs.sh
