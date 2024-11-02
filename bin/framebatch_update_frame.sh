@@ -6,19 +6,21 @@ tillnow=0
 #tolerance of days to either only autodownload or use nla + waiting
 DAYSTOLERANCE=61
 extra=""
+onlyondisk=0
 #DAYSTOLERANCE=961
 #STORE_AND_DELETE=1
 if [ -z $2 ]; then echo "parameters are frame and code (code is either upfill or backfill.. or gapfill)"; 
     echo "running with parameter -k means Keep the frame in BATCH_CACHE_DIR (not store it automatically to the public dir)";
     echo "parameter -u would process upfilling till today"
     echo "parameter -P will run through comet queue"
+    echo "parameter -d would check only epochs on disk (no nla, no autodownload, actually not really recommended but might be ok for monthly"
     #echo "parameter -N will run licsar_make_frame with -N (process only if newer data exists)" # we will have it on by default for upfill
     #echo "hidden params: -E, -R"
     exit; fi
 
 storeparam='-S -G'
 extra=''
-while getopts ":kEuPR" option; do
+while getopts ":kEuPRd" option; do
  case "${option}" in
   k) storeparam=' ';
      ;;
@@ -28,6 +30,10 @@ while getopts ":kEuPR" option; do
   u) tillnow=1;
      ;;
   P) extra=$extra' -P';
+     ;;
+  d) extra=$extra' -c';
+     onlyondisk=1;
+     autodown=0;
      ;;
   R) extra=$extra' -R';
  esac
@@ -108,81 +114,83 @@ if [ ! -z $4 ]; then
 fi
 
 
-#check if to start nla or just use autodownload
-nla_start=0
-nlamaxdate=`date -d "-89 days" +%Y-%m-%d`
-nlamaxdateshort=`date -d "-89 days" +%Y%m%d`
+if [ $onlyondisk == 0 ]; then
+  #check if to start nla or just use autodownload
+  nla_start=0
+  nlamaxdate=`date -d "-89 days" +%Y-%m-%d`
+  nlamaxdateshort=`date -d "-89 days" +%Y%m%d`
 
-if [ $code == "upfill" ]; then
- #in case of upfilling, we should request only files older than 3 months
- #this request will however include also files that are already processed..
- if [ $nlamaxdateshort -gt $lastepoch ]; then
-  if [ `datediff $nlamaxdateshort $lastepoch` -gt $DAYSTOLERANCE ]; then
-   nla_start=1
-  fi
- fi
-elif [ $code == "backfill" ]; then
- if [ `datediff 20141001 $firstepoch` -gt $DAYSTOLERANCE ]; then
-  nla_start=1
-  nlamaxdate=$enddate
- fi
-elif [ $code == "gapfill" ]; then
- #assuming all gapfilling will be performed through nla requests..
- nla_start=1
- nlamaxdate=$enddate
-fi
-
-
-#check the time of the last epoch - use NLA or just download?
-#if [ $nlamaxdateshort -gt $lastepoch ]; then
-#  if [ `datediff $nlamaxdateshort $lastepoch` -gt $DAYSTOLERANCE ]; then
-   #in this option we will do NLA first
-
-if [ $nla_start == 1 ]; then
-   echo "starting NLA request"
-  echo 'LiCSAR_0_getFiles.py -f '$frame' -s '$startdate' -e '$nlamaxdate' -r'
-   LiCSAR_0_getFiles.py -f $frame -s $startdate -e $nlamaxdate -r > $batchesdir/temp/temp_nla.$frame
-   chmod 777 $batchesdir/temp/temp_nla.$frame
-   if [ $PROCESSING -eq 0 ]; then
-     echo "indicated NLA only - exiting";
-     echo "you may start the processing itself manually using: "
-     echo licsar_make_frame.sh -S -G -f $extra $frame 1 1 $startdate $enddate
-     exit;
+  if [ $code == "upfill" ]; then
+   #in case of upfilling, we should request only files older than 3 months
+   #this request will however include also files that are already processed..
+   if [ $nlamaxdateshort -gt $lastepoch ]; then
+    if [ `datediff $nlamaxdateshort $lastepoch` -gt $DAYSTOLERANCE ]; then
+     nla_start=1
+    fi
    fi
-   #hourly checking of NLA requests status...
-   if [ `grep -c "Created request" $batchesdir/temp/temp_nla.$frame` -gt 0 ]; then
-    grep "Created request" $batchesdir/temp/temp_nla.$frame
-    pom=0
-    hours=0
-    while [ $pom == 0 ]; do
-      let hours=$hours+1
-      echo "waiting for NLA to finish: "$hours" hours"
-      sleep 3600
-      pom=1
-      for request in `grep "Created request" $batchesdir/temp/temp_nla.$frame | gawk {'print $3'}`; do
-        if [ `nla.py req $request | grep Status | grep -c "On disk"` -eq 0 ];
-          then pom=0
+  elif [ $code == "backfill" ]; then
+   if [ `datediff 20141001 $firstepoch` -gt $DAYSTOLERANCE ]; then
+    nla_start=1
+    nlamaxdate=$enddate
+   fi
+  elif [ $code == "gapfill" ]; then
+   #assuming all gapfilling will be performed through nla requests..
+   nla_start=1
+   nlamaxdate=$enddate
+  fi
+
+
+  #check the time of the last epoch - use NLA or just download?
+  #if [ $nlamaxdateshort -gt $lastepoch ]; then
+  #  if [ `datediff $nlamaxdateshort $lastepoch` -gt $DAYSTOLERANCE ]; then
+     #in this option we will do NLA first
+
+  if [ $nla_start == 1 ]; then
+     echo "starting NLA request"
+    echo 'LiCSAR_0_getFiles.py -f '$frame' -s '$startdate' -e '$nlamaxdate' -r'
+     LiCSAR_0_getFiles.py -f $frame -s $startdate -e $nlamaxdate -r > $batchesdir/temp/temp_nla.$frame
+     chmod 777 $batchesdir/temp/temp_nla.$frame
+     if [ $PROCESSING -eq 0 ]; then
+       echo "indicated NLA only - exiting";
+       echo "you may start the processing itself manually using: "
+       echo licsar_make_frame.sh -S -G -f $extra $frame 1 1 $startdate $enddate
+       exit;
+     fi
+     #hourly checking of NLA requests status...
+     if [ `grep -c "Created request" $batchesdir/temp/temp_nla.$frame` -gt 0 ]; then
+      grep "Created request" $batchesdir/temp/temp_nla.$frame
+      pom=0
+      hours=0
+      while [ $pom == 0 ]; do
+        let hours=$hours+1
+        echo "waiting for NLA to finish: "$hours" hours"
+        sleep 3600
+        pom=1
+        for request in `grep "Created request" $batchesdir/temp/temp_nla.$frame | gawk {'print $3'}`; do
+          if [ `nla.py req $request | grep Status | grep -c "On disk"` -eq 0 ];
+            then pom=0
+          fi
+        done
+        if [ $hours -gt $maxwaithours ]; then
+             echo "enough waiting, NLA didnt work fully"
+             pom=1
         fi
       done
-      if [ $hours -gt $maxwaithours ]; then
-           echo "enough waiting, NLA didnt work fully"
-           pom=1
-      fi
-    done
-    #
-    extra=$extra" -c"
-    #autodown=0
-    autodown=1
-   else
-    echo "no data from this space and time are available on NLA"
-    echo "will check on scihub/ASF"
-    autodown=1
-   fi
-   rm $batchesdir/temp/temp_nla.$frame
-   #after couple of hours, autodownload is not working. so setting to zero
-else
-   echo "autodownload will be used"
-   autodown=1
+      #
+      extra=$extra" -c"
+      #autodown=0
+      autodown=1
+     else
+      echo "no data from this space and time are available on NLA"
+      echo "will check on scihub/ASF"
+      autodown=1
+     fi
+     rm $batchesdir/temp/temp_nla.$frame
+     #after couple of hours, autodownload is not working. so setting to zero
+  else
+     echo "autodownload will be used"
+     autodown=1
+  fi
 fi
 
 echo licsar_make_frame.sh $storeparam -f $extra $frame 1 $autodown $startdate $enddate
