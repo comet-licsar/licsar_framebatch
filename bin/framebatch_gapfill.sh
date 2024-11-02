@@ -41,7 +41,7 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
 #                  echo "parameter -w ... will wait for the unwrapping jobs to end (useful only if unwrap is running, see licsar_make_frame)";
                    echo "parameter -n ... set custom number of max ifg combinations. default is -n 4"
                    echo "parameter -g ... will run further framebatch step, i.e. geocoding"
-                   echo "parameter -S ... will run store and delete after geocoding.."
+                   echo "parameter -S ... will run store after geocoding.."
                    echo "parameter -P ... prioritise (run through cpom-comet)"
                    echo "parameter -i ifg.list ... add ifg pairs from the given ifg.list file"
                    echo "parameter -o ... no check if gapfill dir exists - DO NOT USE IF NOT SURE WHETHER ANOTHER GAPFILL IN PROGRESS"
