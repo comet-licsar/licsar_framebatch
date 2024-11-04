@@ -95,7 +95,8 @@ if [ $lowres == 1 ]; then
   for frame in `python3 -c "from volcdb import *; volc=get_volcano_from_vid("$vid"); print(get_volcano_frames(volc))" | tail -n 1 | sed 's/\,//g' | sed "s/'//g" | sed 's/\[//' | sed 's/\]//'`; do
     echo $frame
     #licsar2licsbas.sh -M 1 -s -g -u -W -T -d -n 4 -G $cliparea $extra $frame
-    licsar2licsbas.sh -M 1 -g -u -W -T -n 4 -G $cliparea $extra $frame
+    #licsar2licsbas.sh -M 1 -g -u -W -T -n 4 -G $cliparea $extra $frame
+    licsar2licsbas.sh -M 1 -g -u -d -T -n 4 -t 0.15 -G $cliparea $extra $frame
   done
 exit
 fi
