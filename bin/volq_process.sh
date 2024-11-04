@@ -3,12 +3,12 @@
 # this is to process the volcid - ifgs and licsbas
 
 if [ -z $1 ]; then
- echo "Usage e.g.: volq_process.sh [-M 3] [-P] [-l] [-L] -i volclip_id (or -n volcname or -v volcID)"
+ echo "Usage e.g.: volq_process.sh [-M 3] [-P] [-l] [-p] [-L] -i volclip_id (or -n volcname or -v volcID)"
  #echo "Usage e.g.: subset_mk_ifgs.sh [-P] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
  echo "parameter -P will run through comet queue"
  echo "parameter -L will run in LiCSAR regime (frame processing - update)"
  echo "-- for LiCSBAS regime:"
- echo "parameter -l means to run from lowres"
+ echo "parameter -l means to run from lowres (additionally, with parameter -p it will clip to the extents as on volcano portal that is 55 km diameter)"
  echo "parameter -M X means target multilook factor (only for hires regime - by default -M 3)"
  #echo "----"
  echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frameid directory"
@@ -22,7 +22,10 @@ extra=''
 regime='licsbas'
 lowres=0
 ml=3
-while getopts ":PRlLn:i:M:v:" option; do
+clipasportal=0
+volcid=''
+
+while getopts ":PRlpLn:i:M:v:" option; do
  case "${option}" in
   P) extra='-P ';
      ;;
@@ -35,13 +38,23 @@ while getopts ":PRlLn:i:M:v:" option; do
   n ) vid=`python3 -c "import volcdb; volcid=int(volcdb.find_volcano_by_name('"$OPTARG"').volc_id); print(volcdb.get_volclip_vids(volcid)[0])" | tail -n 1`;
      ;;
   v ) vid=`python3 -c "import volcdb; print(volcdb.get_volclip_vids("$OPTARG")[0])" | tail -n 1`;
+      volcid=$OPTARG;
      ;;
   l ) lowres=1;
+    ;;
+  p ) clipasportal=1;
     ;;
   R) extra='-R ';
  esac
 done
 shift $((OPTIND -1))
+
+if [ $clipasportal == 1 ]; then
+  if [ $lowres == 0 ]; then
+    echo "ERROR, you set clip as portal (-p) but not for the orig lics data regime - volq clips cannot be enlarged, thus stopping here (we may instead pad by zeroes)"
+    exit
+  fi
+fi
 
 if [ ! -z $vid ]; then
  echo "Running processing for volclip ID "$vid
@@ -66,7 +79,14 @@ fi
 # if regime is not licsar, it is licsbas regime.. continuing
 
 # 2024/11: we want to clip to the same area...
-cliparea=`python3 -c "import volcdb; print(volcdb.get_licsbas_clipstring_volclip("$vid"))" | tail -n 1`
+if [ $clipasportal == 0 ]; then
+  cliparea=`python3 -c "import volcdb; print(volcdb.get_licsbas_clipstring_volclip("$vid"))" | tail -n 1`
+else
+  if [ -z $volcid ]; then
+    volcid=`python3 -c "import volcdb; vid="$vid"; volcid=volcdb.get_volcano_from_vid(vid); print(volcid)"`
+  fi
+  cliparea=`python3 -c "import volcdb; print(volcdb.get_licsbas_clipstring_volcano(volcid = "$volcid", customradius_km = 55.55/2))" | tail -n 1`
+fi
 
 if [ $lowres == 1 ]; then
   echo "running for lowres only"
