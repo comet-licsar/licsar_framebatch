@@ -615,7 +615,8 @@ for x in `cat gapfill_job/tmp_rslcs2copy` $master; do
  fi
 done
 
-NOIFG=`cat gapfill_job/tmp_unw_todo | wc -l`
+cat gapfill_job/tmp_unw_todo gapfill_job/tmp_bovl_todo | sort | uniq > gapfill_job/tmp_combined_todo
+NOIFG=`cat gapfill_job/tmp_combined_todo | wc -l`
 nojobs=`echo $NOIFG/$NBATCH | bc`
 nojobs10=`echo $NOIFG*10/$NBATCH | bc | rev | cut -c 1 | rev`
 if [ $nojobs10 -gt 0 ]; then let nojobs=$nojobs+1; fi
@@ -657,49 +658,54 @@ l03extra=' -f '$frame
 else l03extra='';
 fi
 
+
 for job in `seq 1 $nojobs`; do
- let nifg=$nifgmax+1
- let nifgmax=$nifgmax+$NBATCH
- sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_unw_todo | sort -u > gapfill_job/unwjob_$job
- sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_ifg_todo | sort -u > gapfill_job/ifgjob_$job
- if [ $dobovl == 1 ]; then
-  sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_bovl_todo | sort -u > gapfill_job/bovljob_$job
-  if [ `wc -l gapfill_job/bovljob_$job | gawk {'print $1'}` -eq 0 ]; then rm gapfill_job/bovljob_$job; else
-  # TODO: last check - if bovl exists and only sbovls are to be regenerated, no need to do bovl
-   echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_soi.py -p " >> gapfill_job/bovljob_$job.sh
-   echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_bovl_ifg.sh " >> gapfill_job/bovljob_$job.sh
-   echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_sbovl_ifg.py " >> gapfill_job/bovljob_$job.sh
-  fi
-  chmod 777 gapfill_job/bovljob_$job.sh
-  waitText=$waitText" && ended('"$frame"_bovl_"$job"')"
- fi
- if [ `wc -l gapfill_job/ifgjob_$job | gawk {'print $1'}` -eq 0 ]; then rm gapfill_job/ifgjob_$job; else
-  #rm gapfill_job/ifgjob_$job.sh 2>/dev/null #just to clean..
-  #deal with mosaics here..
-  #if [ ! -f tab/$master'R_tab' ]; then cp tab/$master'_tab' tab/$master'R_tab'; fi
-  #for image in `cat gapfill_job/ifgjob_$job`; do 
-  # if [ `grep -c $image gapfill_job/tmp_rslcs2mosaic` -gt 0 ]; then
-  #  sed -i '/'$image'/d' gapfill_job/tmp_rslcs2mosaic
-  #  echo "SLC_mosaic_S1_TOPS tab/$image'R_tab' RSLC/$image/$image.rslc RSLC/$image/$image.rslc.par $rlks $azlks 0 tab/$master'R_tab'" >> gapfill_job/ifgjob_$job.sh
-  # fi
-  #done
-  echo "LiCSAR_03_mk_ifgs.py -d . -r $rlks -a $azlks"$l03extra" -c 0 -T gapfill_job/ifgjob_$job.log  -i gapfill_job/ifgjob_$job" > gapfill_job/ifgjob_$job.sh
-  #if [ $dobovl == 1 ]; then
-  #  echo "cat gapfill_job/ifgjob_$job | sed 's/ /_/' | parallel -j 1 create_bovl_ifg.sh " >> gapfill_job/ifgjob_$job.sh
-  #fi
-  chmod 777 gapfill_job/ifgjob_$job.sh
- fi
- #need to edit the unwrap script below to also accept range/azi looks!
- #hmm... actually it seems that unwrap will work anyway...
- #echo "LiCSAR_04_unwrap.py -d . -f $frame -T gapfill_job/unwjob_$job.log -l gapfill_job/unwjob_$job" > gapfill_job/unwjob_$job.sh
- echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -I "`pwd`" " > gapfill_job/unwjob_$job.sh
- echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -C "`pwd`" " >> gapfill_job/unwjob_$job.sh
- if [ $dounw == 1 ]; then
-   echo "cat gapfill_job/unwjob_$job | parallel -j 1 unwrap_geo.sh $frame" >> gapfill_job/unwjob_$job.sh
- fi
- waitText=$waitText" && ended('"$frame"_unw_"$job"')"
- chmod 777 gapfill_job/unwjob_$job.sh
+    let nifg=$nifgmax+1
+    let nifgmax=$nifgmax+$NBATCH
+    
+    # Create job files by selecting lines from the to-do lists
+    sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_unw_todo | sort -u > gapfill_job/unwjob_$job
+    sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_ifg_todo | sort -u > gapfill_job/ifgjob_$job
+
+    # Check if dobovl is enabled to create bovljob files
+    if [ $dobovl == 1 ]; then
+        sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_bovl_todo | sort -u > gapfill_job/bovljob_$job
+        
+        # Check if bovljob file is empty, if so, remove it; otherwise, prepare the job script
+        if [ `wc -l < gapfill_job/bovljob_$job` -eq 0 ]; then
+            rm gapfill_job/bovljob_$job
+        else
+            # Add commands to the bovljob script
+            echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_soi.py -p " >> gapfill_job/bovljob_$job.sh
+            echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_bovl_ifg.sh " >> gapfill_job/bovljob_$job.sh
+            echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_sbovl_ifg.py " >> gapfill_job/bovljob_$job.sh
+            chmod 777 gapfill_job/bovljob_$job.sh
+            waitText=$waitText" && ended('"$frame"_bovl_"$job"')"
+        fi
+    fi
+
+    # Check if ifgjob file is empty, if so, remove it; otherwise, prepare the job script
+    if [ `wc -l < gapfill_job/ifgjob_$job` -eq 0 ]; then
+        rm gapfill_job/ifgjob_$job
+    else
+        echo "LiCSAR_03_mk_ifgs.py -d . -r $rlks -a $azlks"$l03extra" -c 0 -T gapfill_job/ifgjob_$job.log  -i gapfill_job/ifgjob_$job" > gapfill_job/ifgjob_$job.sh
+        chmod 777 gapfill_job/ifgjob_$job.sh
+    fi
+
+    # Check if unwjob file is empty, if so, remove it; otherwise, prepare the job script
+    if [ `wc -l < gapfill_job/unwjob_$job` -eq 0 ]; then
+        rm gapfill_job/unwjob_$job
+    else
+        echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -I "`pwd`" " > gapfill_job/unwjob_$job.sh
+        echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -C "`pwd`" " >> gapfill_job/unwjob_$job.sh
+        if [ $dounw == 1 ]; then
+            echo "cat gapfill_job/unwjob_$job | parallel -j 1 unwrap_geo.sh $frame" >> gapfill_job/unwjob_$job.sh
+        fi
+        waitText=$waitText" && ended('"$frame"_unw_"$job"')"
+        chmod 777 gapfill_job/unwjob_$job.sh
+    fi
 done
+
 
 #check if there is nothing to process, then just ... finish
 cancel=0
