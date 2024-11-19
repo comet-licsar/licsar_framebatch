@@ -45,9 +45,9 @@ while getopts ":PRlpLn:i:C:M:v:" option; do
     ;;
   p ) clipasportal=1;
     ;;
-  C) extra=$extra' -C '$OPTARG;
+  C ) extra=$extra' -C '$OPTARG;
     ;;
-  R) extra=$extra' -R ';
+  R ) extra=$extra' -R ';
  esac
 done
 shift $((OPTIND -1))
