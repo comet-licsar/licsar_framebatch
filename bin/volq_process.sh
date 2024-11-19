@@ -3,13 +3,14 @@
 # this is to process the volcid - ifgs and licsbas
 
 if [ -z $1 ]; then
- echo "Usage e.g.: volq_process.sh [-M 3] [-P] [-l] [-p] [-L] -i volclip_id (or -n volcname or -v volcID)"
+ echo "Usage e.g.: volq_process.sh [-M 3] [-P] [-l] [-p] [-L] [-C 0.15] -i volclip_id (or -n volcname or -v volcID)"
  #echo "Usage e.g.: subset_mk_ifgs.sh [-P] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
  echo "parameter -P will run through comet queue"
  echo "parameter -L will run in LiCSAR regime (frame processing - update)"
  echo "-- for LiCSBAS regime:"
  echo "parameter -l means to run from lowres (additionally, with parameter -p it will clip to the extents as on volcano portal that is 55 km diameter)"
  echo "parameter -M X means target multilook factor (only for hires regime - by default -M 3)"
+ echo "parameter -C 0.X would apply additional masking based on individual coherence"
  #echo "----"
  echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frameid directory"
  echo "---"
@@ -25,7 +26,7 @@ ml=3
 clipasportal=0
 volcid=''
 
-while getopts ":PRlpLn:i:M:v:" option; do
+while getopts ":PRlpLn:i:C:M:v:" option; do
  case "${option}" in
   P) extra='-P ';
      ;;
@@ -44,7 +45,9 @@ while getopts ":PRlpLn:i:M:v:" option; do
     ;;
   p ) clipasportal=1;
     ;;
-  R) extra='-R ';
+  C) extra=$extra' -C '$OPTARG;
+    ;;
+  R) extra=$extra' -R ';
  esac
 done
 shift $((OPTIND -1))
@@ -114,7 +117,7 @@ for subfr in `ls $vidpath`; do
   #echo "licsar2licsbas.sh -M 3 -F -g -u -W -T -d -n 4 " >> $procpath/l2l.sh
   # 2024/01/31 - NOPE! ADF2 is horrible! using smooth, and from unfiltered - best results over Fogo! (or cascade, but that takes too long)
   #echo "licsar2licsbas.sh -M 3 -s -g -u -W -T -d -n 4 "$extra >> $procpath/l2l.sh
-  echo "licsar2licsbas.sh -M "$ml" -g -G "$cliparea" -u -d -T -t 0.2 -n 4 "$extra >> $procpath/l2l.sh
+  echo "licsar2licsbas.sh -M "$ml" -g -G "$cliparea" -u -d -T -t 0.2 -h 23 -n 4 "$extra >> $procpath/l2l.sh
   chmod 777 $procpath/l2l.sh
   subset_mk_ifgs.sh $extra -s $procpath/l2l.sh -N $vidpath/$subfr
   # subset_mk_ifgs.sh $extra $vidpath/$subfr
