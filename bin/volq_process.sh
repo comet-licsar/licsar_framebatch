@@ -20,6 +20,7 @@ if [ -z $1 ]; then
 fi
 
 extra=''
+lbextra=''
 regime='licsbas'
 lowres=0
 ml=3
@@ -45,9 +46,10 @@ while getopts ":PRlpLn:i:C:M:v:" option; do
     ;;
   p ) clipasportal=1;
     ;;
-  C ) extra=$extra' -C '$OPTARG;
+  C ) lbextra=$lbextra' -C '$OPTARG;
     ;;
   R ) extra=$extra' -R ';
+      lbextra=$lbextra$extra;
  esac
 done
 shift $((OPTIND -1))
@@ -99,7 +101,7 @@ if [ $lowres == 1 ]; then
     echo $frame
     #licsar2licsbas.sh -M 1 -s -g -u -W -T -d -n 4 -G $cliparea $extra $frame
     #licsar2licsbas.sh -M 1 -g -u -W -T -n 4 -G $cliparea $extra $frame
-    licsar2licsbas.sh -M 1 -g -u -d -T -n 4 -t 0.15 -G $cliparea $extra $frame
+    licsar2licsbas.sh -M 1 -g -u -d -T -n 4 -t 0.15 -G $cliparea $lbextra $frame
   done
 exit
 fi
@@ -117,7 +119,7 @@ for subfr in `ls $vidpath`; do
   #echo "licsar2licsbas.sh -M 3 -F -g -u -W -T -d -n 4 " >> $procpath/l2l.sh
   # 2024/01/31 - NOPE! ADF2 is horrible! using smooth, and from unfiltered - best results over Fogo! (or cascade, but that takes too long)
   #echo "licsar2licsbas.sh -M 3 -s -g -u -W -T -d -n 4 "$extra >> $procpath/l2l.sh
-  echo "licsar2licsbas.sh -M "$ml" -g -G "$cliparea" -u -d -T -t 0.2 -h 23 -n 4 "$extra >> $procpath/l2l.sh
+  echo "licsar2licsbas.sh -M "$ml" -g -G "$cliparea" -u -d -T -t 0.2 -h 23 -n 4 "$lbextra >> $procpath/l2l.sh
   chmod 777 $procpath/l2l.sh
   subset_mk_ifgs.sh $extra -s $procpath/l2l.sh -N $vidpath/$subfr
   # subset_mk_ifgs.sh $extra $vidpath/$subfr
