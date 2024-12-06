@@ -751,7 +751,14 @@ fi
  mkdir -p $SCRATCHDIR/$frame/RSLC
  chmod 777 $SCRATCHDIR/$frame
  mkdir $SCRATCHDIR/$frame/IFG 2>/dev/null
- mkdir $SCRATCHDIR/$frame/GEOC 2>/dev/null
+ if [ $links == 1 ]; then
+   cd $SCRATCHDIR/$frame;
+   ln -s $WORKFRAMEDIR/GEOC; mkdir -p $WORKFRAMEDIR/GEOC;
+   ln -s $WORKFRAMEDIR/GEOC.MLI; mkdir -p $WORKFRAMEDIR/GEOC.MLI;
+   cd -
+ else
+   mkdir $SCRATCHDIR/$frame/GEOC $SCRATCHDIR/$frame/GEOC.MLI 2>/dev/null
+ fi
  mkdir $SCRATCHDIR/$frame/SLC $SCRATCHDIR/$frame/LOGS  2>/dev/null
  if [ -f gapfill_job/tmp_rslcs2copy ]; then
   if [ $links == 1 ]; then
@@ -784,9 +791,10 @@ fi
  for ifg in `cat gapfill_job/tmp_unw_todo`; do 
   #if [ -d IFG/$ifg ]; then cp -r IFG/$ifg $SCRATCHDIR/$frame/IFG/.; fi;
   if [ -d GEOC/$ifg ]; then
-   if [ $links == 1 ]; then
-    ln -s `pwd`/GEOC/$ifg $SCRATCHDIR/$frame/GEOC/$ifg
-   else
+   #if [ $links == 1 ]; then
+   # ln -s `pwd`/GEOC/$ifg $SCRATCHDIR/$frame/GEOC/$ifg
+   #else
+   if [ $links == 0 ]; then
     cp -r GEOC/$ifg $SCRATCHDIR/$frame/GEOC/.; 
    fi
   elif [ -d IFG/$ifg ]; then
@@ -891,10 +899,11 @@ if [ `echo $waitText | wc -w` -gt 0 ]; then
   waitcmd='-w "'$waitText'"'
 fi
 #echo "chmod -R 777 $SCRATCHDIR/$frame" > $WORKFRAMEDIR/gapfill_job/copyjob.sh
-if [ $links == 1 ]; then
- echo "mv -n $SCRATCHDIR/$frame/GEOC/* $WORKFRAMEDIR/GEOC/." >> $WORKFRAMEDIR/gapfill_job/copyjob.sh # for fully new ifgs
- echo "for x in \`ls $SCRATCHDIR/$frame/GEOC\`; do mv -n $SCRATCHDIR/$frame/GEOC/\$x/*.??? $WORKFRAMEDIR/GEOC/\$x/.; done" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
-else
+#if [ $links == 1 ]; then
+# echo "mv -n $SCRATCHDIR/$frame/GEOC/* $WORKFRAMEDIR/GEOC/." >> $WORKFRAMEDIR/gapfill_job/copyjob.sh # for fully new ifgs
+# echo "for x in \`ls $SCRATCHDIR/$frame/GEOC\`; do mv -n $SCRATCHDIR/$frame/GEOC/\$x/*.??? $WORKFRAMEDIR/GEOC/\$x/.; done" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+#else
+if [ $links == 0 ]; then
  echo "rsync -r $SCRATCHDIR/$frame/GEOC $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 fi
 echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
