@@ -255,7 +255,7 @@ sshout=$SLCdir
 wgetcmd_scihub=''
 if [ $USE_SSH_DOWN -eq 1 ]; then
  #xferserver=jasmin-xfer1.ceda.ac.uk
- xferserver=xfer1.jasmin.ac.uk
+ xferserver=xfer-vm-01.jasmin.ac.uk
  #testing connection
  #if [ `grep -c licsar@gmail.com ~/.ssh/authorized_keys` -eq 0 ]; then
  # cat $LiCSAR_configpath/.id_rsa_licsar.pub >> ~/.ssh/authorized_keys
@@ -280,7 +280,7 @@ if [ $USE_SSH_DOWN -eq 1 ]; then
    #cp `which wget_scihub` ~/.wget_scihub
    #wgetcmd_scihub="~/.wget_scihub"
    #sshserver_scihub=jasmin-xfer2.ceda.ac.uk
-   sshserver_scihub=xfer2.jasmin.ac.uk
+   sshserver_scihub=xfer-vm-02.jasmin.ac.uk
    #wgetcmd_scihub=`which wget_scihub`  # 2023 - change from scihub
    wgetcmd_scihub=`which wget_cdse`
   fi
@@ -290,7 +290,7 @@ if [ $USE_SSH_DOWN -eq 1 ]; then
     echo "(users noticed that XFER3 connection does not work from cems-sci2.. you may try another server)"
   fi
   echo "now we will use a slower solution"
-  xferserver=jasmin-xfer1.ceda.ac.uk
+  xferserver=xfer-vm-01.jasmin.ac.uk
   test_conn=`ssh -q -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver "echo 1"`
   if [ ! -z $test_conn ] && [ $test_conn -eq 1 ]; then
    echo "will use XFER1 server to download data"
