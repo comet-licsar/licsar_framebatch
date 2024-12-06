@@ -5,8 +5,9 @@ inputfile=$1
 onlyPOD=$2
 forcee='-f' # set to '' if we don't want to force-process (only when onlyPOD==0)
 
-extrafup='-d '
-echo "Warning, setting the update to not perform any download or nla request. Might need tweaking"
+#extrafup='-d '
+#echo "Warning, setting the update to not perform any download or nla request. Might need tweaking"
+extrafup=''
 
 totalno=`wc -l $inputfile | gawk {'print $1'}`
 echo "there are "$totalno" frames to update"
