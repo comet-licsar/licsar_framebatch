@@ -42,7 +42,14 @@ if [ ! -f $frame.inp ]; then
  echo "some error in creating input"
  exit
 fi
+
+if [ `cat $frame.inp | wc -l` -lt 4 ]; then
+  echo "nothing to process, GACOS data is complete (or unavailable)"
+  rm $frame.inp
+  exit
+fi
 chmod 777 $frame.inp
+
 
 #use input file to request gacos data
 gacosapi.sh $frame.inp
