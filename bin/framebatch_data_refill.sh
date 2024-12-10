@@ -274,7 +274,7 @@ if [ $USE_SSH_DOWN -eq 1 ]; then
  #ssh -q -i $LiCSAR_configpath/.id_rsa_licsar -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver exit
  test_conn=`ssh -q -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver "echo 1"`
  if [ ! -z $test_conn ] && [ $test_conn -eq 1 ]; then
-  echo "will use XFER3 server to download data"
+  echo "will use XFER-01 server to download data"
 #  sshout=$SLCdir
 #  sshparams="-q -i $LiCSAR_configpath/.id_rsa_licsar -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
   sshparams="-q -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
@@ -289,20 +289,21 @@ if [ $USE_SSH_DOWN -eq 1 ]; then
    #cp `which wget_scihub` ~/.wget_scihub
    #wgetcmd_scihub="~/.wget_scihub"
    #sshserver_scihub=jasmin-xfer2.ceda.ac.uk
-   sshserver_scihub=xfer-vm-02.jasmin.ac.uk
+   sshserver_scihub=xfer-vm-01.jasmin.ac.uk
    #wgetcmd_scihub=`which wget_scihub`  # 2023 - change from scihub
    wgetcmd_scihub=`which wget_cdse`
   fi
  else
-  echo "You do not have access to (fast) XFER3 server, please request hpxfer service via CEDA web portal"
+  #echo "You do not have access to (fast) XFER3 server, please request hpxfer service via CEDA web portal"
   if [ `hostname` == 'host293.jc.rl.ac.uk' ]; then
     echo "(users noticed that XFER3 connection does not work from cems-sci2.. you may try another server)"
   fi
-  echo "now we will use a slower solution"
-  xferserver=xfer-vm-01.jasmin.ac.uk
+  #echo "now we will use a slower solution"
+  echo "no connection to "$xferserver". trying other one"
+  xferserver=xfer-vm-02.jasmin.ac.uk
   test_conn=`ssh -q -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $xferserver "echo 1"`
   if [ ! -z $test_conn ] && [ $test_conn -eq 1 ]; then
-   echo "will use XFER1 server to download data"
+   #echo "will use XFER1 server to download data"
    sshparams="-q -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
    sshserver=$xferserver
    wgetcmd=`which wget_alaska`
