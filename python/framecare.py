@@ -918,13 +918,16 @@ def reingest_file(fileid):
     return chars
 
 
-def ingest_file_to_licsinfo(filepath, isfullpath = True):
+def ingest_file_to_licsinfo(filepath, isfullpath = True, extradirs = [os.environ['LiCSAR_SLC'],'/work/xfc/vol5/user_cache/earmla/SLC']):
     """ Will ingest a S1 SLC zip file to the LiCSInfo database.
     If filepath is only filename, it will try find this file in neodc or LiCSAR_SLC"""
     if not isfullpath:
         filepath = s1.get_neodc_path_images(filepath, file_or_meta = True)[0]
     if not os.path.exists(filepath):
-        filepath = os.path.join(os.environ['LiCSAR_SLC'], os.path.basename(filepath))
+        for otherdir in extradirs:
+            filepath = os.path.join(otherdir, os.path.basename(filepath))
+            if os.path.exists(filepath):
+                break
         if not os.path.exists(filepath):
             print('ERROR - this file does not exist')
             return False
