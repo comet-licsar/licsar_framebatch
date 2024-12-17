@@ -491,9 +491,10 @@ if [ $DORSLC -eq 1 ]; then
   echo "only *quality* logs will be saved"
   for log in `ls $frame/log/*quality* $frame/log/getValidO*`; do
    #if [ ! -f $frameDir/log/`basename $log` ]; then
+    rm -f $frameDir/log/`basename $log`
     cp $log $frameDir/log/.
-    chmod 775 $frameDir/log/$log 2>/dev/null
-    chgrp gws_lics_admin $frameDir/log/$log 2>/dev/null
+    chmod 775 $frameDir/log/`basename $log` 2>/dev/null
+    chgrp gws_lics_admin $frameDir/log/`basename $log` 2>/dev/null
     ##cp $frame/log/$log $frameDir/log/.
    #fi
   done
