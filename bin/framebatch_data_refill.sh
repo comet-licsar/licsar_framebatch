@@ -425,6 +425,7 @@ if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
      echo "..downloaded correctly, ingesting to database"
      if [ $sshout != $SLCdir ]; then echo "(first moving downloaded file from "$sshout" to "$SLCdir" )"; mv $sshout/$x $SLCdir/.; fi
      arch2DB.py -f $SLCdir/$x >/dev/null 2>/dev/null
+     touch $SLCdir/$x
     fi
     chmod 777 $SLCdir/$x 2>/dev/null
    fi

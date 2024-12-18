@@ -28,6 +28,7 @@ if [ -z $1 ]; then
  echo "-N ............... check if there are new acquisitions since the last run. If not, will cancel the processing"
  echo "-P ............... prioritise... i.e. run on comet queue (default: use short-serial where needed)"
  echo "-A or -B ......... perform ifg gapfill (4 ifgs + extras) for only S1A/S1B"
+ echo "-b ............... also do burst overlaps"
  #echo "-R ............... prioritise through comet_responder queue"
 # echo "-k YYYY-MM-DD .... generate kml for the ifg pairs containing given date (e.g. earthquake..)"
  #echo "geocode_to_public_website=0"
@@ -52,7 +53,7 @@ force=0
 dogacos=0
 dogacos=1  # will do this now
 tienshan=0
-
+bovls=0
 #
 #if [ $USER == 'earmla' ]; then
 # prioritise=1
@@ -62,7 +63,7 @@ tienshan=0
  prioritise=0
 # fi
 
-while getopts ":cnSEfNPRGAB" option; do
+while getopts ":cnSEfNPRGAbB" option; do
  case "${option}" in
   A) sensorgapfill="-A";
      ;;
@@ -92,6 +93,8 @@ while getopts ":cnSEfNPRGAB" option; do
      force=1;
      ;;
   N) only_new_rslc=1; echo "Checking if new images appeared since the last processing";
+     ;;
+  b) bovls=1;
      ;;
  esac
 done
@@ -228,6 +231,10 @@ if [ -f $LiCSAR_procdir/$track/$frame/local_config.py ]; then
  #check tien shan
  if [ `grep -c tienshan $LiCSAR_procdir/$track/$frame/local_config.py` -gt 0 ]; then
    tienshan=`grep ^tienshan $LiCSAR_procdir/$track/$frame/local_config.py | cut -d '=' -f2 | sed 's/ //g'`
+ fi
+ # check bovls
+ if [ `grep -c bovl $LiCSAR_procdir/$track/$frame/local_config.py` -gt 0 ]; then
+   bovls=`grep ^bovl $LiCSAR_procdir/$track/$frame/local_config.py | cut -d '=' -f2 | sed 's/ //g'`
  fi
 fi
 #if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
@@ -676,6 +683,9 @@ if [ $prioritise -eq 1 ]; then
 fi
 if [ $tienshan -eq 1 ]; then
  gpextra=$gpextra"-T "
+fi
+if [ $bovls -eq 1 ]; then
+ gpextra=$gpextra"-b "
 fi
 cat << EOF > framebatch_05_gap_filling.nowait.sh
 echo "The gapfilling will use RSLCs in your work folder and update ifg or unw that were not generated (in background - check bjobs)"

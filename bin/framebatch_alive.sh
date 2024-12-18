@@ -8,6 +8,11 @@ forcee='-f' # set to '' if we don't want to force-process (only when onlyPOD==0)
 #extrafup='-d '
 #echo "Warning, setting the update to not perform any download or nla request. Might need tweaking"
 extrafup=''
+extrafup='-U '
+echo "Settting extra param to fr update that will set only autodownloader on. Might be ok but.."
+doparallel=1
+echo "WARNING, NOT PARALLELISING NOW FOR DEC UPDATE -- THIS IS ONLY FOR MANUAL RUN, DO NOT USE WITH LOTUSED JOB"
+doparallel=0
 
 totalno=`wc -l $inputfile | gawk {'print $1'}`
 echo "there are "$totalno" frames to update"
@@ -32,9 +37,13 @@ for frame in `cat $inputfile`; do
  rm -rf $LiCSAR_temp/gapfill_temp/$frame 2>/dev/null
 
  if [ $onlyPOD == 1 ]; then
-  nohup framebatch_update_frame.sh $extrafup -P $frame upfill &
-  #sleep 900
-  sleep 200 # 1500 frames should then finish starting in 3 days
+   if [ $doparallel -gt 0 ]; then
+     nohup framebatch_update_frame.sh $extrafup -P $frame upfill &
+     #sleep 900
+     sleep 200 # 1500 frames should then finish starting in 3 days
+   else
+     framebatch_update_frame.sh $extrafup -P $frame upfill
+   fi
  else
   tr=`echo $frame | cut -d '_' -f1 | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
   # master=`ls $LiCSAR_procdir/$tr/$frame/SLC | head -n1`
