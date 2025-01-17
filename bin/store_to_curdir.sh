@@ -114,6 +114,7 @@ if [ $QUALCHECK -eq 1 ]; then
 fi
 
 if [ $DORSLC -eq 1 ]; then
+ DORSLC=0 # need to check further if there is any update to deal with log files transfer.. takes too long..
  if [ -f $frame/framebatch_01_mk_image.nowait.sh ]; then
   firstrun=`stat $frame/framebatch_01_mk_image.nowait.sh | grep Modify | gawk {'print $2'} | sed 's/-//g'`
  else
@@ -181,6 +182,7 @@ if [ $DORSLC -eq 1 ]; then
        echo "checking "$frame"/"$date
        #if it already doesn't exist in LiCSAR_proc dir, or in LUTs, zip it there
        if [ ! -d $frameDir/RSLC/$date ] && [ ! -f $frameDir/RSLC/$date.7z ] && [ ! -f $frameDir/LUT/$date.7z ]; then
+        DORSLC=1
         cd $frame/RSLC
         #cleaning the folder
         if [ `ls $date/*.lt 2>/dev/null | wc -w` -gt 0 ] && [ `datediff $date $today` -ge 21 ]; then
@@ -302,10 +304,20 @@ fi
 # echo "Stored "$frame" on "`date +'%Y-%m-%d'`>> $thisDir/stored_to_curdir.txt
  #local_config.py file
  if [ -f $frame/local_config.py ]; then
-  echo "copying local config file"
-  cp $frame/local_config.py $frameDir/. 2>/dev/null
-  chmod 775 $frameDir/local_config.py 2>/dev/null
-  chgrp gws_lics_admin $frameDir/local_config.py 2>/dev/null
+  if [ -f $frameDir/local_config.py ]; then
+   if [ `diff $frame/local_config.py $frameDir/local_config.py | wc -l` -gt 0 ]; then
+    echo "copying updated local config file"
+    cploc=1
+   else
+    cploc=0
+   fi
+  else cploc=1
+  fi
+  if [ $cploc == 1 ]; then
+    cp $frame/local_config.py $frameDir/. 2>/dev/null
+    chmod 775 $frameDir/local_config.py 2>/dev/null
+    chgrp gws_lics_admin $frameDir/local_config.py 2>/dev/null
+  fi
  fi
 
 
