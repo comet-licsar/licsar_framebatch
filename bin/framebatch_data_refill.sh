@@ -3,7 +3,8 @@
 curdir=$LiCSAR_procdir
 SLCdir=$LiCSAR_SLC
 if [ $USER == 'earmla' ]; then
-  SLCdir=/work/xfc/vol5/user_cache/earmla/SLC
+  echo "WARNING, data write errors in xfc - using vol2 instead"
+  SLCdir=/work/xfc/vol5/user_cache/earmla/SLC_REMOVETHIS
   if [ ! -d $SLCdir ]; then
     SLCdir=$LiCSAR_SLC
   fi
