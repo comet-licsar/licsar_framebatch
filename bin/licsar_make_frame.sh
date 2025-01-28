@@ -29,6 +29,7 @@ if [ -z $1 ]; then
  echo "-P ............... prioritise... i.e. run on comet queue (default: use short-serial where needed)"
  echo "-A or -B ......... perform ifg gapfill (4 ifgs + extras) for only S1A/S1B"
  echo "-b ............... also do burst overlaps"
+# echo "-D .............. ignore autodownload limit - careful..."
  #echo "-R ............... prioritise through comet_responder queue"
 # echo "-k YYYY-MM-DD .... generate kml for the ifg pairs containing given date (e.g. earthquake..)"
  #echo "geocode_to_public_website=0"
@@ -60,11 +61,14 @@ bovls=0
 #else
 # echo "Note: your query will go through a general queue"
 # echo "(but you may use -P parameter to run through comet queue..)"
- prioritise=0
+prioritise=0
+extradatarefill=''
 # fi
 
-while getopts ":cnSEfNPRGAbB" option; do
+while getopts ":cnSEfNPRGAbBD" option; do
  case "${option}" in
+  D) extradatarefill='-A';
+     ;;
   A) sensorgapfill="-A";
      ;;
   B) sensorgapfill="-B";
@@ -444,7 +448,7 @@ setFrameActive.py $frame
  #doing refill/db check
  if [ $fillgaps -eq 1 ]; then
   echo "Refilling the data gaps"
-  framebatch_data_refill.sh $frame $startdate $enddate
+  framebatch_data_refill.sh $extradatarefill $frame $startdate $enddate
  elif [ $neodc_check -eq 1 ]; then
   echo "Checking if the files are ingested to licsar database"
   framebatch_data_refill.sh -c $frame $startdate $enddate
@@ -466,7 +470,7 @@ setFrameActive.py $frame
    #doing refill/db check
   if [ $fillgaps -eq 1 ]; then
    echo "Re-refilling the data gaps"
-   framebatch_data_refill.sh $frame $startdate $enddate
+   framebatch_data_refill.sh $extradatarefill $frame $startdate $enddate
   else
    echo "Re-checking if the files are ingested to licsar database"
    framebatch_data_refill.sh -c $frame $startdate $enddate
