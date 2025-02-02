@@ -318,7 +318,7 @@ else
  ls RSLC/20??????/*rslc.mli | cut -d '/' -f2 > gapfill_job/tmp_rslcs
 fi
 #ls IFG/20*_20??????/*.cc 2>/dev/null | cut -d '/' -f2 > gapfill_job/tmp_ifg_existing
-ls GEOC/20*_20??????/*.cc.tif 2>/dev/null | cut -d '/' -f2 > gapfill_job/tmp_ifg_existing
+ls GEOC/20*_20??????/20*_20??????.geo.cc.tif 2>/dev/null | cut -d '/' -f2 > gapfill_job/tmp_ifg_existing
 #rm gapfill_job/tmp_ifg_all2 2>/dev/null
 
 # prepare the 5 combinations in a row
