@@ -3,11 +3,12 @@
 # this is to process the volcid - ifgs and licsbas
 
 if [ -z $1 ]; then
- echo "Usage e.g.: volq_process.sh [-M 3] [-P] [-l] [-p] [-L] [-C 0.15] -i volclip_id (or -n volcname or -v volcID)"
+ echo "Usage e.g.: volq_process.sh [-M 3] [-P] [-l] [-p] [-L] [-C 0.15] [-g] -i volclip_id (or -n volcname or -v volcID)"
  #echo "Usage e.g.: subset_mk_ifgs.sh [-P] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
  echo "parameter -P will run through comet queue"
  echo "parameter -L will run in LiCSAR regime (frame processing - update)"
  echo "-- for LiCSBAS regime:"
+ echo "parameter -g for use of GACOS - not by default anymore as this would not run for the latest epoch..."
  echo "parameter -l means to run from lowres (additionally, with parameter -p it will clip to the extents as on volcano portal that is 55 km diameter)"
  echo "parameter -M X means target multilook factor (only for hires regime - by default -M 3)"
  echo "parameter -C 0.X would apply additional masking based on individual coherence"
@@ -29,9 +30,11 @@ clipasportal=0
 volcid=''
 sid=''
 
-while getopts ":PRlpLs:n:i:C:M:v:" option; do
+while getopts ":PRlgpLs:n:i:C:M:v:" option; do
  case "${option}" in
   P) extra='-P ';
+     ;;
+  g) lbextra=$lbextra' -g';
      ;;
   i ) vid=$OPTARG;
      ;;
@@ -122,7 +125,7 @@ if [ $lowres == 1 ]; then
     echo $frame
     #licsar2licsbas.sh -M 1 -s -g -u -W -T -d -n 4 -G $cliparea $extra $frame
     #licsar2licsbas.sh -M 1 -g -u -W -T -n 4 -G $cliparea $extra $frame
-    licsar2licsbas.sh -M 1 -g -u -d -T -n 4 -t 0.15 -G $cliparea $lbextra $frame
+    licsar2licsbas.sh -M 1 -u -d -T -n 4 -t 0.15 -G $cliparea $lbextra $frame
   done
 exit
 fi
@@ -146,9 +149,9 @@ for subfr in `ls $vidpath`; do
   # 2024/01/31 - NOPE! ADF2 is horrible! using smooth, and from unfiltered - best results over Fogo! (or cascade, but that takes too long)
   #echo "licsar2licsbas.sh -M 3 -s -g -u -W -T -d -n 4 "$extra >> $procpath/l2l.sh
   if [ ! -z $cliparea ]; then
-   echo "licsar2licsbas.sh -M "$ml" -g -G "$cliparea" -u -d -T -t 0.2 -h 23 -n 4 "$lbextra >> $procpath/l2l.sh
+   echo "licsar2licsbas.sh -M "$ml" -G "$cliparea" -u -d -T -t 0.2 -h 23 -n 4 "$lbextra >> $procpath/l2l.sh
   else
-    echo "licsar2licsbas.sh -M "$ml" -g -u -d -T -t 0.2 -h 23 -n 4 "$lbextra >> $procpath/l2l.sh
+    echo "licsar2licsbas.sh -M "$ml" -u -d -T -t 0.2 -h 23 -n 4 "$lbextra >> $procpath/l2l.sh
   fi
   chmod 777 $procpath/l2l.sh
   subset_mk_ifgs.sh $extra -s $procpath/l2l.sh -N $vidpath/$subfr
