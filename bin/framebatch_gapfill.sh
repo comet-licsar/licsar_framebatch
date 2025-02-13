@@ -871,10 +871,11 @@ echo "..running "$nojobs" jobs to generate ifgs/unws"
 rm bjobs.sh 2>/dev/null
 for job in `seq 1 $nojobs`; do
  wait=''
+ wallt=0$NBATCH':'00
  if [ -f gapfill_job/ifgjob_$job.sh ]; then
   #weird error in 'job not found'.. workaround:
 #  echo bsub -q $bsubquery -n $bsubncores -W 05:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
-  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 05:00 -M 8192 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh >> bjobs.sh
+  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W $wallt -M 8192 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh >> bjobs.sh
   #this wait text would work for unwrapping to wait for the previous job:
   wait="-w \"ended('"$frame"_ifg_"$job"')\""
  fi
@@ -882,10 +883,10 @@ for job in `seq 1 $nojobs`; do
   #weird error in 'job not found'.. workaround:
 #  echo bsub -q $bsubquery -n $bsubncores -W 08:00 -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
   #echo bsub2slurm.sh -q $bsubquery -n 1 -W 12:00 -M 25000 -R "rusage[mem=25000]" -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
-  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W 08:00 -M 16000 -J $frame'_unw_'$job -e gapfill_job/$frame'_unw_'$job.err -o gapfill_job/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh >> bjobs.sh
+  echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W $wallt -M 16000 -J $frame'_unw_'$job -e gapfill_job/$frame'_unw_'$job.err -o gapfill_job/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh >> bjobs.sh
  fi
  if [ -f gapfill_job/bovljob_$job.sh ]; then
-  echo bsub2slurm.sh -q $bsubquery -n 1 -W 08:00 -M 16000 -J $frame'_bovl_'$job -e gapfill_job/$frame'_bovl_'$job.err -o gapfill_job/$frame'_bovl_'$job.out $waitcmdcreate_soi gapfill_job/bovljob_$job.sh >> bjobs.sh
+  echo bsub2slurm.sh -q $bsubquery -n 1 -W $wallt -M 16000 -J $frame'_bovl_'$job -e gapfill_job/$frame'_bovl_'$job.err -o gapfill_job/$frame'_bovl_'$job.out $waitcmdcreate_soi gapfill_job/bovljob_$job.sh >> bjobs.sh
  fi
 done
 chmod 777 bjobs.sh

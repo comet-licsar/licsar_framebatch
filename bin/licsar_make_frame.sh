@@ -671,6 +671,7 @@ fi
 ###################################################### Gap Filling
 echo "Preparing script for gap filling"
 NBATCH=2  #max number of ifgs per job. it was 4 originally..
+NBATCH=1 # 2025/02 using no. 1 as some jobs get stuck indefinitely!
 gpextra=''
 #added skipping of check for existing scratchdir/frame for gapfilling - just automatically delete it...
 gpextra='-o '
