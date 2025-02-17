@@ -81,9 +81,10 @@ def main(argv):
         print('I required you to set your cache directory using the'\
                 'enviroment variable BATCH_CACHE_DIR')
         raise error
-    tempDir = config.get('Env','TempDir')
-    user = os.environ['USER']
-    tempDir = os.path.join(tempDir,user)
+    #tempDir = config.get('Env','TempDir')
+    #user = os.environ['USER']
+    #tempDir = os.path.join(tempDir,user)
+    tempDir = os.environ['LiCSAR_temp']
     mstrDate = lq.get_master(frameName)
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
