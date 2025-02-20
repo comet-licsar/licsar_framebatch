@@ -35,6 +35,7 @@ if [ -z $2 ]; then
  exit
 fi
 
+
 while getopts ":cAf" option; do
  case "${option}" in
   c ) CHECKONLY=1;
