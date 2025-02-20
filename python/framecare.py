@@ -918,19 +918,23 @@ def reingest_file(fileid):
     return chars
 
 
-def ingest_file_to_licsinfo(filepath, isfullpath = True, extradirs = [os.environ['LiCSAR_SLC'],'/work/xfc/vol5/user_cache/earmla/SLC']):
+def ingest_file_to_licsinfo(filepath, isfullpath = True, extradirs = [os.environ['LiCSAR_SLC']]): #,'/work/xfc/vol5/user_cache/earmla/SLC']):
     """ Will ingest a S1 SLC zip file to the LiCSInfo database.
     If filepath is only filename, it will try find this file in neodc or LiCSAR_SLC"""
     # updating extradirs
+    # updating extradirs
     try:
-        extradirs2 = []
-        efile = os.path.join(os.environ['LiCSAR_configpath'],'autodownloaddirs')
-        with open(efile) as f:
-            line = f.readline().split()
-            extradirs2.append(line[0])
-        extradirs = extradirs+extradirs2
+        extradir=os.path.join(os.environ['XFCPATH'], 'SLC')
+        if os.path.exists(extradir):
+            extradirs.append(extradir)
+        #extradirs2 = []
+        #efile = os.path.join(os.environ['LiCSAR_configpath'],'autodownloaddirs')
+        #with open(efile) as f:
+        #    line = f.readline().split()
+        #    extradirs2.append(line[0])
+        #extradirs = extradirs+extradirs2
     except:
-        print('error reading extra dirs from '+efile)
+        print('')
     extradirs = list(set(extradirs))
     if not isfullpath:
         filepath = s1.get_neodc_path_images(filepath, file_or_meta = True)[0]
