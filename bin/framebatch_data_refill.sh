@@ -1,16 +1,23 @@
 #!/bin/bash
 #procdir=$BATCH_CACHE_DIR
 curdir=$LiCSAR_procdir
-SLCdir=$LiCSAR_SLC
-if [ $USER == 'earmla' ]; then
-  #echo "WARNING, data write errors in xfc - using vol2 instead"
-  SLCdir=/work/xfc/vol5/user_cache/earmla/SLC
-  if [ ! -d $SLCdir ]; then
-    SLCdir=$LiCSAR_SLC
-  fi
+
+if [ -d $XFCPATH/SLC ]; then
+  SLCdir=$XFCPATH/SLC
+else
+  SLCdir=$LiCSAR_SLC
 fi
+
+#if [ $USER == 'earmla' ]; then
+#  #echo "WARNING, data write errors in xfc - using vol2 instead"
+#  SLCdir=/work/xfc/vol5/user_cache/earmla/SLC
+#  if [ ! -d $SLCdir ]; then
+#    SLCdir=$LiCSAR_SLC
+#  fi
+#fi
 #             if os.environ['USER'] == 'earmla':
 #                outdir = '/work/xfc/vol5/user_cache/earmla/SLC'
+echo "will download to "$SLCdir
 
 USE_SSH_DOWN=1 #if the wget error is related to SSL blocking, set this to 1 -- however JASMIN prefers to have it always =1 (to use xfer servers for download)
 use_cdse=0 #being used only for the latest data... like.. the current or previous day
