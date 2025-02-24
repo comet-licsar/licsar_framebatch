@@ -155,7 +155,7 @@ if [ -f coreg_its/noncoreg ]; then
 fi
 
 msize=`du -c SLC/$mstr/*IW?.slc | tail -n1 | gawk {'print $1'}`
-for x in `cat coreg_its/tmp_reprocess.slc | sort -r`; do
+for x in `cat coreg_its/tmp_reprocess.slc | sort`; do # -r`; do # with -r would be needed for backfilling...
  doit=0
  if [ $force == 0 ]; then
   for y in `cat coreg_its/tmp.rslc`; do 
