@@ -407,6 +407,7 @@ def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = Fals
         return False
     if not os.path.exists(os.path.join(framedir, 'subsets')):
         os.mkdir(os.path.join(framedir, 'subsets'))
+        rc=os.system('chmod 775 '+os.path.join(framedir, 'subsets'))
     #
     # get median height
     print('getting median height')
