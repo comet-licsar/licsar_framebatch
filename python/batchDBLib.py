@@ -757,7 +757,8 @@ def get_frame_files_period(frame,startdate,enddate):
                         onclause=polygs.c.polyid==polygs2bursts.c.polyid)
                     ).where(and_(polygs.c.polyid_name==frame,
                         between(func.date(files.c.acq_date),startdate.date(),enddate.date()))
-                        ).order_by(files.c.acq_date).distinct()
+                        ).distinct()
+                        # ).order_by(files.c.acq_date).distinct()
 
     sqlRes = conn.execute(fileQry)
     try:
@@ -789,7 +790,8 @@ def get_frame_files_date(frame,date):
                                      func.date(files.c.acq_date)==date+dt.timedelta(days=1)
                                     )
                                 )
-                        ).order_by(files.c.acq_date).distinct()
+                        ).distinct()
+                        #).order_by(files.c.acq_date).distinct()  # not working in mysql 8
 
     sqlRes = conn.execute(fileQry)
     try:
@@ -816,8 +818,8 @@ def get_burst_no(frame,date):
             .join(polygs,
                 onclause=polygs.c.polyid==polygs2bursts.c.polyid)
             ).where(and_(polygs.c.polyid_name==frame,
-                func.date(files.c.acq_date)==date.date()))\
-            .order_by(files.c.acq_date)
+                func.date(files.c.acq_date)==date.date())) #\
+            # .order_by(files.c.acq_date)
 
     sqlRes = conn.execute(brstQry)
 
