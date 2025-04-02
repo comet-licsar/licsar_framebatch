@@ -146,7 +146,7 @@ if [ $DORSLC -eq 1 ]; then
       if [ ! -f $out7z ]; then
        echo "compressing RSLC of "$date" to keep last 2 dates"
        cd $frame/RSLC
-       7za a -mx=1 '-xr!*.lt' '-xr!20??????.rslc' $out7z $date >/dev/null 2>/dev/null
+       7za -mmt=1 a -mx=1 '-xr!*.lt' '-xr!20??????.rslc' $out7z $date >/dev/null 2>/dev/null
        chmod 775 $out7z 2>/dev/null
        chgrp gws_lics_admin $out7z 2>/dev/null
        cd - 2>/dev/null
@@ -194,7 +194,7 @@ if [ $DORSLC -eq 1 ]; then
          chmod 775 $date/*.results
          cp $date/*.results $frameDir/log/. 2>/dev/null
          echo "compressing LUT of "$date
-         7za a -mx=1 $frameDir/LUT/$date.7z $date/*.lt $date/*.off >/dev/null 2>/dev/null
+         7za -mmt=1 a -mx=1 $frameDir/LUT/$date.7z $date/*.lt $date/*.off >/dev/null 2>/dev/null
          if [ -f $frameDir/LUT/$date.7z ]; then
             chmod 775 $frameDir/LUT/$date.7z 2>/dev/null
             chgrp gws_lics_admin $frameDir/LUT/$date.7z 2>/dev/null
@@ -205,7 +205,7 @@ if [ $DORSLC -eq 1 ]; then
         fi
         #echo "compressing RSLC from "$date
         #echo "the RSLC will not get compressed anymore"
-        #time 7za a -mx=1 '-xr!*.lt' $frameDir/RSLC/$date.7z $date >/dev/null 2>/dev/null
+        #time 7za -mmt=1 a -mx=1 '-xr!*.lt' $frameDir/RSLC/$date.7z $date >/dev/null 2>/dev/null
         #if [ $MOVE -eq 1 ]; then rm -r $date; fi
         cd $thisDir
         if [ -f $frame/log/coreg_quality_$master'_'$date.log ]; then
@@ -540,7 +540,7 @@ then
   echo "storing log files"
   logoutf=$BATCH_CACHE_DIR/LOGS/$frame'.7z'
   rm -f $logoutf 2>/dev/null
-  7za a $logoutf $frame/LOGS/* >/dev/null 2>/dev/null
+  7za -mmt=1 a $logoutf $frame/LOGS/* >/dev/null 2>/dev/null
  fi
  echo "Deleting the frame folder "$frame
  rm -rf $frame
