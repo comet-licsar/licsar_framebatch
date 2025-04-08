@@ -42,7 +42,7 @@ thisDir=`pwd`
        mkdir -p $frameDir/LUT
        rm -f $date/*.lt.orbitonly 2>/dev/null
        echo "compressing LUT of "$date
-       7za a -mx=1 $frameDir/LUT/$date.7z $date/*.lt $date/*.off >/dev/null 2>/dev/null
+       7za -mmt=1 a -mx=1 $frameDir/LUT/$date.7z $date/*.lt $date/*.off >/dev/null 2>/dev/null
        if [ -f $frameDir/LUT/$date.7z ]; then
           rm -f $date/*.lt
        else
@@ -51,7 +51,7 @@ thisDir=`pwd`
       fi
       #echo "compressing RSLC from "$date
       echo "the RSLC will not get compressed anymore"
-      #time 7za a -mx=1 '-xr!*.lt' $frameDir/RSLC/$date.7z $date >/dev/null 2>/dev/null
+      #time 7za -mmt=1 a -mx=1 '-xr!*.lt' $frameDir/RSLC/$date.7z $date >/dev/null 2>/dev/null
       if [ $MOVE -eq 1 ]; then rm -r $date; fi
       cd $thisDir
      fi
