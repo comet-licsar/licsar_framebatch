@@ -47,6 +47,7 @@ while getopts ":cAf" option; do
       shift
       ;;
   f ) trycdse=1;
+      use_cdse=1;
       echo "overriding CDSE blocker. Download might take long";
       shift
       ;;
