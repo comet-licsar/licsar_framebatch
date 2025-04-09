@@ -466,6 +466,7 @@ setFrameActive.py $frame
  
  # 2021-11-15: createFrameCache will now output also updated startdate and enddate to tmp_jobid.txt
  if [ `grep -c ^updated tmp_jobid.txt` -gt 0 ]; then
+if [ $neodc_check -gt 0 ] || [ $fillgaps -eq 1 ]; then
   echo "updated dates to make coregistration possible"
   if [ `grep ^updated tmp_jobid.txt | gawk {'print $2'}` == 'enddate' ]; then
    enddate=`grep ^updated tmp_jobid.txt | gawk {'print $4'}`
@@ -484,7 +485,7 @@ setFrameActive.py $frame
   setFrameInactive.py $frame
   setFrameActive.py $frame
   createFrameCache.py $frame $no_of_jobs $startdate $enddate > tmp_jobid.txt
- fi
+ #fi
  if [ `grep -c ^updated tmp_jobid.txt` -gt 0 ]; then
   echo "ERROR - either data missing or another problem"
   echo "please recheck your input parameters, or contact Milan"
@@ -492,7 +493,11 @@ setFrameActive.py $frame
   cat tmp_jobid.txt
   exit
  fi
- 
+else
+  echo "Warning, your data are out of temporal limit for standard SD estimation. Either you know what you are doing, or you better add either -c or enable autodownload"
+fi
+fi
+
  #ok, let's fix also the stuff already existing...
  if [ -d $LiCSAR_public/$track/$frame/interferograms ]; then
   mkdir GEOC 2>/dev/null
