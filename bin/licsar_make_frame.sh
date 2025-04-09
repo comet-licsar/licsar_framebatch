@@ -900,12 +900,16 @@ echo "(you can now CTRL-C them if you want to edit anything beforehand)"
 sleep 5
 echo "ok, continuing: "
 
-LiCSAR_01_mk_images.py -n -m $m -l list.ep -f $frame -d . -a 4 -r 20
-LiCSAR_02_coreg.py -f $frame -d . -m $m -l list.ep -i
-LiCSAR_03_mk_ifgs.py -d . -r 20 -a 4 -f $frame -c 0 -T ifgs.log -i list.ifg
+echo "step 1: mk SLCs"
+LiCSAR_01_mk_images.py -n -m $m -l list.ep -f $frame -d . -a 4 -r 20 > lmf_step1.out 2> lmf_step1.err
+echo "step 2: mk RSLCs"
+LiCSAR_02_coreg.py -f $frame -d . -m $m -l list.ep -i > lmf_step2.out 2> lmf_step2.err
+echo "step 3: mk ifgs"
+LiCSAR_03_mk_ifgs.py -d . -r 20 -a 4 -f $frame -c 0 -T ifgs.log -i list.ifg > lmf_step3.out 2> lmf_step3.err
 cat list.ifg | parallel -j 2 create_geoctiffs_to_pub.sh -I .
 cat list.ifg | parallel -j 2 create_geoctiffs_to_pub.sh -C .
 cat list.ifg | parallel -j 1 unwrap_geo.sh $frame
+echo "done"
 
 fi
 
