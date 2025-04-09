@@ -891,6 +891,9 @@ echo "cat list.ifg | parallel -j 1 unwrap_geo.sh $frame"
 
 echo ""
 echo "you may want to use them later for e.g. more ifgs - just update list.ifgs then "
+echo "(you can now CTRL-C them if you want to edit anything beforehand)"
+sleep 5
+echo "ok, continuing: "
 
 LiCSAR_01_mk_images.py -n -m $m -l list.ep -f $frame -d . -a 4 -r 20
 LiCSAR_02_coreg.py -f $frame -d . -m $m -l list.ep -i
