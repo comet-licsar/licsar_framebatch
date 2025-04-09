@@ -29,6 +29,7 @@ if [ -z $1 ]; then
  echo "-P ............... prioritise... i.e. run on comet queue (default: use short-serial where needed)"
  echo "-A or -B ......... perform ifg gapfill (4 ifgs + extras) for only S1A/S1B"
  echo "-b ............... also do burst overlaps"
+ echo "-T ............... will run PROCESSING on terminal - workaround for LOTUS2 issues in Mar-Apr 2025"
 # echo "-D .............. ignore autodownload limit - careful..."
  #echo "-R ............... prioritise through comet_responder queue"
 # echo "-k YYYY-MM-DD .... generate kml for the ifg pairs containing given date (e.g. earthquake..)"
@@ -55,6 +56,7 @@ dogacos=0
 dogacos=1  # will do this now
 tienshan=0
 bovls=0
+terminal=0
 #
 #if [ $USER == 'earmla' ]; then
 # prioritise=1
@@ -65,7 +67,7 @@ prioritise=0
 extradatarefill=''
 # fi
 
-while getopts ":cnSEfNPRGAbBD" option; do
+while getopts ":cnSEfNPRGAbBDT" option; do
  case "${option}" in
   D) extradatarefill='-A';
      ;;
@@ -99,6 +101,9 @@ while getopts ":cnSEfNPRGAbBD" option; do
   N) only_new_rslc=1; echo "Checking if new images appeared since the last processing";
      ;;
   b) bovls=1;
+     ;;
+  T) terminal=1; echo "will set things and run in terminal";
+     NORUN=1;
      ;;
  esac
 done
@@ -864,6 +869,37 @@ mkdir log tab 2>/dev/null
 #fi
 
 
+# only now, the updated way:
+if [ $terminal -gt 0 ]; then
+echo "---------------------"
+echo "---------------------"
+echo "TERMINAL PROCESSING"
+echo "---------------------"
+echo "---------------------"
+echo " the following commands will now be performed: "
+echo ""
+m=`get_master $frame`
+grep 'Not Built' framebatch_01_mk_image.list | gawk {'print $3'} | sed 's/\-//g' > list.ep
+cat framebatch_03_mk_ifg.list | sed 's/\-//g' | gawk '{nn=$3"_"$4; print nn}' > list.ifg
+
+echo "LiCSAR_01_mk_images.py -n -m $m -l list.ep -f $frame -d . -a 4 -r 20"
+echo "LiCSAR_02_coreg.py -f $frame -d . -m $m -l list.ep -i"
+echo "LiCSAR_03_mk_ifgs.py -d . -r 20 -a 4 -f $frame -c 0 -T ifgs.log -i list.ifg"
+echo "cat list.ifg | parallel -j 2 create_geoctiffs_to_pub.sh -I ."
+echo "cat list.ifg | parallel -j 2 create_geoctiffs_to_pub.sh -C ."
+echo "cat list.ifg | parallel -j 1 unwrap_geo.sh $frame"
+
+echo ""
+echo "you may want to use them later for e.g. more ifgs - just update list.ifgs then "
+
+LiCSAR_01_mk_images.py -n -m $m -l list.ep -f $frame -d . -a 4 -r 20
+LiCSAR_02_coreg.py -f $frame -d . -m $m -l list.ep -i
+LiCSAR_03_mk_ifgs.py -d . -r 20 -a 4 -f $frame -c 0 -T ifgs.log -i list.ifg
+cat list.ifg | parallel -j 2 create_geoctiffs_to_pub.sh -I .
+cat list.ifg | parallel -j 2 create_geoctiffs_to_pub.sh -C .
+cat list.ifg | parallel -j 1 unwrap_geo.sh $frame
+
+fi
 
 exit
 
