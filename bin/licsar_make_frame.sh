@@ -887,28 +887,31 @@ m=`get_master $frame`
 grep 'Not Built' framebatch_01_mk_image.list | gawk {'print $3'} | sed 's/\-//g' > list.ep
 cat framebatch_03_mk_ifg.list | sed 's/\-//g' | gawk '{nn=$3"_"$4; print nn}' > list.ifg
 
-echo "LiCSAR_01_mk_images.py -n -m $m -l list.ep -f $frame -d . -a 4 -r 20"
-echo "LiCSAR_02_coreg.py -f $frame -d . -m $m -l list.ep -i"
-echo "LiCSAR_03_mk_ifgs.py -d . -r 20 -a 4 -f $frame -c 0 -T ifgs.log -i list.ifg"
-echo "cat list.ifg | parallel -j 2 create_geoctiffs_to_pub.sh -I ."
-echo "cat list.ifg | parallel -j 2 create_geoctiffs_to_pub.sh -C ."
-echo "cat list.ifg | parallel -j 1 unwrap_geo.sh $frame"
-
+echo "LiCSAR_01_mk_images.py -n -m $m -l list.ep -f $frame -d . -a 4 -r 20  > lmf_step1.out 2> lmf_step1.err"
+echo "LiCSAR_02_coreg.py -f $frame -d . -m $m -l list.ep -i  > lmf_step2.out 2> lmf_step2.err"
+echo "LiCSAR_03_mk_ifgs.py -d . -r 20 -a 4 -f $frame -c 0 -T ifgs.log -i list.ifg  > lmf_step3.out 2> lmf_step3.err"
+#echo "cat list.ifg | parallel -j 2 create_geoctiffs_to_pub.sh -I .  >> lmf_step3.out 2>> lmf_step3.err"
+#echo "cat list.ifg | parallel -j 2 create_geoctiffs_to_pub.sh -C . >> lmf_step3.out 2>> lmf_step3.err"
+#echo "cat list.ifg | parallel -j 1 unwrap_geo.sh $frame  > lmf_step4.out 2> lmf_step4.err"
+echo "./framebatch_05_gap_filling.nowait.sh"
 echo ""
-echo "you may want to use them later for e.g. more ifgs - just update list.ifgs then "
-echo "(you can now CTRL-C them if you want to edit anything beforehand)"
-sleep 5
-echo "ok, continuing: "
+#echo "you may want to use them later for e.g. more ifgs - just update list.ifgs then "
+#echo "(you can now CTRL-C them if you want to edit anything beforehand)"
+echo "please be patient (will run for hours...)"
+#sleep 5
+#echo "ok, continuing: "
 
-echo "step 1: mk SLCs"
+echo ".. running step 1: mk SLCs (15+ min per one epoch)"
 LiCSAR_01_mk_images.py -n -m $m -l list.ep -f $frame -d . -a 4 -r 20 > lmf_step1.out 2> lmf_step1.err
-echo "step 2: mk RSLCs"
+echo ".. running step 2: mk RSLCs (30+ min per epoch)"
 LiCSAR_02_coreg.py -f $frame -d . -m $m -l list.ep -i > lmf_step2.out 2> lmf_step2.err
-echo "step 3: mk ifgs"
+echo ".. running step 3: mk ifgs (less than 10 min per ifg)"
 LiCSAR_03_mk_ifgs.py -d . -r 20 -a 4 -f $frame -c 0 -T ifgs.log -i list.ifg > lmf_step3.out 2> lmf_step3.err
 cat list.ifg | parallel -j 2 create_geoctiffs_to_pub.sh -I .
 cat list.ifg | parallel -j 2 create_geoctiffs_to_pub.sh -C .
-cat list.ifg | parallel -j 1 unwrap_geo.sh $frame
+echo ".. running step 4: already sending to LOTUS2 (check bjobs)"
+#cat list.ifg | parallel -j 1 unwrap_geo.sh $frame
+./framebatch_05_gap_filling.nowait.sh
 echo "done"
 
 fi
