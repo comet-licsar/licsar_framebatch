@@ -8,6 +8,7 @@ if [ -z $1 ]; then
  echo "parameter -P will run through comet queue"
  echo "parameter -s foo.sh .. will run foo.sh script after end of generation of ifgs"
  echo "parameter -N will skip standard unwrapping (useful if reunw is planned)"
+ echo "parameter -R will add rg offset tracking to processing"
  echo "----"
  echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frameid directory"
  echo "NOTE: if you use ifgs.list, please provide FULL PATH. Also note, the ifgs.list should contain pairs in the form of e.g.:"

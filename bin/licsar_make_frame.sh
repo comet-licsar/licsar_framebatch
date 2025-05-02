@@ -29,6 +29,7 @@ if [ -z $1 ]; then
  echo "-P ............... prioritise... i.e. run on comet queue (default: use short-serial where needed)"
  echo "-A or -B ......... perform ifg gapfill (4 ifgs + extras) for only S1A/S1B"
  echo "-b ............... also do burst overlaps"
+ echo "-R ............... also do rg (and azi) offsets"
  echo "-T ............... will run PROCESSING on terminal - workaround for LOTUS2 issues in Mar-Apr 2025"
 # echo "-D .............. ignore autodownload limit - careful..."
  #echo "-R ............... prioritise through comet_responder queue"
@@ -65,6 +66,7 @@ terminal=0
 # echo "(but you may use -P parameter to run through comet queue..)"
 prioritise=0
 extradatarefill=''
+rgoff=0
 # fi
 
 while getopts ":cnSEfNPRGAbBDT" option; do
@@ -95,8 +97,11 @@ while getopts ":cnSEfNPRGAbBDT" option; do
      ;;
   P) prioritise=1; echo "prioritising - using comet queue in all steps";
      ;;
-  R) prioritise_nrt=1; echo "prioritising through comet_responder";
-     force=1;
+  R) rgoff=1;
+     #prioritise_nrt=1; echo "prioritising through comet_responder";
+     #force=1;
+     #;;
+     echo "will generate also rg offsets";
      ;;
   N) only_new_rslc=1; echo "Checking if new images appeared since the last processing";
      ;;
@@ -701,6 +706,9 @@ if [ $tienshan -eq 1 ]; then
 fi
 if [ $bovls -eq 1 ]; then
  gpextra=$gpextra"-b "
+fi
+if [ $rgoff -eq 1 ]; then
+ gpextra=$gpextra"-R "
 fi
 cat << EOF > framebatch_05_gap_filling.nowait.sh
 echo "The gapfilling will use RSLCs in your work folder and update ifg or unw that were not generated (in background - check bjobs)"

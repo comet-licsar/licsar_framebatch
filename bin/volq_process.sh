@@ -12,6 +12,7 @@ if [ -z $1 ]; then
  echo "parameter -l means to run from lowres (additionally, with parameter -p it will clip to the extents as on volcano portal that is 55 km diameter)"
  echo "parameter -M X means target multilook factor (only for hires regime - by default -M 3)"
  echo "parameter -C 0.X would apply additional masking based on individual coherence"
+ echo "parameter -R would add range offset tracking-supported unwrapping"
  echo "-s would use sid"
  #echo "----"
  echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frameid directory"
@@ -56,7 +57,8 @@ while getopts ":PRlgpLs:n:i:C:M:v:" option; do
   C ) lbextra=$lbextra' -C '$OPTARG;
     ;;
   R ) extra=$extra' -R ';
-      lbextra=$lbextra$extra;
+      lbextra=$lbextra' -R ';
+    ;;
  esac
 done
 shift $((OPTIND -1))
@@ -96,7 +98,9 @@ if [ $regime == 'licsar' ]; then
   #for x in `grep '\[' $tempfile | sed "s/'//g" | sed 's/\[//' | sed 's/\]//' | sed 's/\,//'`; do
   for x in `cat $tempfile`; do
      echo "running background process for frame "$frame
-     nohup framebatch_update_frame.sh -u $extra $x upfill > $tempfile.log.$x &
+     # nohup framebatch_update_frame.sh -u $extra $x upfill > $tempfile.log.$x &
+     # removing 'extra' as LOTUS2 now does not support prioritised queues...
+     nohup framebatch_update_frame.sh -u $x upfill > $tempfile.log.$x &
      sleep 15
   done
   rm $tempfile 2>/dev/null
