@@ -22,10 +22,12 @@ checkMosaic=1
 locl=0
 dobovl=0
 dounw=1
+dorgo=0 # for offset tracking
 # for S1A or S1B only
 A=0
 B=0
 ifglist=''
+ifglistonly=0
 
 source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 #quality checker here is the basic one. but still it does problems! e.g. Iceland earthquake - took long to process due to tech complications
@@ -43,7 +45,9 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -g ... will run further framebatch step, i.e. geocoding"
                    echo "parameter -S ... will run store after geocoding.."
                    echo "parameter -P ... prioritise (run through cpom-comet)"
-                   echo "parameter -i ifg.list ... add ifg pairs from the given ifg.list file"
+                   echo "parameter -i ifgtoadd.list ... add ifg pairs from the given ifg.list file"
+                   echo "parameter -I ifg.list ........ generate ONLY ifg pairs from the given ifg.list file"
+                   echo "parameter -R ... include also range pixel offsets (careful, better use together with -I)"
                    echo "parameter -o ... no check if gapfill dir exists - DO NOT USE IF NOT SURE WHETHER ANOTHER GAPFILL IN PROGRESS"
                    echo "parameter -T ... Tien Shan strategy - do connections starting May etc."
                    echo "parameter -A or -B .. do only S1A/S1B combinations"
@@ -53,7 +57,7 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -N ... this will SKIP unwrapping (useful if you plan using LiCSBAS02to05_unwrap)"
                    exit; fi
 
-while getopts ":wn:gSaABi:Pos:lbTN" option; do
+while getopts ":wn:gSaABi:I:RPos:lbTN" option; do
  case "${option}" in
   A) A=1; echo "S1A only";
       ;;
@@ -85,6 +89,11 @@ while getopts ":wn:gSaABi:Pos:lbTN" option; do
       ;;
   i ) ifglist=$OPTARG; echo "adding ifgs from the text file "$ifglist;
 #      shift
+      ;;
+  I ) ifglist=$OPTARG; echo "generating ONLY ifgs from the text file "$ifglist;
+      ifglistonly=1;
+      ;;
+  R ) dorgo=1; # licsar_offset_tracking_pair.sh $ifg --awin 64 --rwin 128 --rstep 40 --astep 8
       ;;
   s ) shscript=$OPTARG; echo "will run this script afterwards: "$shscript;
 #      shift
@@ -320,6 +329,21 @@ fi
 #ls IFG/20*_20??????/*.cc 2>/dev/null | cut -d '/' -f2 > gapfill_job/tmp_ifg_existing
 ls GEOC/20*_20??????/20*_20??????.geo.cc.tif 2>/dev/null | cut -d '/' -f2 > gapfill_job/tmp_ifg_existing
 #rm gapfill_job/tmp_ifg_all2 2>/dev/null
+
+
+
+if [ $ifglistonly -gt 0 ]; then
+# from the txt file here:
+if [ ! -z $ifglist ]; then
+ cp $ifglist gapfill_job/tmp_ifg_all
+fi
+
+if [ ! -f gapfill_job/tmp_ifg_all ]; then
+  echo "some error in "$ifglist
+  exit
+fi
+
+else
 
 # prepare the 5 combinations in a row
 for FIRST in `cat gapfill_job/tmp_rslcs`; do 
@@ -585,6 +609,10 @@ fi
 
 #cat gapfill_job/tmp_ifg_all2 | head -n-5 | sort -u > gapfill_job/tmp_ifg_all
 cat gapfill_job/tmp_ifg_all2 | sort -u > gapfill_job/tmp_ifg_all # this is the important file with ALL ifgs..
+
+fi
+
+
 if [ $dobovl -eq 1 ]; then
  cp gapfill_job/tmp_ifg_all gapfill_job/tmp_bovl_todo
  for x in `ls GEOC/*/*.cc.tif 2>/dev/null | cut -d '/' -f2`; do
@@ -597,6 +625,17 @@ fi
 
 for ifg in `cat gapfill_job/tmp_ifg_existing`; do  sed -i '/'$ifg'/d' gapfill_job/tmp_ifg_all; done
 sed 's/_/ /' gapfill_job/tmp_ifg_all > gapfill_job/tmp_ifg_todo
+if [ $dorgo -gt 0 ]; then
+  rm gapfill_job/tmp_rgo_todo 2>/dev/null
+  for pair in `cat gapfill_job/tmp_ifg_all`; do if [ ! -f GEOC/$pair/$pair.geo.rng.tif ]; then echo $pair >> gapfill_job/tmp_rgo_todo; fi; done
+  # also prep script
+  offsetsh=`pwd`/offsetrack.sh
+  echo "licsar_offset_tracking_pair.sh \$1 --noderamp --novr 1 --awin 24 --rwin 48 --rstep $rlks --astep "$azlks > $offsetsh
+  echo "offset tracking will be performed as: "
+  cat $offsetsh
+  chmod 777 $offsetsh
+fi
+
 #rm gapfill_job/tmp_rslcs2copy 2>/dev/null
 for x in `cat gapfill_job/tmp_ifg_todo`; do echo $x >> gapfill_job/tmp_rslcs2copy; done
 sort -u gapfill_job/tmp_rslcs2copy -o gapfill_job/tmp_rslcs2copy 2>/dev/null
@@ -676,14 +715,25 @@ for job in `seq 1 $nojobs`; do
             rm gapfill_job/bovljob_$job
         else
             # Add commands to the bovljob script
-            echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_soi.py -p " >> gapfill_job/bovljob_$job.sh
-            echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_bovl_ifg.sh " >> gapfill_job/bovljob_$job.sh
-            echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel -j 1 create_sbovl_ifg.py " >> gapfill_job/bovljob_$job.sh
+            echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel.perl -j 1 create_soi.py -p " >> gapfill_job/bovljob_$job.sh
+            echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel.perl -j 1 create_bovl_ifg.sh " >> gapfill_job/bovljob_$job.sh
+            echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel.perl -j 1 create_sbovl_ifg.py " >> gapfill_job/bovljob_$job.sh
             chmod 777 gapfill_job/bovljob_$job.sh
             waitText=$waitText" && ended('"$frame"_bovl_"$job"')"
         fi
     fi
 
+    if [ $dorgo -gt 0 ]; then
+      sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_rgo_todo 2>/dev/null | sort -u > gapfill_job/offsetsjob_$job 2>/dev/null
+      if [ `wc -l < gapfill_job/offsetsjob_$job` -eq 0 ]; then
+            rm gapfill_job/offsetsjob_$job
+        else
+            # Add commands to the offsetsjob script
+            echo "cat gapfill_job/offsetsjob_$job | parallel.perl -j 1 "$offsetsh > gapfill_job/offsetsjob_$job.sh
+            chmod 777 gapfill_job/offsetsjob_$job.sh
+            #waitText=$waitText" && ended('"$frame"_offsetsjob_"$job"')"
+        fi
+    fi
     # Check if ifgjob file is empty, if so, remove it; otherwise, prepare the job script
     if [ `wc -l < gapfill_job/ifgjob_$job` -eq 0 ]; then
         rm gapfill_job/ifgjob_$job
@@ -696,10 +746,10 @@ for job in `seq 1 $nojobs`; do
     if [ `wc -l < gapfill_job/unwjob_$job` -eq 0 ]; then
         rm gapfill_job/unwjob_$job
     else
-        echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -I "`pwd`" " > gapfill_job/unwjob_$job.sh
-        echo "cat gapfill_job/unwjob_$job | parallel -j 1 create_geoctiffs_to_pub.sh -C "`pwd`" " >> gapfill_job/unwjob_$job.sh
+        echo "cat gapfill_job/unwjob_$job | parallel.perl -j 1 create_geoctiffs_to_pub.sh -I "`pwd`" " > gapfill_job/unwjob_$job.sh
+        echo "cat gapfill_job/unwjob_$job | parallel.perl -j 1 create_geoctiffs_to_pub.sh -C "`pwd`" " >> gapfill_job/unwjob_$job.sh
         if [ $dounw == 1 ]; then
-            echo "cat gapfill_job/unwjob_$job | parallel -j 1 unwrap_geo.sh $frame" >> gapfill_job/unwjob_$job.sh
+            echo "cat gapfill_job/unwjob_$job | parallel.perl -j 1 unwrap_geo.sh $frame" >> gapfill_job/unwjob_$job.sh
         fi
         waitText=$waitText" && ended('"$frame"_unw_"$job"')"
         chmod 777 gapfill_job/unwjob_$job.sh
@@ -715,6 +765,11 @@ if [ `wc -l gapfill_job/tmp_ifg_todo | gawk {'print $1'}` == 0 ] && [ `wc -l gap
  cancel=1
  if [ $dobovl == 1 ]; then
   if [ `wc -l gapfill_job/tmp_bovl_todo | gawk {'print $1'}` -gt 0 ]; then
+   cancel=0
+  fi
+ fi
+ if [ $dorgo == 1 ]; then
+  if [ `wc -l gapfill_job/tmp_rgo_todo | gawk {'print $1'}` -gt 0 ]; then
    cancel=0
   fi
  fi
@@ -746,6 +801,9 @@ fi
  echo "There are "`wc -l gapfill_job/tmp_ifg_todo | gawk {'print $1'}`" interferograms to process and "`wc -l gapfill_job/tmp_unw_todo | gawk {'print $1'}`" to unwrap."
  if [ $dobovl == 1 ]; then
   echo "(and "`wc -l gapfill_job/tmp_bovl_todo | gawk {'print $1'}`" subswath+burst overlap ifgs (sbovls) to generate)"
+ fi
+ if [ $dorgo == 1 ]; then
+  echo "(and "`wc -l gapfill_job/tmp_rgo_todo | gawk {'print $1'}`" pairs for offset tracking)"
  fi
  #if [ -d $SCRATCHDIR/$frame ]; then echo "..cleaning scratchdir"; rm -rf $SCRATCHDIR/$frame; fi
  mkdir -p $SCRATCHDIR/$frame/RSLC
@@ -840,6 +898,15 @@ fi
 ###############################################
 #now we can start jobs..
  echo "running jobs"
+ if [ $dorgo -gt 0 ]; then
+   # keeping in the batch directory...
+   for job in `seq 1 $nojobs`; do
+     if [ -f gapfill_job/offsetsjob_$job.sh ]; then
+       bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 32768 -J $frame"_offsetsjob_"$job -e gapfill_job/offsetsjob_$job.err -o gapfill_job/offsetsjob_$job.out gapfill_job/offsetsjob_$job.sh >/dev/null
+     fi
+   done
+ fi
+
  cd $SCRATCHDIR/$frame
  #weird error - mk_ifg is reading SLC tabs instead of rslc?? (need debug).. quick fix here:
  #for x in `ls tab/20??????_tab`; do cp `echo $x | sed 's/_tab/R_tab/'` $x; done
@@ -861,7 +928,7 @@ if [ $dobovl == 1 ]; then
 #first run mosaicking
  waitTextcreate_soi="ended('"$frame"_soi_00')"
  waitcmdcreate_soi="-w \""$waitTextcreate_soi"\""
- bsub2slurm.sh -q $bsubquery -n 1 -W 24:00 -M 16000 -J $frame"_soi_00" create_soi_00.py >/dev/null
+ bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 16000 -J $frame"_soi_00" create_soi_00.py >/dev/null
 else
  waitcmdcreate_soi='';
 fi
