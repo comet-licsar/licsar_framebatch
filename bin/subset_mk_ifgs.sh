@@ -40,7 +40,7 @@ if [ -z $1 ]; then echo "please check provided parameters"; exit; fi
 if [ ! -z $2 ]; then
  echo "using file "$2" as input for ifgs"
  ifglist=`realpath $2`
- extra='-i '$ifglist
+ extra=$extra'-i '$ifglist
 fi
 
 cd $1

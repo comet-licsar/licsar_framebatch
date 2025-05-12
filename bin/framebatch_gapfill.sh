@@ -623,9 +623,9 @@ if [ $dobovl -eq 1 ]; then
  for x in `cat gapfill_job/tmp_bovl_todo | sed 's/_/ /'`; do echo $x >> gapfill_job/tmp_rslcs2copy; done
 fi
 
-for ifg in `cat gapfill_job/tmp_ifg_existing`; do  sed -i '/'$ifg'/d' gapfill_job/tmp_ifg_all; done
-sed 's/_/ /' gapfill_job/tmp_ifg_all > gapfill_job/tmp_ifg_todo
+
 if [ $dorgo -gt 0 ]; then
+  # setting it here, as we will want to apply also on ifgs already existing (if the offsets do not exist)
   rm gapfill_job/tmp_rgo_todo 2>/dev/null
   for pair in `cat gapfill_job/tmp_ifg_all`; do if [ ! -f GEOC/$pair/$pair.geo.rng.tif ]; then echo $pair >> gapfill_job/tmp_rgo_todo; fi; done
   # also prep script
@@ -635,6 +635,10 @@ if [ $dorgo -gt 0 ]; then
   cat $offsetsh
   chmod 777 $offsetsh
 fi
+
+# just removing already existing ifgs from the list
+for ifg in `cat gapfill_job/tmp_ifg_existing`; do  sed -i '/'$ifg'/d' gapfill_job/tmp_ifg_all; done
+sed 's/_/ /' gapfill_job/tmp_ifg_all > gapfill_job/tmp_ifg_todo
 
 #rm gapfill_job/tmp_rslcs2copy 2>/dev/null
 for x in `cat gapfill_job/tmp_ifg_todo`; do echo $x >> gapfill_job/tmp_rslcs2copy; done
@@ -654,7 +658,7 @@ for x in `cat gapfill_job/tmp_rslcs2copy` $master; do
  fi
 done
 
-cat gapfill_job/tmp_unw_todo gapfill_job/tmp_bovl_todo | sort | uniq > gapfill_job/tmp_combined_todo
+cat gapfill_job/tmp_*_todo | sort | uniq > gapfill_job/tmp_combined_todo
 NOIFG=`cat gapfill_job/tmp_combined_todo | wc -l`
 nojobs=`echo $NOIFG/$NBATCH | bc`
 nojobs10=`echo $NOIFG*10/$NBATCH | bc | rev | cut -c 1 | rev`
