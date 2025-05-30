@@ -915,8 +915,7 @@ echo ".. running step 2: mk RSLCs (30+ min per epoch)"
 LiCSAR_02_coreg.py -f $frame -d . -m $m -l list.ep -i > lmf_step2.out 2> lmf_step2.err
 echo ".. running step 3: mk ifgs (less than 10 min per ifg)"
 LiCSAR_03_mk_ifgs.py -d . -r 20 -a 4 -f $frame -c 0 -T ifgs.log -i list.ifg > lmf_step3.out 2> lmf_step3.err
-cat list.ifg | parallel.perl -j 2 create_geoctiffs_to_pub.sh -I .
-cat list.ifg | parallel.perl -j 2 create_geoctiffs_to_pub.sh -C .
+for x in `cat list.ifg`; do create_geoctiffs_to_pub.sh -I . $x; create_geoctiffs_to_pub.sh -C . $x; done
 echo ".. running step 4: already sending to LOTUS2 (check bjobs)"
 #cat list.ifg | parallel.perl -j 1 unwrap_geo.sh $frame
 ./framebatch_05_gap_filling.nowait.sh

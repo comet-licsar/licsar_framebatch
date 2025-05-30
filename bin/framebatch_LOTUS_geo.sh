@@ -75,7 +75,7 @@ for script in `ls tmp_geocmd_*`; do
  echo "./"$script >> framebatch_geocode_script.sh
 done
 chmod 777 framebatch_geocode_script.sh
-parallel.perl --jobs $NOPAR < framebatch_geocode_script.sh
+parallel.perl --jobs $NOPAR < framebatch_geocode_script.sh    # 2025 - something got wrong with the parallel script.. hope this will still work
 #./framebatch_geocode_script.sh
 
 #additionally process MLIs - without parallelisation

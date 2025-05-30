@@ -719,9 +719,9 @@ for job in `seq 1 $nojobs`; do
             rm gapfill_job/bovljob_$job
         else
             # Add commands to the bovljob script
-            echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel.perl -j 1 create_soi.py -p " >> gapfill_job/bovljob_$job.sh
-            echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel.perl -j 1 create_bovl_ifg.sh " >> gapfill_job/bovljob_$job.sh
-            echo "cat gapfill_job/bovljob_$job | sed 's/ /_/' | parallel.perl -j 1 create_sbovl_ifg.py " >> gapfill_job/bovljob_$job.sh
+            echo "for x in \`cat gapfill_job/bovljob_$job | sed 's/ /_/'\`; do create_soi.py \$x; done " >> gapfill_job/bovljob_$job.sh
+            echo "for x in \`cat gapfill_job/bovljob_$job | sed 's/ /_/'\`; do create_bovl_ifg.sh \$x; done" >> gapfill_job/bovljob_$job.sh
+            echo "for x in \`cat gapfill_job/bovljob_$job | sed 's/ /_/'\`; do create_sbovl_ifg.py \$x; done" >> gapfill_job/bovljob_$job.sh
             chmod 777 gapfill_job/bovljob_$job.sh
             waitText=$waitText" && ended('"$frame"_bovl_"$job"')"
         fi
@@ -733,7 +733,8 @@ for job in `seq 1 $nojobs`; do
             rm gapfill_job/offsetsjob_$job
         else
             # Add commands to the offsetsjob script
-            echo "cat gapfill_job/offsetsjob_$job | parallel.perl -j 1 "$offsetsh > gapfill_job/offsetsjob_$job.sh
+            #echo "cat gapfill_job/offsetsjob_$job | parallel.perl -j 1 "$offsetsh > gapfill_job/offsetsjob_$job.sh
+            echo "for x in \`cat gapfill_job/offsetsjob_$job \`; do "$offsetsh" \$x; done" > gapfill_job/offsetsjob_$job.sh
             chmod 777 gapfill_job/offsetsjob_$job.sh
             #waitText=$waitText" && ended('"$frame"_offsetsjob_"$job"')"
         fi
@@ -750,10 +751,10 @@ for job in `seq 1 $nojobs`; do
     if [ `wc -l < gapfill_job/unwjob_$job` -eq 0 ]; then
         rm gapfill_job/unwjob_$job
     else
-        echo "cat gapfill_job/unwjob_$job | parallel.perl -j 1 create_geoctiffs_to_pub.sh -I "`pwd`" " > gapfill_job/unwjob_$job.sh
-        echo "cat gapfill_job/unwjob_$job | parallel.perl -j 1 create_geoctiffs_to_pub.sh -C "`pwd`" " >> gapfill_job/unwjob_$job.sh
+        echo "for x in \`cat gapfill_job/unwjob_$job \`; do create_geoctiffs_to_pub.sh -I "`pwd`" \$x; done" > gapfill_job/unwjob_$job.sh
+        echo "for x in \`cat gapfill_job/unwjob_$job \`; do create_geoctiffs_to_pub.sh -C "`pwd`" \$x; done" >> gapfill_job/unwjob_$job.sh
         if [ $dounw == 1 ]; then
-            echo "cat gapfill_job/unwjob_$job | parallel.perl -j 1 unwrap_geo.sh $frame" >> gapfill_job/unwjob_$job.sh
+            echo "for x in \`cat gapfill_job/unwjob_$job \`; do unwrap_geo.sh $frame \$x; done" >> gapfill_job/unwjob_$job.sh
         fi
         waitText=$waitText" && ended('"$frame"_unw_"$job"')"
         chmod 777 gapfill_job/unwjob_$job.sh
