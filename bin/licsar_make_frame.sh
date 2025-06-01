@@ -854,7 +854,7 @@ chmod 770 framebatch_07_baseline_plot.sh
 
 
 # I disabled it since it wasn't really starting.. too complicated -w , I guess J
-# bsub2slurm.sh.sh -o "$logdir/geotiffs.out" -e "$logdir/geotiffs.out" -J "geotiffs_$frame" \
+# bsub2slurm.sh -o "$logdir/geotiffs.out" -e "$logdir/geotiffs.out" -J "geotiffs_$frame" \
 # -q $bsubquery -n 1 -W 12:00 -w "$step5_wait" ./framebatch_05_geotiffs.sh
 echo ""
 echo ""
