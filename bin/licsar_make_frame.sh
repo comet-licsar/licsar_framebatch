@@ -353,7 +353,8 @@ EOF
  mv $step.list2 $step.list 
 #fi
 chmod 777 $step.sql
-
+ exptimemax=1
+ maxmaxmem=1024
  for jobid in `cat $step.list | gawk {'print $1'} | sort -un`; do
   #get connected images from previous step
   waitText=""
@@ -413,6 +414,7 @@ chmod 777 $step.sql
    # update of JASMIN - they somehow decreased default memory... fixing this here for all jobs..
    #extrabsub='-R "rusage[mem='$maxmem']" -M '$maxmem
    extrabsub='-M '$maxmem
+   if [ $maxmem -gt $maxmaxmem ]; then maxmaxmem=$maxmem; fi
    #fi
   #fi
   #get expected time
@@ -425,6 +427,7 @@ chmod 777 $step.sql
   exptime=`echo $hoursperone*$notoprocess+1.5 | bc | cut -d '.' -f1`
   if [ $exptime -gt 23 ]; then exptime=23; fi
   if [ $exptime -lt 10 ]; then exptime=0$exptime; fi
+  if [ $exptime -gt $exptimemax ]; then exptimemax=$exptime; fi
   echo bsub2slurm.sh -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$jobid"_"$step" \
      -q $bsubquery -n $bsubncores -W $exptime:59 $extrabsub $waitcmd $stepcmd $jobid >> $step.wait.sh
   echo bsub2slurm.sh -o "$logdir/$step"_"$jobid.out" -e "$logdir/$step"_"$jobid.err" -Ep \"ab_LiCSAR_lotus_cleanup.py $jobid\" -J "$jobid"_"$step" \
@@ -432,7 +435,29 @@ chmod 777 $step.sql
  done
  
  rm tmpText 2>/dev/null
- chmod 770 $step.wait.sh $step'.nowait.sh'
+ 
+ # 06/2025: arrange as job array for LOTUS2:
+ maxj=`cat $step.nowait.sh | wc -l`
+ if [ $exptimemax -gt 23 ]; then qos='long'; echo "setting long qos"; else qos='standard'; fi
+ if [ $bsubncores -gt 1 ]; then qos='high'; echo "setting high qos"; fi
+ 
+ cat << EOF > $step.lotus2.sh
+#!/bin/bash
+#SBATCH --job-name=$frame.`echo $step | cut -c 12-`
+#SBATCH --time=$exptimemax:59:00
+#SBATCH --account=nceo_geohazards
+#SBATCH --partition=standard
+#SBATCH --qos=$qos
+#SBATCH -o $logdir/%A.%a.out
+#SBATCH -e $logdir/%A.%a.err
+#SBATCH --array=1-$maxj
+#SBATCH --mem-per-cpu=${maxmaxmem}M
+
+CID=\`gawk 'NR=='\${SLURM_ARRAY_TASK_ID} $step.nowait.sh | gawk 'END {print \$NF}'\`
+$stepcmd \$CID
+ab_LiCSAR_lotus_cleanup.py \$CID
+EOF
+ chmod 770 $step.wait.sh $step'.nowait.sh' $step.lotus2.sh
 }
 
 ## MAIN CODE
@@ -541,7 +566,11 @@ fi
  prepare_job_script $step $stepcmd $stepsql $stepprev
  rm $step.wait.sh
  if [ $NORUN -eq 0 ]; then
-  ./$step.nowait.sh
+  #./$step.nowait.sh
+  # 2025/06: running as Job Array:
+  echo "Running step 1 as job array"
+  PREVJID=$(sbatch --parsable $step.lotus2.sh)
+  echo $PREVJID
  else
   echo "To run this step, use ./"$step".nowait.sh"
  fi
@@ -558,7 +587,10 @@ fi
 
  prepare_job_script $step $stepcmd $stepsql $stepprev
  if [ $NORUN -eq 0 ]; then
-  ./$step.wait.sh
+  # ./$step.wait.sh
+  echo "Running step 2 as job array"
+  PREVJID=$(sbatch -d afterany:$PREVJID --parsable $step.lotus2.sh)
+  echo $PREVJID
  else
   echo "To run this step, use ./"$step".nowait.sh"
  fi
@@ -640,8 +672,9 @@ fi
 
 if [ $NORUN -eq 0 ]; then
  #./framebatch_x_second_iteration.wait.sh
- echo 'setting post-proc coreg (new functionality - this will also auto inactivate the frame and run gapfilling afterwards. store script is run through gapfilling)'
- ./framebatch_x_coreg_iteration.wait.sh
+ echo 'setting post-proc coreg' # (new functionality - this will also auto inactivate the frame and run gapfilling afterwards. store script is run through gapfilling)'
+ # ./framebatch_x_coreg_iteration.wait.sh
+ sbatch -d afterany:$PREVJID --account=nceo_geohazards --time=00:45:00 --job-name=$frame.it2_coreg --output=LOGS/it2_coreg.out --error=LOGS/it2_coreg.err --wrap=" framebatch_postproc_coreg.sh "$frame" 1 " --mem=16384 --partition=standard --qos=standard
 fi
 
 
@@ -656,7 +689,10 @@ fi
  prepare_job_script $step $stepcmd $stepsql $stepprev
  if [ $NORUN -eq 0 ]; then
    if [ -f $step.wait.sh ]; then
-    ./$step.wait.sh
+    #./$step.wait.sh
+    echo "Running step 3 as job array"
+    PREVJID=$(sbatch -d afterany:$PREVJID --parsable $step.lotus2.sh)
+    echo $PREVJID
    else
     echo "ERROR: no mk_ifg script exists - perhaps not enough of input data. Exiting (keeping processing, so you may store at least coregistered files and their LUTs)"
     exit
@@ -675,8 +711,11 @@ fi
  
  prepare_job_script $step $stepcmd $stepsql $stepprev
  if [ $NORUN -eq 0 ]; then
-  ./$step.wait.sh
- echo "All bsub jobs are sent for processing."
+  #./$step.wait.sh
+  echo "Running step 4 as job array"
+  PREVJID=$(sbatch -d afterany:$PREVJID --parsable $step.lotus2.sh)
+  echo $PREVJID
+  echo "All jobs are sent for processing."
  else
   echo "To run this step, use ./"$step".x.sh, where x=nowait would start immediately while wait will start after finishing the previous stage"
  fi
