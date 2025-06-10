@@ -207,8 +207,9 @@ for x in `cat coreg_its/tmp_reprocess.slc | sort`; do # -r`; do # with -r would 
   jobname=coreg.$x.$frame
   echo "bsub2slurm.sh -o coreg_its/coreg."$x".out -e coreg_its/coreg."$x".err -J "$jobname" -q "$que" -n 1 -W "$T" -M "$maxmem" coreg_its/coreg."$x".sh" > coreg_its/coreg.$x.job.sh
   chmod 777 coreg_its/coreg.$x.job.sh
-  #running the job
-  coreg_its/coreg.$x.job.sh
+  #running the job ... or not
+  echo coreg_its/coreg.$x.job.sh
+  maxj=$x
   if [ $autocont -eq 1 ]; then
    if [ -z $waitTextFirst ]; then
      waitText="ended("$jobname")"; 
@@ -226,6 +227,29 @@ for x in `cat coreg_its/tmp_reprocess.slc | sort`; do # -r`; do # with -r would 
   echo $x >> coreg_its/noncoreg
  fi
 done
+
+# prep the job array
+cat << EOF > framebatch_postproc_coreg.lotus2.sh
+#!/bin/bash
+#SBATCH --job-name=$frame.coreg.$maxj
+#SBATCH --time=$T:00
+#SBATCH --account=nceo_geohazards
+#SBATCH --partition=standard
+#SBATCH --qos=standard
+#SBATCH -o coreg_its/%A.%a.out
+#SBATCH -e coreg_its/%A.%a.err
+#SBATCH --array=1-$maxj
+#SBATCH --mem-per-cpu=${maxmem}M
+
+coreg_its/coreg.\${SLURM_ARRAY_TASK_ID}.sh
+
+EOF
+
+chmod 770 framebatch_postproc_coreg.lotus2.sh
+# and run it
+echo "Running postproc coreg scripts as job array"
+PREVJID=$(sbatch --parsable framebatch_postproc_coreg.lotus2.sh)
+echo $PREVJID
 
 # double-check here for the previous non coregs...
 if [ $diffprev == 0 ]; then
@@ -254,9 +278,9 @@ if [ $autocont -eq 1 ]; then
 if [ $autocont -eq 1 ]; then
  # add next iteration in waiting mode
  echo "bsub2slurm.sh -w '"$waitText"' -o coreg_its/coreg.wait.out -e coreg_its/coreg.wait.err -J coreg."$frame".wait -q "$que" -n 1 -W 00:30 ./postproc_coreg.sh" > postproc.coreg.wait.sh
- chmod 777 postproc.coreg.wait.sh
- ./postproc.coreg.wait.sh
-
+ echo "sbatch -d afterany:"$PREVJID" --account=nceo_geohazards --partition=standard --qos=standard --time=00:45:00 --job-name="$frame".waitcoreg --output=coreg_its/coreg.wait2.out --error=coreg_its/coreg.wait2.err postproc_coreg.sh" > postproc.coreg.wait2.sh
+ chmod 777 postproc.coreg.wait.sh postproc.coreg.wait2.sh
+ ./postproc.coreg.wait2.sh
 else
 
  if [ `cat coreg_its/noncoreg 2>/dev/null | wc -l` -gt 0 ]; then
