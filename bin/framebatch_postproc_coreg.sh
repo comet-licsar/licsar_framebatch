@@ -283,7 +283,7 @@ if [ $autocont -eq 1 ]; then
 if [ $autocont -eq 1 ]; then
  # add next iteration in waiting mode
  echo "bsub2slurm.sh -w '"$waitText"' -o coreg_its/coreg.wait.out -e coreg_its/coreg.wait.err -J coreg."$frame".wait -q "$que" -n 1 -W 00:30 ./postproc_coreg.sh" > postproc.coreg.wait.sh
- echo "sbatch -d afterany:"$PREVJID" --account=nceo_geohazards --partition=standard --qos=standard --time=00:45:00 --job-name="$frame".waitcoreg --output=coreg_its/coreg.wait2.out --error=coreg_its/coreg.wait2.err postproc_coreg.sh" > postproc.coreg.wait2.sh
+ echo "sbatch -d afterany:"$PREVJID" --account=nceo_geohazards --partition=standard --qos=standard --time=00:45:00 --job-name="$frame".waitcoreg --output=coreg_its/coreg.wait2.out --error=coreg_its/coreg.wait2.err --wrap='./postproc_coreg.sh'" > postproc.coreg.wait2.sh
  chmod 777 postproc.coreg.wait.sh postproc.coreg.wait2.sh
  ./postproc.coreg.wait2.sh
 else
