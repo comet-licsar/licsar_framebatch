@@ -155,6 +155,7 @@ if [ -f coreg_its/noncoreg ]; then
 fi
 
 msize=`du -c SLC/$mstr/*IW?.slc | tail -n1 | gawk {'print $1'}`
+maxj=0
 for x in `cat coreg_its/tmp_reprocess.slc | sort`; do # -r`; do # with -r would be needed for backfilling...
  doit=0
  if [ $force == 0 ]; then
@@ -209,7 +210,8 @@ for x in `cat coreg_its/tmp_reprocess.slc | sort`; do # -r`; do # with -r would 
   chmod 777 coreg_its/coreg.$x.job.sh
   #running the job ... or not
   echo coreg_its/coreg.$x.job.sh
-  maxj=$x
+  let maxj=$maxj+1
+  cp coreg_its/coreg.$x.sh coreg_its/coreg.job.$maxj.sh
   if [ $autocont -eq 1 ]; then
    if [ -z $waitTextFirst ]; then
      waitText="ended("$jobname")"; 
@@ -228,6 +230,7 @@ for x in `cat coreg_its/tmp_reprocess.slc | sort`; do # -r`; do # with -r would 
  fi
 done
 
+if [ $maxj -gt 0 ]; then
 # prep the job array
 cat << EOF > framebatch_postproc_coreg.lotus2.sh
 #!/bin/bash
@@ -241,7 +244,7 @@ cat << EOF > framebatch_postproc_coreg.lotus2.sh
 #SBATCH --array=1-$maxj
 #SBATCH --mem-per-cpu=${maxmem}M
 
-coreg_its/coreg.\${SLURM_ARRAY_TASK_ID}.sh
+coreg_its/coreg.job.\${SLURM_ARRAY_TASK_ID}.sh
 
 EOF
 
@@ -250,6 +253,8 @@ chmod 770 framebatch_postproc_coreg.lotus2.sh
 echo "Running postproc coreg scripts as job array"
 PREVJID=$(sbatch --parsable framebatch_postproc_coreg.lotus2.sh)
 echo $PREVJID
+fi
+
 
 # double-check here for the previous non coregs...
 if [ $diffprev == 0 ]; then
