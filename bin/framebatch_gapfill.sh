@@ -712,8 +712,8 @@ for job in `seq 1 $nojobs`; do
 
     # Check if dobovl is enabled to create bovljob files
     if [ $dobovl == 1 ]; then
-        sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_bovl_todo | sort -u > gapfill_job/bovljob_$job
-        
+       sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_bovl_todo | sort -u > gapfill_job/bovljob_$job
+       if [ -f gapfill_job/bovljob_$job ]; then
         # Check if bovljob file is empty, if so, remove it; otherwise, prepare the job script
         if [ `wc -l < gapfill_job/bovljob_$job` -eq 0 ]; then
             rm gapfill_job/bovljob_$job
@@ -725,29 +725,36 @@ for job in `seq 1 $nojobs`; do
             chmod 777 gapfill_job/bovljob_$job.sh
             waitText=$waitText" && ended('"$frame"_bovl_"$job"')"
         fi
+       fi
     fi
 
     if [ $dorgo -gt 0 ]; then
       sed -n ''$nifg','$nifgmax'p' gapfill_job/tmp_rgo_todo 2>/dev/null | sort -u > gapfill_job/offsetsjob_$job 2>/dev/null
-      if [ `wc -l < gapfill_job/offsetsjob_$job` -eq 0 ]; then
+      if [ -f gapfill_job/offsetsjob_$job ]; then
+       if [ `wc -l < gapfill_job/offsetsjob_$job` -eq 0 ]; then
             rm gapfill_job/offsetsjob_$job
-        else
+       else
             # Add commands to the offsetsjob script
             #echo "cat gapfill_job/offsetsjob_$job | parallel.perl -j 1 "$offsetsh > gapfill_job/offsetsjob_$job.sh
             echo "for x in \`cat gapfill_job/offsetsjob_$job \`; do "$offsetsh" \$x; done" > gapfill_job/offsetsjob_$job.sh
             chmod 777 gapfill_job/offsetsjob_$job.sh
             #waitText=$waitText" && ended('"$frame"_offsetsjob_"$job"')"
-        fi
+       fi
+      fi
     fi
+
     # Check if ifgjob file is empty, if so, remove it; otherwise, prepare the job script
+    if [ -f gapfill_job/ifgjob_$job ]; then
     if [ `wc -l < gapfill_job/ifgjob_$job` -eq 0 ]; then
         rm gapfill_job/ifgjob_$job
     else
         echo "LiCSAR_03_mk_ifgs.py -d . -r $rlks -a $azlks"$l03extra" -c 0 -T gapfill_job/ifgjob_$job.log  -i gapfill_job/ifgjob_$job" > gapfill_job/ifgjob_$job.sh
         chmod 777 gapfill_job/ifgjob_$job.sh
     fi
+    fi
 
     # Check if unwjob file is empty, if so, remove it; otherwise, prepare the job script
+    if [ -f gapfill_job/unwjob_$job ]; then
     if [ `wc -l < gapfill_job/unwjob_$job` -eq 0 ]; then
         rm gapfill_job/unwjob_$job
     else
@@ -758,6 +765,7 @@ for job in `seq 1 $nojobs`; do
         fi
         waitText=$waitText" && ended('"$frame"_unw_"$job"')"
         chmod 777 gapfill_job/unwjob_$job.sh
+    fi
     fi
 done
 
@@ -844,7 +852,8 @@ fi
   for aa in tab geo log ; do ln -s `pwd`/$aa $SCRATCHDIR/$frame/$aa; done
  else
   echo "..copying geo and other files"
-  cp -r tab geo log $SCRATCHDIR/$frame/.
+  cp -r tab geo $SCRATCHDIR/$frame/.
+  mkdir $SCRATCHDIR/$frame/log
  fi
  
  cp -r gapfill_job $SCRATCHDIR/$frame/.
@@ -905,11 +914,12 @@ fi
  echo "running jobs"
  if [ $dorgo -gt 0 ]; then
    # keeping in the batch directory...
-   for job in `seq 1 $nojobs`; do
-     if [ -f gapfill_job/offsetsjob_$job.sh ]; then
-       bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 32768 -J $frame"_offsetsjob_"$job -e gapfill_job/offsetsjob_$job.err -o gapfill_job/offsetsjob_$job.out gapfill_job/offsetsjob_$job.sh >/dev/null
-     fi
-   done
+   echo "WARNING - offsets changed to run in LiCSARtemp SCRATCHDIR after mosaicking - that is bit different than before, not tested"
+   #for job in `seq 1 $nojobs`; do
+   #  if [ -f gapfill_job/offsetsjob_$job.sh ]; then
+   #    bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 32768 -J $frame"_offsetsjob_"$job -e gapfill_job/offsetsjob_$job.err -o gapfill_job/offsetsjob_$job.out gapfill_job/offsetsjob_$job.sh >/dev/null
+   #  fi
+   #done
  fi
 
  cd $SCRATCHDIR/$frame
@@ -919,12 +929,19 @@ fi
 if [ $checkMosaic == 1 ]; then
 #first run mosaicking
 if [ `echo $waitTextmosaic | wc -w` -gt 0 ]; then
+ nomos=`grep -c SLC_mosaic_S1_TOPS gapfill_job/mosaic.sh`
+ # use 30 minutes for mosaicking one
+ let mostime=$nomos/2+1
+ if [ $mostime -gt 9 ]; then mostime=9; fi  # hope ok..
  waitcmdmosaic="-w \""$waitTextmosaic"\""
  echo "..running for missing mosaics"
- bsub2slurm.sh -q $bsubquery -n 1 -W 06:00 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
+ #bsub2slurm.sh -q $bsubquery -n 1 -W 0$mostime:00 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
  #bsub -q $bsubquery -n 1 -W 04:00 -J $frame"_mosaic" gapfill_job/mosaic.sh >/dev/null
+ # 06/2025 change:
+ JOBIDMOS=$(sbatch --account=nceo_geohazards --time=0$mostime:00:00 --job-name=$frame.mosaic --output=gapfill_job/mosaic2.out --error=gapfill_job/mosaic2.err --wrap="./gapfill_job/mosaic.sh" --mem=4096 --partition=standard --qos=standard --parsable)
 else
  waitcmdmosaic='';
+ JOBIDMOS='';
 fi
 fi
 
@@ -933,7 +950,8 @@ if [ $dobovl == 1 ]; then
 #first run mosaicking
  waitTextcreate_soi="ended('"$frame"_soi_00')"
  waitcmdcreate_soi="-w \""$waitTextcreate_soi"\""
- bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 16000 -J $frame"_soi_00" create_soi_00.py >/dev/null
+ echo "DEBUG: SOI will be created bit later"
+ # bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 16000 -J $frame"_soi_00" create_soi_00.py >/dev/null
 else
  waitcmdcreate_soi='';
 fi
@@ -941,9 +959,10 @@ fi
 #now we can start jobs..
 echo "..running "$nojobs" jobs to generate ifgs/unws"
 rm bjobs.sh 2>/dev/null
+
+wallt=0$NBATCH':'00
 for job in `seq 1 $nojobs`; do
  wait=''
- wallt=0$NBATCH':'00
  if [ -f gapfill_job/ifgjob_$job.sh ]; then
   #weird error in 'job not found'.. workaround:
 #  echo bsub -q $bsubquery -n $bsubncores -W 05:00 -J $frame'_ifg_'$job -e gapfill_job/ifgjob_$job.err -o gapfill_job/ifgjob_$job.out $waitcmdmosaic gapfill_job/ifgjob_$job.sh > tmptmp
@@ -962,7 +981,69 @@ for job in `seq 1 $nojobs`; do
  fi
 done
 chmod 777 bjobs.sh
-./bjobs.sh
+echo "Warning, experimental job arrays in place - only testing now"
+#./bjobs.sh
+
+# 06/2025: changing to job arrays, so...
+# TODO: wait for: $JOBIDMOS -> for ifgs, bovls (i guess), offsets (i guess)
+# actually i have to run offsets before due to paths... and hopefully no need for mosaicking?
+# then start and wait for all those 'main jobs' as waitcmdl2...
+
+waitcmdl2=''
+for corestr in ifg unw bovl offsets; do
+nojobs=`ls gapfill_job/$corestr'job_'*.sh 2>/dev/null | wc -l`
+if [ $nojobs -gt 0 ]; then
+l2wait=''
+maxmem=8192
+qos='standard'
+exptimemax=0
+if [ ! -z $JOBIDMOS ]; then
+  if [[ 'ifg bovl offsets' =~ $corestr ]]; then l2wait='-d afterany:'$JOBIDMOS; fi
+fi
+
+if [ $corestr == 'ifg' ]; then maxmem=8192; let exptimemax=$NBATCH/2; fi # assuming 2 ifgs per hour
+if [ $corestr == 'unw' ]; then maxmem=16384; exptimemax=$NBATCH; fi # assuming 1 unw per hour
+if [ $corestr == 'bovl' ]; then maxmem=16384; exptimemax=$NBATCH; # assuming 1 bovl per hour  # TODO: wait for create_soi ... or do it differently
+  # bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 16000 -J $frame"_soi_00" create_soi_00.py >/dev/null
+  JOBIDSOI=$(sbatch $l2wait --account=nceo_geohazards --time=23:00:00 --job-name=$frame'_soi_00' --output=gapfill_job/soi_00.out --error=gapfill_job/soi_00.err --wrap="create_soi_00.py" --mem=16384 --partition=standard --qos=standard --parsable)
+  l2wait='-d afterany:'$JOBIDSOI
+fi
+#bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 32768 -J $frame"_offsetsjob_"$job -e gapfill_job/offsetsjob_$job.err -o gapfill_job/offsetsjob_$job.out gapfill_job/offsetsjob_$job.sh >/dev/null
+if [ $corestr == 'offsets' ]; then maxmem=32768; let exptimemax=$NBATCH+1; fi # assuming 1 offset per hour, +1 extra hour
+
+if [ $exptimemax -gt 23 ]; then qos='long'; echo "setting long qos"; fi
+#if [ $bsubncores -gt 1 ]; then qos='high'; echo "setting high qos"; fi
+if [ $exptimemax -gt 23 ]; then exptimemax=23; fi
+if [ $exptimemax -lt 10 ]; then exptimemax=0$exptimemax; fi
+
+ cat << EOF > gapfill_job/batch.lotus2.$corestr.sh
+#!/bin/bash
+#SBATCH --job-name=$frame.$corestr
+#SBATCH --time=$exptimemax:59:00
+#SBATCH --account=nceo_geohazards
+#SBATCH --partition=standard
+#SBATCH --qos=$qos
+#SBATCH -o gapfill_job/%A.%a.out
+#SBATCH -e gapfill_job/%A.%a.err
+#SBATCH --array=1-$nojobs
+#SBATCH --mem-per-cpu=${maxmem}M
+
+gapfill_job/$corestr'job_'\${SLURM_ARRAY_TASK_ID}.sh
+
+EOF
+chmod 770 gapfill_job/batch.lotus2.$corestr.sh
+
+echo "running LOTUS2 job array for "$corestr
+PREVJID=$(sbatch $l2wait --parsable gapfill_job/batch.lotus2.$corestr.sh)
+echo $PREVJID
+waitcmdl2=$waitcmdl2':'$PREVJID
+fi
+done
+
+waitcmdl2=`echo $waitcmdl2 | cut -c 2-`
+waitcmdl2='-w '$waitcmdl2
+
+
 
 # copying and cleaning job
 echo "..running job that will copy outputs from TEMP to your WORKDIR"
@@ -1001,11 +1082,14 @@ echo "chmod -R 777 "$WORKFRAMEDIR >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 chmod 777 $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #workaround for 'Empty job. Job not submitted'
 echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
+echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmdl2 -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp2
 #echo bsub -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
 #echo "debug last:"
 #cat $WORKFRAMEDIR/gapfill_job/tmptmp
 echo "starting copyjob - may take few minutes if the number of ifg jobs is large"
-chmod 777 $WORKFRAMEDIR/gapfill_job/tmptmp; $WORKFRAMEDIR/gapfill_job/tmptmp
+chmod 777 $WORKFRAMEDIR/gapfill_job/tmptmp $WORKFRAMEDIR/gapfill_job/tmptmp2;
+#$WORKFRAMEDIR/gapfill_job/tmptmp
+$WORKFRAMEDIR/gapfill_job/tmptmp2  # LOTUS2 version
 echo "changing permissions (so admins can store and delete the frame in work directory if needed)"
 chmod -R 777 $WORKFRAMEDIR
 #rm $WORKFRAMEDIR/gapfill_job/tmptmp
