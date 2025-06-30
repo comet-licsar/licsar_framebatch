@@ -919,6 +919,20 @@ def reingest_file(fileid):
     return chars
 
 
+def check_reingest_filelist(filelistpath):
+    '''This expects list of files in text file - either as full paths or just file ids, and will check through them for erroneous database entries.
+    Used by autodownloader - $frame'_'scihub.list'''
+    a = pd.read_csv(filelistpath, header=None)
+    paths = a[0].values
+    for p in paths:
+        fn = p.split('/')[-1]
+        fn = fn.replace('.zip', '')
+        bsts = lq.get_bursts_in_file(fn)
+        if not bsts:
+            print('File '+fn+' has been wrongly ingested, fixing')
+            _ = reingest_file(fn)
+
+
 def ingest_file_to_licsinfo(filepath, isfullpath = True, extradirs = [os.environ['LiCSAR_SLC']]): #,'/work/xfc/vol5/user_cache/earmla/SLC']):
     """ Will ingest a S1 SLC zip file to the LiCSInfo database.
     If filepath is only filename, it will try find this file in neodc or LiCSAR_SLC"""
