@@ -28,6 +28,7 @@ A=0
 B=0
 ifglist=''
 ifglistonly=0
+clean=1
 
 #source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 #quality checker here is the basic one. but still it does problems! e.g. Iceland earthquake - took long to process due to tech complications
@@ -55,9 +56,10 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -b ... will do burst overlap ddiff ifgs AND SBOVLS (added by M. Nergizci)"
                    echo "parameter -s foo.sh ... run a shell script foo.sh automatically after ifg-gapfilling"
                    echo "parameter -N ... this will SKIP unwrapping (useful if you plan using LiCSBAS02to05_unwrap)"
+                   echo "parameter -k ... keep the IFG and other data without cleaning (that is on by default)"
                    exit; fi
 
-while getopts ":wn:gSaABi:I:RPos:lbTN" option; do
+while getopts ":wn:gSaABi:I:RPkos:lbTN" option; do
  case "${option}" in
   A) A=1; echo "S1A only";
       ;;
@@ -66,6 +68,8 @@ while getopts ":wn:gSaABi:I:RPos:lbTN" option; do
   b) dobovl=1; echo "will generate (filtered) bovl ifgs";
       ;;
   l) locl=1; checkrslc=0; tienshan=0; checkMosaic=0;
+      ;;
+  k) clean=0;
       ;;
   w ) waiting=1; echo "parameter -w set: will wait for standard unwrapping before ifg gap filling";
 #      shift
@@ -1074,6 +1078,11 @@ waitcmdl2='-w '$waitcmdl2
 #if [ $links == 0 ]; then
 # echo "rsync -r $SCRATCHDIR/$frame/GEOC $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #fi
+echo "preparing postgapfill job"
+rm gapfill_job/copyjob.sh 2>/dev/null
+if [ $clean == 1 ]; then
+ echo "rm -rf IFG/*" > $WORKFRAMEDIR/gapfill_job/copyjob.sh
+fi
 #echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #echo "cd $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #if [ $geocode == 1 ]; then
@@ -1092,19 +1101,25 @@ if [ ! -z $shscript ]; then
   chmod 777 $shscript 2>/dev/null
   echo "sh "$shscript >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 fi
-echo "chmod -R 777 "$WORKFRAMEDIR >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
-chmod 777 $WORKFRAMEDIR/gapfill_job/copyjob.sh
-#workaround for 'Empty job. Job not submitted'
-echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
-echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmdl2 -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp2
-#echo bsub -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
-#echo "debug last:"
-#cat $WORKFRAMEDIR/gapfill_job/tmptmp
-echo "starting copyjob - may take few minutes if the number of ifg jobs is large"
-chmod 777 $WORKFRAMEDIR/gapfill_job/tmptmp $WORKFRAMEDIR/gapfill_job/tmptmp2;
-#$WORKFRAMEDIR/gapfill_job/tmptmp
-$WORKFRAMEDIR/gapfill_job/tmptmp2  # LOTUS2 version
-echo "changing permissions (so admins can store and delete the frame in work directory if needed)"
-chmod -R 777 $WORKFRAMEDIR
-#rm $WORKFRAMEDIR/gapfill_job/tmptmp
-cd -
+#echo "chmod -R 777 "$WORKFRAMEDIR >> $WORKFRAMEDIR/gapfill_job/copyjob.sh  # this only to allow admin full access - but might not need it..
+if [ -f $WORKFRAMEDIR/gapfill_job/copyjob.sh ]; then
+  chmod 777 $WORKFRAMEDIR/gapfill_job/copyjob.sh
+  #workaround for 'Empty job. Job not submitted'
+  #echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
+  echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmdl2 -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp2
+  #echo bsub -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
+  #echo "debug last:"
+  #cat $WORKFRAMEDIR/gapfill_job/tmptmp
+  #echo "starting copyjob - may take few minutes if the number of ifg jobs is large"
+  echo "setting post-processing job"
+  #chmod 777 $WORKFRAMEDIR/gapfill_job/tmptmp
+  chmod 777 $WORKFRAMEDIR/gapfill_job/tmptmp2
+  #$WORKFRAMEDIR/gapfill_job/tmptmp
+  $WORKFRAMEDIR/gapfill_job/tmptmp2  # LOTUS2 version
+fi
+
+echo "all jobs sent"
+#echo "changing permissions (so admins can store and delete the frame in work directory if needed)"
+#chmod -R 777 $WORKFRAMEDIR
+##rm $WORKFRAMEDIR/gapfill_job/tmptmp
+#cd -
