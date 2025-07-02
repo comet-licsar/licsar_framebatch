@@ -28,8 +28,9 @@ A=0
 B=0
 ifglist=''
 ifglistonly=0
+clean=1
 
-source $LiCSARpath/lib/LiCSAR_bash_lib.sh
+#source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 #quality checker here is the basic one. but still it does problems! e.g. Iceland earthquake - took long to process due to tech complications
 #and just after this was done, this auto-checker detected it as problematic and deleted those wonderful ifgs!!
 #it is all the no-ESD test that is performed over whole image, and not only at the edges of bursts. so rather keep =0
@@ -55,9 +56,10 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -b ... will do burst overlap ddiff ifgs AND SBOVLS (added by M. Nergizci)"
                    echo "parameter -s foo.sh ... run a shell script foo.sh automatically after ifg-gapfilling"
                    echo "parameter -N ... this will SKIP unwrapping (useful if you plan using LiCSBAS02to05_unwrap)"
+                   echo "parameter -k ... keep the IFG and other data without cleaning (that is on by default)"
                    exit; fi
 
-while getopts ":wn:gSaABi:I:RPos:lbTN" option; do
+while getopts ":wn:gSaABi:I:RPkos:lbTN" option; do
  case "${option}" in
   A) A=1; echo "S1A only";
       ;;
@@ -66,6 +68,8 @@ while getopts ":wn:gSaABi:I:RPos:lbTN" option; do
   b) dobovl=1; echo "will generate (filtered) bovl ifgs";
       ;;
   l) locl=1; checkrslc=0; tienshan=0; checkMosaic=0;
+      ;;
+  k) clean=0;
       ;;
   w ) waiting=1; echo "parameter -w set: will wait for standard unwrapping before ifg gap filling";
 #      shift
@@ -80,10 +84,10 @@ while getopts ":wn:gSaABi:I:RPos:lbTN" option; do
   S ) store=1; echo "parameter -S set: will store after the processing";
 #      shift
       ;;
-  P ) prioritise=1; echo "parameter -P set: prioritising through cpom-comet";
+  P ) prioritise=1; echo "Param -P does not do anything anymore"; #echo "parameter -P set: prioritising through cpom-comet";
 #      shift
       ;;
-  o ) CHECKSCRATCH=0; echo "skipping check for existing frame on LiCSAR_temp";
+  o ) CHECKSCRATCH=0; echo "Param -o does not do anything anymore"; #skipping check for existing frame on LiCSAR_temp";
       ;;
   T ) tienshan=1; echo "arranging ifg connections strategy for Tien Shan";
       ;;
@@ -148,6 +152,8 @@ fi
 
 #NBATCH=5
 NBATCH=$1
+if [ $NBATCH -gt 9 ]; then echo "NBATCH should be below 10 - setting to 9"; NBATCH=9; fi
+
 WORKFRAMEDIR=`pwd`
 mkdir -p $WORKFRAMEDIR/LOGS
 #if [ -f local_config.py ]; then
@@ -195,20 +201,21 @@ fi
 
 
 master=`basename geo/20??????.hgt .hgt`
-SCRATCHDIR=$LiCSAR_temp/gapfill_temp
-rmdir $SCRATCHDIR/$frame 2>/dev/null
+# 2025/07: removing use of temp directory...
+#SCRATCHDIR=$LiCSAR_temp/gapfill_temp
+#rmdir $SCRATCHDIR/$frame 2>/dev/null
 
-if [ $CHECKSCRATCH -eq 1 ]; then
- if [ -d $SCRATCHDIR/$frame ]; then
-  echo "ERROR: the gapfill directory already exists:"
-  echo $SCRATCHDIR/$frame
-  echo "please check it yourself and delete manually"
-  exit
- fi
-fi
+#if [ $CHECKSCRATCH -eq 1 ]; then
+# if [ -d $SCRATCHDIR/$frame ]; then
+#  echo "ERROR: the gapfill directory already exists:"
+#  echo $SCRATCHDIR/$frame
+#  echo "please check it yourself and delete manually"
+#  exit
+# fi
+#fi
 
-rm -rf $SCRATCHDIR/$frame 2>/dev/null
-mkdir -p $SCRATCHDIR/$frame
+#rm -rf $SCRATCHDIR/$frame 2>/dev/null
+#mkdir -p $SCRATCHDIR/$frame
 
 
 #SCRATCHDIR=/work/scratch-nopw/licsar
@@ -346,6 +353,7 @@ fi
 else
 
 # prepare the 5 combinations in a row
+echo "Establishing "$ifg_combinations" consecutive pairs within max Btemp of "$MAXBTEMP" days"
 for FIRST in `cat gapfill_job/tmp_rslcs`; do 
  for i in `seq 1 $ifg_combinations`; do
   last=`grep -A$i $FIRST gapfill_job/tmp_rslcs | tail -n1`;
@@ -636,6 +644,7 @@ if [ $dorgo -gt 0 ]; then
   chmod 777 $offsetsh
 fi
 
+
 # just removing already existing ifgs from the list
 for ifg in `cat gapfill_job/tmp_ifg_existing`; do  sed -i '/'$ifg'/d' gapfill_job/tmp_ifg_all; done
 sed 's/_/ /' gapfill_job/tmp_ifg_all > gapfill_job/tmp_ifg_todo
@@ -804,13 +813,13 @@ fi
 
  #move it for processing in SCRATCHDIR
  #if [ `echo $BATCH_CACHE_DIR | grep -c scratch` -eq 1 ]; then 
- if [ `echo $WORKFRAMEDIR | cut -d '/' -f3` == `echo $SCRATCHDIR | cut -d '/' -f3` ]; then
-  echo "BATCH_CACHE_DIR is in scratch - making only links (faster)"
-  links=1
- else
-  links=0
-  echo "Preparation phase: copying data to SCRATCH disk (may take long)"
- fi
+ #if [ `echo $WORKFRAMEDIR | cut -d '/' -f3` == `echo $SCRATCHDIR | cut -d '/' -f3` ]; then
+ # echo "BATCH_CACHE_DIR is in scratch - making only links (faster)"
+ # links=1
+ #else
+ # links=0
+ # echo "Preparation phase: copying data to SCRATCH disk (may take long)"
+ #fi
  echo "There are "`wc -l gapfill_job/tmp_ifg_todo | gawk {'print $1'}`" interferograms to process and "`wc -l gapfill_job/tmp_unw_todo | gawk {'print $1'}`" to unwrap."
  if [ $dobovl == 1 ]; then
   echo "(and "`wc -l gapfill_job/tmp_bovl_todo | gawk {'print $1'}`" subswath+burst overlap ifgs (sbovls) to generate)"
@@ -819,64 +828,67 @@ fi
   echo "(and "`wc -l gapfill_job/tmp_rgo_todo | gawk {'print $1'}`" pairs for offset tracking)"
  fi
  #if [ -d $SCRATCHDIR/$frame ]; then echo "..cleaning scratchdir"; rm -rf $SCRATCHDIR/$frame; fi
- mkdir -p $SCRATCHDIR/$frame/RSLC
- chmod 777 $SCRATCHDIR/$frame
- mkdir $SCRATCHDIR/$frame/IFG 2>/dev/null
- if [ $links == 1 ]; then
-   cd $SCRATCHDIR/$frame;
-   ln -s $WORKFRAMEDIR/GEOC; mkdir -p $WORKFRAMEDIR/GEOC;
-   ln -s $WORKFRAMEDIR/GEOC.MLI; mkdir -p $WORKFRAMEDIR/GEOC.MLI;
-   cd -
- else
-   mkdir $SCRATCHDIR/$frame/GEOC $SCRATCHDIR/$frame/GEOC.MLI 2>/dev/null
- fi
- mkdir $SCRATCHDIR/$frame/SLC $SCRATCHDIR/$frame/LOGS  2>/dev/null
- if [ -f gapfill_job/tmp_rslcs2copy ]; then
-  if [ $links == 1 ]; then
-   for rslc in `cat gapfill_job/tmp_rslcs2copy`; do
-    if [ ! -d $SCRATCHDIR/$frame/RSLC/$rslc ]; then ln -s `pwd`/RSLC/$rslc $SCRATCHDIR/$frame/RSLC/$rslc; fi;
-   done
-  else
-   echo "..copying "`wc -l gapfill_job/tmp_rslcs2copy | gawk {'print $1'}`" needed rslcs"
-   for rslc in `cat gapfill_job/tmp_rslcs2copy`; do
-    if [ ! -d $SCRATCHDIR/$frame/RSLC/$rslc ]; then echo "copying "$rslc; cp -r RSLC/$rslc $SCRATCHDIR/$frame/RSLC/.; fi;
-   done
-  fi
- fi
- echo "..copying master slc"
- cp -r SLC/$master $SCRATCHDIR/$frame/SLC/.
- rm -r $SCRATCHDIR/$frame/RSLC/$master 2>/dev/null
- mkdir $SCRATCHDIR/$frame/RSLC/$master
- for x in `ls $SCRATCHDIR/$frame/SLC/$master/*`; do ln -s $x $SCRATCHDIR/$frame/RSLC/$master/`basename $x | sed 's/slc/rslc/'`; done
- if [ $links == 1 ]; then
-  for aa in tab geo log ; do ln -s `pwd`/$aa $SCRATCHDIR/$frame/$aa; done
- else
-  echo "..copying geo and other files"
-  cp -r tab geo $SCRATCHDIR/$frame/.
-  mkdir $SCRATCHDIR/$frame/log
- fi
+ #mkdir -p $SCRATCHDIR/$frame/RSLC
+ #chmod 777 $SCRATCHDIR/$frame
+ #mkdir $SCRATCHDIR/$frame/IFG 2>/dev/null
+ mkdir IFG 2>/dev/null
+ #if [ $links == 1 ]; then
+ #  cd $SCRATCHDIR/$frame;
+   #ln -s $WORKFRAMEDIR/GEOC;
+   mkdir -p $WORKFRAMEDIR/GEOC;
+   #ln -s $WORKFRAMEDIR/GEOC.MLI;
+   mkdir -p $WORKFRAMEDIR/GEOC.MLI;
+   #cd -
+ #else
+ #  mkdir $SCRATCHDIR/$frame/GEOC $SCRATCHDIR/$frame/GEOC.MLI 2>/dev/null
+ #fi
+ #mkdir $SCRATCHDIR/$frame/SLC $SCRATCHDIR/$frame/LOGS  2>/dev/null
+ #if [ -f gapfill_job/tmp_rslcs2copy ]; then
+ # if [ $links == 1 ]; then
+ #  for rslc in `cat gapfill_job/tmp_rslcs2copy`; do
+ #   if [ ! -d $SCRATCHDIR/$frame/RSLC/$rslc ]; then ln -s `pwd`/RSLC/$rslc $SCRATCHDIR/$frame/RSLC/$rslc; fi;
+ #  done
+ # else
+ #  echo "..copying "`wc -l gapfill_job/tmp_rslcs2copy | gawk {'print $1'}`" needed rslcs"
+ #  for rslc in `cat gapfill_job/tmp_rslcs2copy`; do
+ #   if [ ! -d $SCRATCHDIR/$frame/RSLC/$rslc ]; then echo "copying "$rslc; cp -r RSLC/$rslc $SCRATCHDIR/$frame/RSLC/.; fi;
+ #  done
+ # fi
+ #fi
+ #echo "..copying master slc"
+ #cp -r SLC/$master $SCRATCHDIR/$frame/SLC/.
+ #rm -r $SCRATCHDIR/$frame/RSLC/$master 2>/dev/null
+ #mkdir $SCRATCHDIR/$frame/RSLC/$master
+ #for x in `ls $SCRATCHDIR/$frame/SLC/$master/*`; do ln -s $x $SCRATCHDIR/$frame/RSLC/$master/`basename $x | sed 's/slc/rslc/'`; done
+ #if [ $links == 1 ]; then
+ # for aa in tab geo log ; do ln -s `pwd`/$aa $SCRATCHDIR/$frame/$aa; done
+ #else
+ # echo "..copying geo and other files"
+ # cp -r tab geo $SCRATCHDIR/$frame/.
+ # mkdir $SCRATCHDIR/$frame/log
+ #fi
  
- cp -r gapfill_job $SCRATCHDIR/$frame/.
+ #cp -r gapfill_job $SCRATCHDIR/$frame/.
  #sed 's/ /_/' gapfill_job/tmp_ifg_todo > gapfill_job/tmp_ifg_copy
- cat gapfill_job/tmp_unw_todo >> gapfill_job/tmp_ifg_copy
- echo "..copying (or linking) ifgs to unwrap only"
- for ifg in `cat gapfill_job/tmp_unw_todo`; do 
+ #cat gapfill_job/tmp_unw_todo >> gapfill_job/tmp_ifg_copy
+ #echo "..copying (or linking) ifgs to unwrap only"
+ #for ifg in `cat gapfill_job/tmp_unw_todo`; do
   #if [ -d IFG/$ifg ]; then cp -r IFG/$ifg $SCRATCHDIR/$frame/IFG/.; fi;
-  if [ -d GEOC/$ifg ]; then
+  #if [ -d GEOC/$ifg ]; then
    #if [ $links == 1 ]; then
    # ln -s `pwd`/GEOC/$ifg $SCRATCHDIR/$frame/GEOC/$ifg
    #else
-   if [ $links == 0 ]; then
-    cp -r GEOC/$ifg $SCRATCHDIR/$frame/GEOC/.; 
-   fi
-  elif [ -d IFG/$ifg ]; then
-   if [ $links == 1 ]; then
-    ln -s `pwd`/IFG/$ifg $SCRATCHDIR/$frame/IFG/$ifg;
-   else
-    cp -r IFG/$ifg $SCRATCHDIR/$frame/IFG/.;
-   fi
-  fi;
- done
+   #if [ $links == 0 ]; then
+   # cp -r GEOC/$ifg $SCRATCHDIR/$frame/GEOC/.;
+   #fi
+  #elif [ -d IFG/$ifg ]; then
+   #if [ $links == 1 ]; then
+   # ln -s `pwd`/IFG/$ifg $SCRATCHDIR/$frame/IFG/$ifg;
+   #else
+   # cp -r IFG/$ifg $SCRATCHDIR/$frame/IFG/.;
+   #fi
+  #fi;
+ #done
  if [ $locl == 0 ]; then  # expecting geo ready
  #rglkstmp=`get_value SLC/$master/$master.slc.mli.par range_looks`
  #azlkstmp=`get_value SLC/$master/$master.slc.mli.par azimuth_looks`
@@ -885,16 +897,18 @@ fi
   echo "preparing MLI and DEM for the custom multilooking"
   echo "(nothing will get rewritten in your workfolder)"
   #mkdir $SCRATCHDIR/$frame/DEM
-  cp -r DEM $SCRATCHDIR/$frame/.
-  cd $SCRATCHDIR/$frame
+  #cp -r DEM $SCRATCHDIR/$frame/.
+  #cd $SCRATCHDIR/$frame
   #doing MLI for given rlks and azlks over master image
   rm SLC/$master/$master.slc.mli SLC/$master/$master.slc.mli.par SLC/$master/$master.slc.mli.bmp 2>/dev/null
   echo "..generating custom multilooked master"
   #SLC_mosaic_S1_TOPS tab/$master'_tab' SLC/$master/$master.mli SLC/$master/$master.mli.par $rlks $azlks 0 2>/dev/null
-  multilookSLC $master $rlks $azlks 1 $SCRATCHDIR/$frame/SLC/$master
+  #multilookSLC $master $rlks $azlks 1 $SCRATCHDIR/$frame/SLC/$master
+  multilookSLC $master $rlks $azlks 1 SLC/$master
   echo "..recreating geocoding tables"
   echo "WARNING - NEED TO FIX THIS - JUST ADD OUTPUT RESOLUTION AND IT WILL WORK - PLEASE ASK EARMLA IF NEEDED"
-  python -c "from LiCSAR_lib.coreg_lib import geocode_dem; geocode_dem('"$SCRATCHDIR/$frame/SLC/$master"','"$SCRATCHDIR/$frame/geo"','"$SCRATCHDIR/$frame/DEM"','"$SCRATCHDIR/$frame"','"$master"')"
+  #python -c "from LiCSAR_lib.coreg_lib import geocode_dem; geocode_dem('"$SCRATCHDIR/$frame/SLC/$master"','"$SCRATCHDIR/$frame/geo"','"$SCRATCHDIR/$frame/DEM"','"$SCRATCHDIR/$frame"','"$master"')"
+  echo python -c "from LiCSAR_lib.coreg_lib import geocode_dem; geocode_dem('"SLC/$master"','"geo"','"DEM"','"$frame"','"$master"')"
   #echo "..generating custom multilooked hgt file"
   #ml_width=`grep range_samples SLC/$master/$master.slc.mli.par | gawk {'print $2'}`
   #demwidth=`grep width geo/EQA.dem_par | gawk {'print $2'}`
@@ -902,19 +916,19 @@ fi
   #geocode geo/$master.lt_fine geo/EQA.dem $demwidth geo/$master.hgt $ml_width - 2 0 - - - - - >/dev/null 2>/dev/null
   #rashgt geo/$master.hgt SLC/$master/$master.slc.mli $ml_width
  fi
- else
+ #else
   # check/copy GEOC/geo
-  if [ -d GEOC/geo ]; then
-   mkdir -p $SCRATCHDIR/$frame/GEOC
-   cp -r GEOC/geo $SCRATCHDIR/$frame/GEOC/.
-  fi
+ # if [ -d GEOC/geo ]; then
+ #  mkdir -p $SCRATCHDIR/$frame/GEOC
+ #  cp -r GEOC/geo $SCRATCHDIR/$frame/GEOC/.
+ # fi
  fi
 ###############################################
 #now we can start jobs..
  echo "running jobs"
  if [ $dorgo -gt 0 ]; then
    # keeping in the batch directory...
-   echo "WARNING - offsets changed to run in LiCSARtemp SCRATCHDIR after mosaicking - that is bit different than before, not tested"
+   echo "WARNING - offsets changed to run in after mosaicking - that is bit different than before, not tested"
    #for job in `seq 1 $nojobs`; do
    #  if [ -f gapfill_job/offsetsjob_$job.sh ]; then
    #    bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 32768 -J $frame"_offsetsjob_"$job -e gapfill_job/offsetsjob_$job.err -o gapfill_job/offsetsjob_$job.out gapfill_job/offsetsjob_$job.sh >/dev/null
@@ -922,7 +936,7 @@ fi
    #done
  fi
 
- cd $SCRATCHDIR/$frame
+ #cd $SCRATCHDIR/$frame
  #weird error - mk_ifg is reading SLC tabs instead of rslc?? (need debug).. quick fix here:
  #for x in `ls tab/20??????_tab`; do cp `echo $x | sed 's/_tab/R_tab/'` $x; done
 
@@ -960,7 +974,7 @@ fi
 echo "..running "$nojobs" jobs to generate ifgs/unws"
 rm bjobs.sh 2>/dev/null
 
-wallt=0$NBATCH':'00
+wallt=0$NBATCH':'00 #assuming less than 10 per batch job
 for job in `seq 1 $nojobs`; do
  wait=''
  if [ -f gapfill_job/ifgjob_$job.sh ]; then
@@ -990,31 +1004,32 @@ echo "Warning, experimental job arrays in place - only testing now"
 # then start and wait for all those 'main jobs' as waitcmdl2...
 
 waitcmdl2=''
+ifgwait=''
 for corestr in ifg unw bovl offsets; do
-nojobs=`ls gapfill_job/$corestr'job_'*.sh 2>/dev/null | wc -l`
-if [ $nojobs -gt 0 ]; then
-l2wait=''
-maxmem=8192
-qos='standard'
-exptimemax=0
-if [ ! -z $JOBIDMOS ]; then
-  if [[ 'ifg bovl offsets' =~ $corestr ]]; then l2wait='-d afterany:'$JOBIDMOS; fi
-fi
+  nojobs=`ls gapfill_job/$corestr'job_'*.sh 2>/dev/null | wc -l`
+  if [ $nojobs -gt 0 ]; then
+    l2wait=''
+    maxmem=8192
+    qos='standard'
+    exptimemax=0
+    if [ ! -z $JOBIDMOS ]; then
+      if [[ 'ifg bovl offsets' =~ $corestr ]]; then l2wait='-d afterany:'$JOBIDMOS; fi
+    fi
 
-if [ $corestr == 'ifg' ]; then maxmem=8192; let exptimemax=$NBATCH/2; fi # assuming 2 ifgs per hour
-if [ $corestr == 'unw' ]; then maxmem=16384; exptimemax=$NBATCH; fi # assuming 1 unw per hour
-if [ $corestr == 'bovl' ]; then maxmem=16384; exptimemax=$NBATCH; # assuming 1 bovl per hour  # TODO: wait for create_soi ... or do it differently
-  # bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 16000 -J $frame"_soi_00" create_soi_00.py >/dev/null
-  JOBIDSOI=$(sbatch $l2wait --account=nceo_geohazards --time=23:00:00 --job-name=$frame'_soi_00' --output=gapfill_job/soi_00.out --error=gapfill_job/soi_00.err --wrap="create_soi_00.py" --mem=16384 --partition=standard --qos=standard --parsable)
-  l2wait='-d afterany:'$JOBIDSOI
-fi
-#bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 32768 -J $frame"_offsetsjob_"$job -e gapfill_job/offsetsjob_$job.err -o gapfill_job/offsetsjob_$job.out gapfill_job/offsetsjob_$job.sh >/dev/null
-if [ $corestr == 'offsets' ]; then maxmem=32768; let exptimemax=$NBATCH+1; fi # assuming 1 offset per hour, +1 extra hour
+    if [ $corestr == 'ifg' ]; then maxmem=8192; let exptimemax=$NBATCH/2; fi # assuming 2 ifgs per hour
+    if [ $corestr == 'unw' ]; then maxmem=16384; exptimemax=$NBATCH; fi # assuming 1 unw per hour
+    if [ $corestr == 'bovl' ]; then maxmem=16384; exptimemax=$NBATCH; # assuming 1 bovl per hour  # TODO: wait for create_soi ... or do it differently
+      # bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 16000 -J $frame"_soi_00" create_soi_00.py >/dev/null
+      JOBIDSOI=$(sbatch $l2wait --account=nceo_geohazards --time=23:00:00 --job-name=$frame'_soi_00' --output=gapfill_job/soi_00.out --error=gapfill_job/soi_00.err --wrap="create_soi_00.py" --mem=16384 --partition=standard --qos=standard --parsable)
+      l2wait='-d afterany:'$JOBIDSOI
+    fi
+    #bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 32768 -J $frame"_offsetsjob_"$job -e gapfill_job/offsetsjob_$job.err -o gapfill_job/offsetsjob_$job.out gapfill_job/offsetsjob_$job.sh >/dev/null
+    if [ $corestr == 'offsets' ]; then maxmem=32768; let exptimemax=$NBATCH+1; fi # assuming 1 offset per hour, +1 extra hour
 
-if [ $exptimemax -gt 23 ]; then qos='long'; echo "setting long qos"; fi
-#if [ $bsubncores -gt 1 ]; then qos='high'; echo "setting high qos"; fi
-if [ $exptimemax -gt 23 ]; then exptimemax=23; fi
-if [ $exptimemax -lt 10 ]; then exptimemax=0$exptimemax; fi
+    if [ $exptimemax -gt 23 ]; then qos='long'; echo "setting long qos"; fi
+    #if [ $bsubncores -gt 1 ]; then qos='high'; echo "setting high qos"; fi
+    if [ $exptimemax -gt 23 ]; then exptimemax=23; fi
+    if [ $exptimemax -lt 10 ]; then exptimemax=0$exptimemax; fi
 
  cat << EOF > gapfill_job/batch.lotus2.$corestr.sh
 #!/bin/bash
@@ -1031,13 +1046,16 @@ if [ $exptimemax -lt 10 ]; then exptimemax=0$exptimemax; fi
 gapfill_job/$corestr'job_'\${SLURM_ARRAY_TASK_ID}.sh
 
 EOF
-chmod 770 gapfill_job/batch.lotus2.$corestr.sh
+    chmod 770 gapfill_job/batch.lotus2.$corestr.sh
 
-echo "running LOTUS2 job array for "$corestr
-PREVJID=$(sbatch $l2wait --parsable gapfill_job/batch.lotus2.$corestr.sh)
-echo $PREVJID
-waitcmdl2=$waitcmdl2':'$PREVJID
-fi
+    echo "running LOTUS2 job array for "$corestr
+    if [ $corestr == 'unw' ]; then l2wait=$ifgwait' '$l2wait; fi
+    PREVJID=$(sbatch $l2wait --parsable gapfill_job/batch.lotus2.$corestr.sh)
+    echo $PREVJID
+    waitcmdl2=$waitcmdl2':'$PREVJID # this for the final 'after all finishes' job
+    # to have unw jobs wait for ifg jobs
+    if [ $corestr == 'ifg' ]; then ifgwait='-d afterany:'$PREVJID; fi
+  fi
 done
 
 waitcmdl2=`echo $waitcmdl2 | cut -c 2-`
@@ -1046,22 +1064,27 @@ waitcmdl2='-w '$waitcmdl2
 
 
 # copying and cleaning job
-echo "..running job that will copy outputs from TEMP to your WORKDIR"
-waitcmd=''
-if [ `echo $waitText | wc -w` -gt 0 ]; then
-  waitText=`echo $waitText | cut -c 4-`
-  waitcmd='-w "'$waitText'"'
-fi
+#echo "..running job that will copy outputs from TEMP to your WORKDIR"
+#waitcmd=''
+#if [ `echo $waitText | wc -w` -gt 0 ]; then
+#  waitText=`echo $waitText | cut -c 4-`
+#  waitcmd='-w "'$waitText'"'
+#fi
 #echo "chmod -R 777 $SCRATCHDIR/$frame" > $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #if [ $links == 1 ]; then
 # echo "mv -n $SCRATCHDIR/$frame/GEOC/* $WORKFRAMEDIR/GEOC/." >> $WORKFRAMEDIR/gapfill_job/copyjob.sh # for fully new ifgs
 # echo "for x in \`ls $SCRATCHDIR/$frame/GEOC\`; do mv -n $SCRATCHDIR/$frame/GEOC/\$x/*.??? $WORKFRAMEDIR/GEOC/\$x/.; done" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #else
-if [ $links == 0 ]; then
- echo "rsync -r $SCRATCHDIR/$frame/GEOC $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+#if [ $links == 0 ]; then
+# echo "rsync -r $SCRATCHDIR/$frame/GEOC $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+#fi
+echo "preparing postgapfill job"
+rm gapfill_job/copyjob.sh 2>/dev/null
+if [ $clean == 1 ]; then
+ echo "rm -rf IFG/*" > $WORKFRAMEDIR/gapfill_job/copyjob.sh
 fi
-echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
-echo "cd $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+#echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+#echo "cd $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #if [ $geocode == 1 ]; then
 # echo "echo 'starting geocoding job'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 # echo $WORKFRAMEDIR/framebatch_06_geotiffs.nowait.sh >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
@@ -1072,25 +1095,31 @@ if [ $store == 1 ]; then
   echo "cd ..; store_to_curdir.sh $frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 fi
 #echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
-echo "echo 'sync done, deleting TEMP folder'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
-echo "rm -rf $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+#echo "echo 'sync done, deleting TEMP folder'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+#echo "rm -rf $SCRATCHDIR/$frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 if [ ! -z $shscript ]; then
   chmod 777 $shscript 2>/dev/null
   echo "sh "$shscript >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 fi
-echo "chmod -R 777 "$WORKFRAMEDIR >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
-chmod 777 $WORKFRAMEDIR/gapfill_job/copyjob.sh
-#workaround for 'Empty job. Job not submitted'
-echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
-echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmdl2 -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp2
-#echo bsub -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
-#echo "debug last:"
-#cat $WORKFRAMEDIR/gapfill_job/tmptmp
-echo "starting copyjob - may take few minutes if the number of ifg jobs is large"
-chmod 777 $WORKFRAMEDIR/gapfill_job/tmptmp $WORKFRAMEDIR/gapfill_job/tmptmp2;
-#$WORKFRAMEDIR/gapfill_job/tmptmp
-$WORKFRAMEDIR/gapfill_job/tmptmp2  # LOTUS2 version
-echo "changing permissions (so admins can store and delete the frame in work directory if needed)"
-chmod -R 777 $WORKFRAMEDIR
-#rm $WORKFRAMEDIR/gapfill_job/tmptmp
-cd -
+#echo "chmod -R 777 "$WORKFRAMEDIR >> $WORKFRAMEDIR/gapfill_job/copyjob.sh  # this only to allow admin full access - but might not need it..
+if [ -f $WORKFRAMEDIR/gapfill_job/copyjob.sh ]; then
+  chmod 777 $WORKFRAMEDIR/gapfill_job/copyjob.sh
+  #workaround for 'Empty job. Job not submitted'
+  #echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
+  echo bsub2slurm.sh -q $bsubquery -n 1 $waitcmdl2 -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp2
+  #echo bsub -q $bsubquery -n 1 $waitcmd -W 08:00 -J $frame'_gapfill_out' -e $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.err -o $WORKFRAMEDIR/LOGS/framebatch_gapfill_postproc.out $WORKFRAMEDIR/gapfill_job/copyjob.sh > $WORKFRAMEDIR/gapfill_job/tmptmp
+  #echo "debug last:"
+  #cat $WORKFRAMEDIR/gapfill_job/tmptmp
+  #echo "starting copyjob - may take few minutes if the number of ifg jobs is large"
+  echo "setting post-processing job"
+  #chmod 777 $WORKFRAMEDIR/gapfill_job/tmptmp
+  chmod 777 $WORKFRAMEDIR/gapfill_job/tmptmp2
+  #$WORKFRAMEDIR/gapfill_job/tmptmp
+  $WORKFRAMEDIR/gapfill_job/tmptmp2  # LOTUS2 version
+fi
+
+echo "all jobs sent"
+#echo "changing permissions (so admins can store and delete the frame in work directory if needed)"
+#chmod -R 777 $WORKFRAMEDIR
+##rm $WORKFRAMEDIR/gapfill_job/tmptmp
+#cd -

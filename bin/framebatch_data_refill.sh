@@ -141,6 +141,10 @@ python3 s1_search.py | grep neodc > ${frame}_scihub.list
 
  sort -o ${frame}_scihub2.list ${frame}_scihub.list
  mv ${frame}_scihub2.list ${frame}_scihub.list
+
+ echo "double-checking for correct database entries (there were issues in 2025)"
+ python3 -c "import framecare as fc; fc.check_reingest_filelist('"$frame'_scihub.list'"')"
+ 
 ## make list from nla
 rm ${frame}_db_query.list 2>/dev/null
 touch ${frame}_db_query.list 2>/dev/null
