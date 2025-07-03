@@ -1419,7 +1419,42 @@ def store_frame_geometry(framesgpd):
 def export_geopandas_to_kml(gpan, outfile):
     gpan.to_file(outfile, driver='KML', NameField='frameID')
 
+def add_bursts_along_track(frame, upbids = [0, 0, 0], downbids = [0, 0, 0]):
+    '''Will find bursts along the track and add to the list of bursts (bidtanx IDs) for given frame. Relorb number change not implemented!
+    Args:
+        frame (str): Frame ID
+        upbids (list of int): three numbers (per swath) to how many bursts along track to add to the North
+        downbids (list of int): three numbers (per swath) to how many bursts along track to add to the South
+    Returns:
+        list : burst list included the additions
+    '''
+    bids = lq.sqlout2list(get_bidtanxs_in_frame(frame))
+    bids = bursts_group_to_iws(bids)
+    trackbids = lq.sqlout2list(lq.get_bidtanxs_in_track(frame[:4]))
+    trackbids = bursts_group_to_iws(trackbids)
+    added = [[], [], []]
+    for i in range(3):
+        # up:
+        bid = bids[i][0]
+        bidid = trackbids[i].index(bid)
+        for j in range(upbids[i]):
+            bid2add = trackbids[i][bidid - j]
+            added[i].append(bid2add)
+        # down:
+        bid = bids[i][-1]
+        bidid = trackbids[i].index(bid)
+        for j in range(downbids[i]):
+            bid2add = trackbids[i][bidid + j]
+            added[i].append(bid2add)
+    outbids = []
+    for i in range(3):
+        outbids += bids[i]
+        outbids += added[i]
+    return outbids
+
+
 def bursts_group_to_iws(bidtanxs):
+    '''Will return sorted(!) lists of bids per swaths 1, 2, 3'''
     iw1s = []
     iw2s = []
     iw3s = []
