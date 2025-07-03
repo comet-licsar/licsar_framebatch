@@ -1428,6 +1428,10 @@ def add_bursts_along_track(frame, upbids = [0, 0, 0], downbids = [0, 0, 0]):
     Returns:
         list : burst list included the additions
     '''
+    if frame[3]=='D':
+        pom = downbids
+        downbids = upbids
+        upbids = pom
     bids = lq.sqlout2list(get_bidtanxs_in_frame(frame))
     bids = bursts_group_to_iws(bids)
     trackbids = lq.sqlout2list(lq.get_bidtanxs_in_track(frame[:4]))
@@ -1438,13 +1442,13 @@ def add_bursts_along_track(frame, upbids = [0, 0, 0], downbids = [0, 0, 0]):
         bid = bids[i][0]
         bidid = trackbids[i].index(bid)
         for j in range(upbids[i]):
-            bid2add = trackbids[i][bidid - j]
+            bid2add = trackbids[i][bidid + j]
             added[i].append(bid2add)
         # down:
         bid = bids[i][-1]
         bidid = trackbids[i].index(bid)
         for j in range(downbids[i]):
-            bid2add = trackbids[i][bidid + j]
+            bid2add = trackbids[i][bidid - j]
             added[i].append(bid2add)
     outbids = []
     for i in range(3):
