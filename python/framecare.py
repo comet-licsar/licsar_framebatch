@@ -914,7 +914,8 @@ for fileid in filez.name.values:
 '''
 
 def reingest_file(fileid):
-    rc = lq.delete_file_from_db(fileid, col = 'name')
+    num = lq.delete_file_from_db(fileid, col = 'name')
+    print(str(num)+' records deleted')
     chars = ingest_file_to_licsinfo(fileid, False)
     return chars
 
