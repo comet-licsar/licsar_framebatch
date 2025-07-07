@@ -927,7 +927,7 @@ def check_reingest_filelist(filelistpath):
     paths = a[0].values
     for p in paths:
         fn = p.split('/')[-1]
-        fn = fn.replace('.zip', '')
+        fn = fn.split('.')[0]
         bsts = lq.get_bursts_in_file(fn)
         if not bsts:
             print('File '+fn+' has been wrongly ingested, fixing')
