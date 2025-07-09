@@ -12,8 +12,11 @@ if [ `pwd` == $LiCSAR_procdir ]; then echo "NO.."; exit; fi
 # we may have files deleted in scratch...
 if [ -d $frame/geo ]; then
  if [ `ls $frame/geo | wc -l` == 0 ]; then echo "empty frame, deleting"; rm -rf $frame; exit; fi
+elif [ -d $frame ]; then
+ echo "no geo folder inside the frame directory - moving to todelete directory"
+ mkdir todelete; mv $frame todelete/.; exit
 else
- echo "no data, cancel"
+ echo "no such frame dir, cancel"
  exit
 fi
  
