@@ -129,9 +129,10 @@ fi
 #
 startdate_str=`echo $startdate | sed 's/-//g'`
 enddate_str=`echo $enddate | sed 's/-//g'`
+echo "DEBUG 202507: it appears search_alaska does not return S1C data - using CDSE temporarily only to search for filenames"
 cat << EOF > s1_search.py
 from s1data import *
-a=get_images_for_frame('$frame', '$startdate_str', '$enddate_str', sensType='$mode', asf = $flagasf);
+a=get_images_for_frame('$frame', '$startdate_str', '$enddate_str', sensType='$mode', asf = False); # $flagasf);
 a=get_neodc_path_images(a);
 for b in a:
     print(b)
@@ -144,7 +145,7 @@ python3 s1_search.py | grep neodc > ${frame}_scihub.list
 
  echo "double-checking for correct database entries (there were issues in 2025)"
  python3 -c "import framecare as fc; fc.check_reingest_filelist('"$frame'_scihub.list'"')"
- 
+
 ## make list from nla
 rm ${frame}_db_query.list 2>/dev/null
 touch ${frame}_db_query.list 2>/dev/null
