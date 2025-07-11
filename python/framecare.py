@@ -928,10 +928,11 @@ def check_reingest_filelist(filelistpath):
     for p in paths:
         fn = p.split('/')[-1]
         fn = fn.split('.')[0]
-        bsts = lq.get_bursts_in_file(fn)
-        if not bsts:
-            print('File '+fn+' has been wrongly ingested, fixing')
-            _ = reingest_file(fn)
+        if lq.is_in_table(fn, 'name', 'files'):
+            bsts = lq.get_bursts_in_file(fn)
+            if not bsts:
+                print('File '+fn+' has been wrongly ingested, fixing')
+                _ = reingest_file(fn)
 
 
 def ingest_file_to_licsinfo(filepath, isfullpath = True, extradirs = [os.environ['LiCSAR_SLC']]): #,'/work/xfc/vol5/user_cache/earmla/SLC']):
