@@ -394,18 +394,26 @@ if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
    if [ `arch2DB.py -f $pom_to | grep -c ERROR` -gt 0 ]; then pom_to=''; echo "but it is erroneous, so will redownload it"; fi
   fi
   if [ -z $pom_to ]; then
-   echo "downloading file "$x" from alaska server"
+   echo "downloading file "$x #" from alaska server"
    echo "( it is file no. "$count" from "$filestodown" )"
    scihub_pom=0
    if [ `echo $x | cut -c 18-25` -ge `date -d 'yesterday' +'%Y%m%d'` ]; then
     echo "( it is latest date, will check for RESORBs and download them )"
     update_resorb_for_slc.sh $x
    fi
-   if [ `echo $x | cut -c 18-25` -ge `date -d 'yesterday' +'%Y%m%d'` ] && [ $use_cdse -eq 1 ]; then
-    echo "(actually will use scihub for this one..)"
-    scihub_pom=1
-    time sshdown_scihub $x >/dev/null 2>/dev/null
-    sshdown_scihub $x >/dev/null 2>/dev/null
+   #if [ `echo $x | cut -c 18-25` -ge `date -d 'yesterday' +'%Y%m%d'` ] &&
+   if [ $use_cdse -eq 1 ]; then
+    echo "trying from ASF first"
+    time sshdown $x >/dev/null 2>/dev/null
+    sshdown $x >/dev/null 2>/dev/null
+    if [ ! -f $sshout/$x ]; then
+      echo "none from ASF, proceeding with (slower) CDSE"
+      scihub_pom=1
+      time sshdown_scihub $x >/dev/null 2>/dev/null
+      if [ ! -f $sshout/$x ]; then
+        sshdown_scihub $x >/dev/null 2>/dev/null
+      fi
+    fi
    else
     #sshinst 2>/dev/null;
     time sshdown $x >/dev/null 2>/dev/null
