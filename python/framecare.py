@@ -589,6 +589,29 @@ def check_and_fix_all_bursts_in_frame(frame):
             print('frame {0}: {1}'.format(frame, fdate))
             #print('remove_from_lics.sh {0} {1}'.format(frame, fdate))
 
+
+def export_all_bursts_to_kmls(outpath='/gws/nopw/j04/nceo_geohazards_vol1/public/shared/test/bursts2'):
+    # to export all bursts:
+    for ddir in ['A','D']:
+        for can in range(175):
+            cant=str(can+1)
+            if len(cant) == 1:
+                cant = '00'+cant
+            if len(cant) == 2:
+                cant = '0'+cant
+            trackid = cant+ddir
+            canfbursts = lq.get_bidtanxs_in_track(trackid,False)
+            canfbursts = lq.sqlout2list(canfbursts)
+            if len(canfbursts)==0:
+                print('no bursts for track '+trackid)
+                continue
+            kmlout = os.path.join(outpath,'{0}.kml'.format(trackid))
+            if os.path.exists(kmlout): os.remove(kmlout)
+            frame_gpd = bursts2geopandas(canfbursts, merge=False, use_s1burst=False)
+            print('exporting to '+kmlout)
+            frame_gpd.to_file(kmlout, driver='KML')
+
+
 '''
 check these frames:
 ['149D_05278_131313', '150D_05107_131313', '150D_05306_131313', '151D_05241_131313']
