@@ -40,7 +40,7 @@ fi
 #export BATCH_CACHE_DIR=/work/scratch-nopw/licsar/earmla
 source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 
-revisittime=12 # for S1A-only period
+revisittime=5 # just to speed up the procedure, although some S1A/C might be only one day ... (may need to set 0 to avoid this check)
 sensorgapfill=''
 NORUN=0
 neodc_check=0

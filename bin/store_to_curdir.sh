@@ -399,7 +399,7 @@ if [ $DOGEOC -eq 1 ]; then
   track=$tr
   for img in `ls $frame/GEOC.MLI/2* -d | rev | cut -d '/' -f1 | rev`; do
    if [ -f $frame/GEOC.MLI/$img/$img.geo.mli.tif ]; then
-    if [ -d $pubDir_epochs/$img ]; then
+    if [ -f $pubDir_epochs/$img/$img.geo.mli.tif ]; then
      echo "epoch for "$img" exists, we will not overwrite now"
     else
      echo "moving/copying epoch "$img
@@ -591,3 +591,14 @@ if [ $DOLONGRAMPS -eq 1 ]; then
  done
 fi
 echo "done"
+
+
+
+exit
+
+# function to get same or different file within /neodc:
+
+function isinceda() {
+  cmp $1 $2 >/dev/null && echo "identical" || echo "different"
+}
+
