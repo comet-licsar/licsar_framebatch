@@ -62,17 +62,21 @@ startdate=$2 #should be as 2014-10-10
 #this is to use scihub to download only the today's and yesterday's data
 if [ ! -z $3 ]; then 
  enddate=$3;
+else
+ enddate=`date -d 'tomorrow' +'%Y-%m-%d'`;
+fi
+
+# setting CDSE for dates since 'yesterday' including (should be enough?... ok, setting also day before)
+ if [ `datediff $enddate` -lt 3 ]; then
  #if [ `date -d $enddate +'%Y%m%d'` -gt `date +'%Y%m%d'` ]; then enddate=`date +'%Y-%m-%d'`; fi
- if [ $enddate == `date +'%Y-%m-%d'` ] || [ `date -d $enddate +'%Y%m%d'` -gt `date +'%Y%m%d'` ] || [ $enddate == `date -d 'tomorrow' +'%Y-%m-%d'` ] || [ $enddate == `date -d 'yesterday' +'%Y-%m-%d'` ]; then
+ #if [ $enddate == `date +'%Y-%m-%d'` ] || [ `date -d $enddate +'%Y%m%d'` -gt `date +'%Y%m%d'` ] || [ $enddate == `date -d 'tomorrow' +'%Y-%m-%d'` ] || [ $enddate == `date -d 'yesterday' +'%Y-%m-%d'` ]; then
   if [ $trycdse == 1 ]; then
     if [ -f ~/.cdse_credentials ]; then use_cdse=1; echo "using CDSE"; fi
   else
     echo "WARNING - issues with CDSE download speed - not using CDSE but WE SHOULD HERE. Temporary solution. To force CDSE, rerun framebatch_data_refill.sh with -f"
   fi
  fi
-else
- enddate=`date -d 'tomorrow' +'%Y-%m-%d'`;
-fi
+
 
 if [[ ! `echo $frame | cut -d '_' -f3 | cut -c 6` == ?([0-9]) ]]; then echo 'frame wrongly set: '$frame; exit; fi
 if [ ! -d $BATCH_CACHE_DIR/$frame ]; then echo 'this frame was not started by framebatch. I suppose you know what you are doing'; mkdir $BATCH_CACHE_DIR/$frame; fi

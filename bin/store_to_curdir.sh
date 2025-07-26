@@ -60,7 +60,8 @@ MOVE=0
 DORSLC=1
 KEEPRSLC=1
 DOGEOC=1
-DOIFG=0
+DOWEB=1
+DOIFG=0 # that's only radarcoded (abandoned...)
 DOSUBSETS=1
 #let's request gacos data if we do DELETEAFTER..
 DOGACOS=0
@@ -378,9 +379,15 @@ if [ $DOGEOC -eq 1 ]; then
           echo $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp >> $list_added 2>/dev/null
           chmod 775 $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp 2>/dev/null
           chgrp gws_lics_admin $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp 2>/dev/null
+          updated=1
          fi
        fi
     done
+   fi
+   if [ $updated == 1 ]; then
+     cedaarch_create_html.sh $frame $geoifg
+     updated=0
+     updatedframe=1
    fi
   done
  else
@@ -392,7 +399,7 @@ if [ $DOGEOC -eq 1 ]; then
   track=$tr
   for img in `ls $frame/GEOC.MLI/2* -d | rev | cut -d '/' -f1 | rev`; do
    if [ -f $frame/GEOC.MLI/$img/$img.geo.mli.tif ]; then
-    if [ -d $pubDir_epochs/$img ]; then
+    if [ -f $pubDir_epochs/$img/$img.geo.mli.tif ]; then
      echo "epoch for "$img" exists, we will not overwrite now"
     else
      echo "moving/copying epoch "$img
@@ -408,6 +415,7 @@ if [ $DOGEOC -eq 1 ]; then
       fi
       echo $pubDir_epochs/$img/$img.geo.$toexp >> $list_added 2>/dev/null
       chmod 775 $pubDir_epochs/$img/$img.geo.$toexp 2>/dev/null
+      cedaarch_create_html.sh $frame $img epochs
       #chgrp gws_lics_admin $pubDir_epochs/$img/$img.geo.$toexp 2>/dev/null
      fi
      done
@@ -453,7 +461,7 @@ fi
 #this does not work well due to multiple connections...of course
 #echo "Updating frame csv"
 #update_framecsv.py -f $frame
-if [ $updated == 1 ]; then
+if [ $updatedframe == 1 ]; then
  echo "Updating bperp file in pubdir"
  cd $thisDir/$frame
  #mk_bperp_file.sh
@@ -578,5 +586,19 @@ if [ $DOLONGRAMPS -eq 1 ]; then
  python3 -c "from iono_correct import *; make_all_frame_epochs('"$frame"')"
  # and now SET (bigger files.. unfortunately)
  create_LOS_tide_frame_allepochs $frame
+ for ep in `ls $pubDir_epochs | grep ^20`; do
+   cedaarch_create_html.sh $frame $ep
+ done
 fi
 echo "done"
+
+
+
+exit
+
+# function to get same or different file within /neodc:
+
+function isinceda() {
+  cmp $1 $2 >/dev/null && echo "identical" || echo "different"
+}
+
