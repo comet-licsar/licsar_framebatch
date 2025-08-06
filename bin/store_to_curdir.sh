@@ -336,6 +336,7 @@ if [ $DOGEOC -eq 1 ]; then
   for geoifg in `ls $frame/GEOC/20??????_20?????? -d | rev | cut -d '/' -f1 | rev`; do
    if [ -f $frame/GEOC/$geoifg/$geoifg.geo.unw.tif ]; then
     if [ -f $pubDir_ifgs/$geoifg/$geoifg.geo.unw.tif ]; then
+     if [ $GEOC_OVERWRITE == 1 ]; then
       if [ `comparefiles $frame/GEOC/$geoifg/$geoifg.geo.unw.tif $pubDir_ifgs/$geoifg/$geoifg.geo.unw.tif` == 'different' ]; then
       #if [ $GEOC_OVERWRITE == 1 ]; then
       # echo "warning, geoifg "$geoifg" already exists. Data will be overwritten";
@@ -345,6 +346,9 @@ if [ $DOGEOC -eq 1 ]; then
         updated=0
         #echo "warning, geoifg "$geoifg" already existed. Data will not be overwritten";
       fi;
+     else
+       updated=0
+     fi
     else
      echo "copying geocoded "$geoifg
      updated=1
@@ -362,9 +366,14 @@ if [ $DOGEOC -eq 1 ]; then
          GOON=1
          #if [ $GEOC_OVERWRITE == 0 ]; then
          if [ -f $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp ]; then
-          if [ `comparefiles $frame/GEOC/$geoifg/$geoifg.geo.$toexp $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp` == 'identical' ]; then
+          if [ $GEOC_OVERWRITE == 1 ]; then
+           if [ `comparefiles $frame/GEOC/$geoifg/$geoifg.geo.$toexp $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp` == 'identical' ]; then
             GOON=0;
-         fi; fi
+           fi;
+          else
+            GOON=0;
+          fi;
+         fi
          if [ $GOON == 1 ]; then
          # prelb issue
          if [ -L $frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
@@ -412,9 +421,13 @@ if [ $DOGEOC -eq 1 ]; then
    if [ -f $frame/GEOC.MLI/$img/$img.geo.mli.tif ]; then
     GOON=1;
     if [ -f $pubDir_epochs/$img/$img.geo.mli.tif ]; then
+     if [ $GEOC_OVERWRITE == 1 ]; then
       if [ `comparefiles $frame/GEOC.MLI/$img/$img.geo.mli.tif $pubDir_epochs/$img/$img.geo.mli.tif` == 'identical' ]; then
             GOON=0;
       fi;
+     else
+       GOON=0;
+     fi
     fi
     if [ $GOON == 1 ]; then
      echo "moving/copying epoch "$img
