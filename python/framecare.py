@@ -1100,7 +1100,18 @@ def get_master(frame, asfilenames = False, asdate = False, asdatetime = False, m
             zipfiles = []
             for zipfile in glob.glob(slcpath+'/S1*zip'):
                 zipfiles.append(os.path.basename(zipfile))
-            return zipfiles
+            if zipfiles:
+                return zipfiles
+            else:
+                mm = dt.datetime.strptime(masterdate, '%Y%m%d')
+                zzs = lq.get_frame_files_date(frame, mm)
+                for z in zzs:
+                    zipfiles.append(os.path.basename(z[2]))
+            if zipfiles:
+                return zipfiles
+            else:
+                print('error getting zip filenames even from database..')
+                return False
         except:
             print('error finding zip files in the frame SLC directory')
             return False

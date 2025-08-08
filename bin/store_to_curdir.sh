@@ -16,6 +16,12 @@ if [ -z $1 ]; then
 
 if [ ! -d $frame ]; then echo "framedir does not exist - are you be in the \$BATCH_CACHE_DIR \?"; exit; fi
 
+
+function comparefiles() {
+  cmp $1 $2 >/dev/null && echo "identical" || echo "different"
+}
+
+
 #check for changed frame IDs
 framechanges=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/frameid_changes.txt
 list_added=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/updates/`date +'%Y%m%d'`.$frame.added
@@ -329,15 +335,22 @@ if [ $DOGEOC -eq 1 ]; then
   track=$tr
   for geoifg in `ls $frame/GEOC/20??????_20?????? -d | rev | cut -d '/' -f1 | rev`; do
    if [ -f $frame/GEOC/$geoifg/$geoifg.geo.unw.tif ]; then
-    if [ -f $pubDir_ifgs/$geoifg/$geoifg.geo.unw.tif ]; then 
-      if [ $GEOC_OVERWRITE == 1 ]; then
-       echo "warning, geoifg "$geoifg" already exists. Data will be overwritten";
-       updated=1
+    if [ -f $pubDir_ifgs/$geoifg/$geoifg.geo.unw.tif ]; then
+     if [ $GEOC_OVERWRITE == 1 ]; then
+      if [ `comparefiles $frame/GEOC/$geoifg/$geoifg.geo.unw.tif $pubDir_ifgs/$geoifg/$geoifg.geo.unw.tif` == 'different' ]; then
+      #if [ $GEOC_OVERWRITE == 1 ]; then
+      # echo "warning, geoifg "$geoifg" already exists. Data will be overwritten";
+        echo "the geoifg "$geoifg" differs - updating"
+        updated=1
       else
-       echo "warning, geoifg "$geoifg" already existed. Data will not be overwritten";
+        updated=0
+        #echo "warning, geoifg "$geoifg" already existed. Data will not be overwritten";
       fi;
+     else
+       updated=0
+     fi
     else
-     echo "moving geocoded "$geoifg
+     echo "copying geocoded "$geoifg
      updated=1
     fi
     mkdir -p $pubDir_ifgs/$geoifg 2>/dev/null
@@ -351,8 +364,15 @@ if [ $DOGEOC -eq 1 ]; then
         diff_pha.tif unw.png unw.full.png unw.tif disp_blk.png; do
        if [ -f $frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
          GOON=1
-         if [ $GEOC_OVERWRITE == 0 ]; then
-          if [ -f $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp ]; then GOON=0; fi
+         #if [ $GEOC_OVERWRITE == 0 ]; then
+         if [ -f $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp ]; then
+          if [ $GEOC_OVERWRITE == 1 ]; then
+           if [ `comparefiles $frame/GEOC/$geoifg/$geoifg.geo.$toexp $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp` == 'identical' ]; then
+            GOON=0;
+           fi;
+          else
+            GOON=0;
+          fi;
          fi
          if [ $GOON == 1 ]; then
          # prelb issue
@@ -399,9 +419,17 @@ if [ $DOGEOC -eq 1 ]; then
   track=$tr
   for img in `ls $frame/GEOC.MLI/2* -d | rev | cut -d '/' -f1 | rev`; do
    if [ -f $frame/GEOC.MLI/$img/$img.geo.mli.tif ]; then
+    GOON=1;
     if [ -f $pubDir_epochs/$img/$img.geo.mli.tif ]; then
-     echo "epoch for "$img" exists, we will not overwrite now"
-    else
+     if [ $GEOC_OVERWRITE == 1 ]; then
+      if [ `comparefiles $frame/GEOC.MLI/$img/$img.geo.mli.tif $pubDir_epochs/$img/$img.geo.mli.tif` == 'identical' ]; then
+            GOON=0;
+      fi;
+     else
+       GOON=0;
+     fi
+    fi
+    if [ $GOON == 1 ]; then
      echo "moving/copying epoch "$img
      mkdir -p $pubDir_epochs/$img
      chmod 775 $pubDir_epochs/$img 2>/dev/null
@@ -596,9 +624,12 @@ echo "done"
 
 exit
 
+
+
+# ok, need to run following to check and make link to /neodc for all png and tif files in epochs and interferograms folders:
+cedaarch_filelink.sh $file
 # function to get same or different file within /neodc:
 
-function isinceda() {
+function comparefiles() {
   cmp $1 $2 >/dev/null && echo "identical" || echo "different"
 }
-
