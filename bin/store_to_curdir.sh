@@ -361,6 +361,7 @@ if [ $DOGEOC -eq 1 ]; then
         sbovldiff.adf.mm.tif sbovldiff.adf.cc.tif \
         azi.tif azi.png rng.tif rng.png tracking_corr.tif \
         cc.png cc.tif cc.full.png diff.png diff.full.png diff_unfiltered.png diff_unfiltered.full.png diff_unfiltered_pha.tif \
+        mag_cc.png mag_cc.tif \
         diff_pha.tif unw.png unw.full.png unw.tif disp_blk.png; do
        if [ -f $frame/GEOC/$geoifg/$geoifg.geo.$toexp ]; then
          GOON=1
