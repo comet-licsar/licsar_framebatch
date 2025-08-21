@@ -79,7 +79,7 @@ DELETESLCS=0
 DOLONGRAMPS=0
 QUALCHECK=0
 store_logs=1 #for autodelete only
-updated=0
+updatedframe=0
 
 #second parameter - if 1, then delete after storing
 #third parameter - if 0, then disable overwriting of GEOC and IFG files
@@ -334,6 +334,7 @@ if [ $DOGEOC -eq 1 ]; then
   echo "Moving geoifgs to public folder for frame "$frame
   track=$tr
   for geoifg in `ls $frame/GEOC/20??????_20?????? -d | rev | cut -d '/' -f1 | rev`; do
+    updated=0
    if [ -f $frame/GEOC/$geoifg/$geoifg.geo.unw.tif ]; then
     if [ -f $pubDir_ifgs/$geoifg/$geoifg.geo.unw.tif ]; then
      if [ $GEOC_OVERWRITE == 1 ]; then
