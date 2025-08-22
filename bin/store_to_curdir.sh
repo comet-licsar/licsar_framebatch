@@ -619,7 +619,7 @@ if [ $DOLONGRAMPS -eq 1 ]; then
  # and now SET (bigger files.. unfortunately)
  create_LOS_tide_frame_allepochs $frame
  for ep in `ls $pubDir_epochs | grep ^20`; do
-   cedaarch_create_html.sh $frame $ep
+   cedaarch_create_html.sh $frame $ep epochs
  done
 fi
 echo "done"
