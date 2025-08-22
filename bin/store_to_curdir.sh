@@ -79,7 +79,7 @@ DELETESLCS=0
 DOLONGRAMPS=0
 QUALCHECK=0
 store_logs=1 #for autodelete only
-updated=0
+updatedframe=0
 
 #second parameter - if 1, then delete after storing
 #third parameter - if 0, then disable overwriting of GEOC and IFG files
@@ -334,6 +334,7 @@ if [ $DOGEOC -eq 1 ]; then
   echo "Moving geoifgs to public folder for frame "$frame
   track=$tr
   for geoifg in `ls $frame/GEOC/20??????_20?????? -d | rev | cut -d '/' -f1 | rev`; do
+    updated=0
    if [ -f $frame/GEOC/$geoifg/$geoifg.geo.unw.tif ]; then
     if [ -f $pubDir_ifgs/$geoifg/$geoifg.geo.unw.tif ]; then
      if [ $GEOC_OVERWRITE == 1 ]; then
@@ -391,6 +392,7 @@ if [ $DOGEOC -eq 1 ]; then
          if [ $GOON == 1 ]; then
          #this condition is to NOT TO OVERWRITE the GEOC results. But it makes sense to overwrite them 'always'
          #if [ ! -f $public/$tr/$frame/products/$geoifg/$geoifg.geo.$toexp ]; then
+          if [ -L $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp ]; then rm -f $pubDir_ifgs/$geoifg/$geoifg.geo.$toexp; fi
           if [ $MOVE -eq 1 ]; then 
            mv $frame/GEOC/$geoifg/$geoifg.geo.$toexp $pubDir_ifgs/$geoifg/.
           else
@@ -437,6 +439,7 @@ if [ $DOGEOC -eq 1 ]; then
      #chgrp gws_lics_admin $pubDir_epochs/$img 2>/dev/null
      for toexp in mli.png mli.tif; do
      if [ -f $frame/GEOC.MLI/$img/$img.geo.$toexp ]; then
+      if [ -L $pubDir_epochs/$img/$img.geo.$toexp ]; then rm -f $pubDir_epochs/$img/$img.geo.$toexp; fi
       if [ $MOVE -eq 1 ]; then
        mv $frame/GEOC.MLI/$img/$img.geo.$toexp $pubDir_epochs/$img/.
       else
