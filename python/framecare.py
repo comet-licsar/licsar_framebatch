@@ -1835,6 +1835,23 @@ def get_frames_gpd(framelist):
     return fgpd
 
 
+def get_frames_from_txtfile(txtfile):
+    ''' same as get_all_frames but would load from text file
+
+    :param txtfile: text file path (one frame ID per line)
+    :return: gpd.DataFrame
+    '''
+    frames = fc.pd.read_csv(txtfile, header=None)
+    frames = list(frames[0].values)
+    framesgpd = gpd.geodataframe.GeoDataFrame()
+    for frame in frames:
+        a = frame2geopandas(frame)
+        if type(a) != type(None):
+            framesgpd = framesgpd.append(a)
+    framesgpd = framesgpd.set_geometry('geometry')
+    return framesgpd
+
+
 def get_all_frames(only_initialised = False, merge = False):
     """Will get geopandas for all LiCSAR frames
 
@@ -1897,13 +1914,18 @@ def manual_check_master_files(frame, master):
     print("os.system('arch2DB.py -f {} >/dev/null 2>/dev/null'.format(fullpath))")
 
 
+def export_framelist_to_kml(txtfile, outkmlfile):
+    framesgpd = get_frames_from_txtfile(txtfile)
+    export_geopandas_to_kml(framesgpd, outkmlfile)
+
+
 def export_all_frames_to_kmls(kmldirpath = '/gws/nopw/j04/nceo_geohazards_vol1/public/shared/test/bursts'): #'/gws/nopw/j04/nceo_geohazards_vol1/public/shared/frames/'):
     asc_gpd, desc_gpd = get_all_frames()
     if os.path.exists(os.path.join(kmldirpath,'ascending.kml')):
         os.remove(os.path.join(kmldirpath,'ascending.kml'))
     if os.path.exists(os.path.join(kmldirpath,'descending.kml')):
         os.remove(os.path.join(kmldirpath,'descending.kml'))
-    
+    #
     export_geopandas_to_kml(asc_gpd, os.path.join(kmldirpath,'ascending.kml'))
     export_geopandas_to_kml(desc_gpd, os.path.join(kmldirpath,'descending.kml'))
 
