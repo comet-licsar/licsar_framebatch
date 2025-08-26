@@ -137,6 +137,7 @@ fi
 #volcid=$1
 if [ ! -z $sid ]; then
   vidpath=$LiCSAR_procdir/subsets/$sid
+  vid=$sid
 else
   vidpath=$LiCSAR_procdir/subsets/volc/$vid
 fi
@@ -145,6 +146,7 @@ for subfr in `ls $vidpath`; do
   procpath=$BATCH_CACHE_DIR/subsets/$vid/$subfr
   # prepare licsbas script
   mkdir -p $procpath
+  cd $procpath
   echo "cd "$procpath"; " > $procpath/l2l.sh
   #echo "licsar2licsbas.sh -M 2 -F -g -u -W -T -d -n 4 -s " >> $procpath/l2l.sh
   #echo "licsar2licsbas.sh -M 5 -F -g -u -W -T -d -n 4 -s " >> $procpath/l2l.sh
@@ -153,12 +155,13 @@ for subfr in `ls $vidpath`; do
   # 2024/01/31 - NOPE! ADF2 is horrible! using smooth, and from unfiltered - best results over Fogo! (or cascade, but that takes too long)
   #echo "licsar2licsbas.sh -M 3 -s -g -u -W -T -d -n 4 "$extra >> $procpath/l2l.sh
   if [ ! -z $cliparea ]; then
-   echo "licsar2licsbas.sh -M "$ml" -G "$cliparea" -u -d -T -t 0.2 -h 23 -n 4 "$lbextra >> $procpath/l2l.sh
+    echo "licsar2licsbas.sh -M "$ml" -G "$cliparea" -u -d -T -t 0.2 -h 23 -n 4 "$lbextra >> $procpath/l2l.sh
   else
     echo "licsar2licsbas.sh -M "$ml" -u -d -T -t 0.2 -h 23 -n 4 "$lbextra >> $procpath/l2l.sh
   fi
   chmod 777 $procpath/l2l.sh
   subset_mk_ifgs.sh $extra -s $procpath/l2l.sh -N $vidpath/$subfr
+  cd -
   # subset_mk_ifgs.sh $extra $vidpath/$subfr
 done
 
