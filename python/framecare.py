@@ -1406,7 +1406,7 @@ def get_ifg_list_pubdir_limit(framename, startdate = '20141001', enddate = dt.da
     for ifgd in ifgdates_all:
         mimd = int(ifgd[:8])
         simd = int(ifgd[-8:])
-        if mimd >= startdate and simd <= enddate:
+        if mimd >= int(startdate) and simd <= int(enddate):
             ifgdates.append(ifgd)
     return ifgdates
 
