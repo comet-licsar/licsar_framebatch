@@ -1393,6 +1393,24 @@ def get_epochs_from_ifg_list_pubdir(framename):
     return list(epochs)
 
 
+def get_ifg_list_pubdir_limit(framename, startdate = '20141001', enddate = dt.datetime.now().date().strftime('%Y%m%d')):
+    import LiCSBAS_tools_lib as tools_lib
+    pubdir = os.environ['LiCSAR_public']
+    track = str(int(framename[0:3]))
+    pubpath = os.path.join(pubdir, track, framename)
+    if not os.path.exists(pubpath):
+        return 0
+    ifgdir = os.path.join(pubpath, 'interferograms')
+    ifgdates_all = tools_lib.get_ifgdates(ifgdir)
+    ifgdates = []
+    for ifgd in ifgdates_all:
+        mimd = int(ifgd[:8])
+        simd = int(ifgd[-8:])
+        if mimd >= startdate and simd <= enddate:
+            ifgdates.append(ifgd)
+    return ifgdates
+
+
 def export_frames_to_licsar_csv(framesgpd, outcsv = '/gws/nopw/j04/nceo_geohazards_vol1/public/shared/frames/frames.csv', store_zero = False):
     #print('now we would export the frame to outcsv, including wkb')
     # this will update the csv, not rewrite it..
