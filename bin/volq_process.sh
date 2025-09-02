@@ -97,7 +97,7 @@ if [ $regime == 'licsar' ]; then
   fi
   #for x in `grep '\[' $tempfile | sed "s/'//g" | sed 's/\[//' | sed 's/\]//' | sed 's/\,//'`; do
   for x in `cat $tempfile`; do
-     echo "running background process for frame "$frame
+     echo "running background process for frame "$x
      # nohup framebatch_update_frame.sh -u $extra $x upfill > $tempfile.log.$x &
      # removing 'extra' as LOTUS2 now does not support prioritised queues...
      nohup framebatch_update_frame.sh -u $x upfill > $tempfile.log.$x &
