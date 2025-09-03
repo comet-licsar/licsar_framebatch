@@ -35,10 +35,11 @@ else
    rslcdates=`ls $frame/RSLC | wc -l`
    if [ $slcdates -gt 1 ]; then echo "this frame has SLCs to process: "$frame;
          if [ $PROC == 1 ]; then
-           if [ $slcdates -lt 5 ]; then
-             batchcachedir_reprocess_from_slcs.sh $frame
-           else
-             echo "quite a lot of not processed SLCs. performing through postproc_coreg only"
+           #if [ $slcdates -lt 5 ]; then
+           #  batchcachedir_reprocess_from_slcs.sh $frame
+           #else
+           #  echo "quite a lot of not processed SLCs. performing through postproc_coreg only"
+           echo "TODO - make some more intelligent checks, e.g. on missing bursts, or way too far-in-time epochs"
              framebatch_postproc_coreg.sh $frame 1
              #~ echo "quite a lot of not processed SLCs. switching to licsar_make_frame.sh reprocessing"
              #~ mstr=`ls $frame/geo/*.hgt | head -n1`
@@ -48,7 +49,7 @@ else
              #~ if [ `grep -c comet $frame/framebatch_02_coreg.nowait.sh` -gt 0 ]; then extral='-P'; fi
              #~ licsar_make_frame.sh -f $extral $frame 1 0 `date -d $startdate +'%Y-%m-%d'` `date -d $enddate +'%Y-%m-%d'`
              #~ rm $frame/tmp_reprocess.slc
-           fi
+           #fi
          fi
    else
     if [ $rslcdates -lt 2 ]; then todel=1;
