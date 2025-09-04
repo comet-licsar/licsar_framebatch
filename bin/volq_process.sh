@@ -3,9 +3,9 @@
 # this is to process the volcid - ifgs and licsbas
 
 if [ -z $1 ]; then
- echo "Usage e.g.: volq_process.sh [-M 3] [-P] [-l] [-p] [-L] [-C 0.15] [-g] [-s 20141001] [-e 20230101] -i volclip_id (or -n volcname or -v volcID)"
+ echo "Usage e.g.: volq_process.sh [-M 3] [-l] [-p] [-L] [-C 0.15] [-g] [-s 20141001] [-e 20230101] -i volclip_id (or -n volcname or -v volcID)"
  #echo "Usage e.g.: subset_mk_ifgs.sh [-P] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
- echo "parameter -P will run through comet queue"
+ #echo "parameter -P will run through comet queue"
  echo "parameter -L will run in LiCSAR regime (frame processing - update)"
  echo "-- for LiCSBAS regime:"
  echo "parameter -g for use of GACOS - not by default anymore as this would not run for the latest epoch..."
