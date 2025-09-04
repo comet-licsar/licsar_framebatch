@@ -14,10 +14,9 @@ if [ -z $1 ]; then
  echo "parameter -C 0.X would apply additional masking based on individual coherence"
  echo "parameter -R would add range offset tracking-supported unwrapping"
  echo "parameters -s, -e are to limit by startdate and enddate"
- echo "-S would use sid (subset ID) - in case this is not volcano"
- #echo "----"
- echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frameid directory"
- echo "---"
+ echo "parameter -S would use sid (subset ID) - in case this is not volcano"
+ #echo "             (this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frameid directory)"
+ #echo "---"
  #echo "NOTE: if you use ifgs.list, please provide FULL PATH. Also note, the ifgs.list should contain pairs in the form of e.g.:"
  #echo "20180101_20180303"
  exit
