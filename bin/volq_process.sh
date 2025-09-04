@@ -3,7 +3,7 @@
 # this is to process the volcid - ifgs and licsbas
 
 if [ -z $1 ]; then
- echo "Usage e.g.: volq_process.sh [-M 3] [-P] [-l] [-p] [-L] [-C 0.15] [-g] -i volclip_id (or -n volcname or -v volcID)"
+ echo "Usage e.g.: volq_process.sh [-M 3] [-P] [-l] [-p] [-L] [-C 0.15] [-g] [-s 20141001] [-e 20230101] -i volclip_id (or -n volcname or -v volcID)"
  #echo "Usage e.g.: subset_mk_ifgs.sh [-P] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
  echo "parameter -P will run through comet queue"
  echo "parameter -L will run in LiCSAR regime (frame processing - update)"
@@ -13,7 +13,8 @@ if [ -z $1 ]; then
  echo "parameter -M X means target multilook factor (only for hires regime - by default -M 3)"
  echo "parameter -C 0.X would apply additional masking based on individual coherence"
  echo "parameter -R would add range offset tracking-supported unwrapping"
- echo "-s would use sid"
+ echo "parameters -s, -e are to limit by startdate and enddate"
+ echo "-S would use sid (subset ID) - in case this is not volcano"
  #echo "----"
  echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frameid directory"
  echo "---"
@@ -30,8 +31,10 @@ ml=3
 clipasportal=0
 volcid=''
 sid=''
+sdate=''
+edate=''
 
-while getopts ":PRlgpLs:n:i:C:M:v:" option; do
+while getopts ":PRlgpLS:n:i:C:M:s:e:v:" option; do
  case "${option}" in
   P) extra='-P ';
      ;;
@@ -41,7 +44,11 @@ while getopts ":PRlgpLs:n:i:C:M:v:" option; do
      ;;
   M ) ml=$OPTARG;
      ;;
-  s ) sid=$OPTARG;
+  S ) sid=$OPTARG;
+     ;;
+  s ) sdate=$OPTARG;
+     ;;
+  e ) edate=$OPTARG;
      ;;
   L ) regime='licsar';
      ;;
@@ -129,7 +136,7 @@ if [ $lowres == 1 ]; then
     echo $frame
     #licsar2licsbas.sh -M 1 -s -g -u -W -T -d -n 4 -G $cliparea $extra $frame
     #licsar2licsbas.sh -M 1 -g -u -W -T -n 4 -G $cliparea $extra $frame
-    licsar2licsbas.sh -M 1 -u -d -T -n 4 -t 0.15 -G $cliparea $lbextra $frame
+    licsar2licsbas.sh -M 1 -u -d -T -n 4 -t 0.15 -G $cliparea $lbextra $frame $sdate $edate
   done
 exit
 fi
@@ -160,7 +167,7 @@ for subfr in `ls $vidpath`; do
     echo "licsar2licsbas.sh -M "$ml" -u -d -T -t 0.2 -h 23 -n 4 "$lbextra >> $procpath/l2l.sh
   fi
   chmod 777 $procpath/l2l.sh
-  subset_mk_ifgs.sh $extra -s $procpath/l2l.sh -N $vidpath/$subfr
+  subset_mk_ifgs.sh $extra -s $procpath/l2l.sh -N $vidpath/$subfr $sdate $edate
   cd -
   # subset_mk_ifgs.sh $extra $vidpath/$subfr
 done
