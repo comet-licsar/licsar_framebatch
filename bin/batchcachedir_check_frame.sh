@@ -19,7 +19,8 @@ else
  echo "no such frame dir, cancel"
  exit
 fi
- 
+
+rmdir $frame/SLC/* 2>/dev/null
 #first check - bad SLC - too large, i.e. over 30 GB:
 for x in `ls $frame/SLC`; do
   if [ `ls -al $frame/SLC/$x/$x.slc 2>/dev/null | gawk {'print $5'}` -gt 30066815424 ]; then
