@@ -62,7 +62,7 @@ else
      #else
       rmdir $frame/GEOC/* 2>/dev/null
       ifgdates=`ls $frame/GEOC | wc -l`
-      let expifgdates=4*$rslcdates'-3-4'  # -4 due to ref epoch in RSLC folder, -3 should be ok for the first/last epoch.. i guess...
+      let expifgdates=4*$rslcdates'-4-4-3-2-1-1'  # -4 due to ref epoch in RSLC folder, -4 for the last RSLC, etc., last -1 only to allow -lt
       if [ $ifgdates -lt $expifgdates ]; then
        echo "this frame needs ifg gapfilling: "$frame
          if [ $PROC == 1 ]; then

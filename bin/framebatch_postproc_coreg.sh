@@ -161,7 +161,7 @@ for x in `cat coreg_its/tmp_reprocess.slc | sort`; do # -r`; do # with -r would 
  if [ $force == 0 ]; then
   cp coreg_its/tmp.rslc coreg_its/tmp.rslc.tmp
   echo $x >> coreg_its/tmp.rslc.tmp
-  for y in `sort coreg_its/tmp.rslc.tmp | grep -A 1 -B 1 $x | sed '/'$x'/d'`; do if [ `datediff $x $y` -lt 180 ]; then doit=1; fi; done
+  for y in `sort coreg_its/tmp.rslc.tmp | grep -A 1 -B 1 $x | sed '/'$x'/d'`; do if [ `datediff $x $y | sed 's/-//'` -lt 180 ]; then doit=1; fi; done
   # this below was the bottleneck!!!
   #for y in `cat coreg_its/tmp.rslc`; do 
   # if [ `datediff $x $y` -lt 180 ]; then

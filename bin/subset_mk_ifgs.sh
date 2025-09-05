@@ -4,22 +4,24 @@
 # just run in the subsets dir
 
 if [ -z $1 ]; then
- echo "Usage e.g.: subset_mk_ifgs.sh [-P] [-s foo.sh] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [ifgs.list]"
+ echo "Usage e.g.: subset_mk_ifgs.sh [-P] [-s foo.sh] [-i ifgs.list] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [startdate] [enddate]"
  echo "parameter -P will run through comet queue"
  echo "parameter -s foo.sh .. will run foo.sh script after end of generation of ifgs"
  echo "parameter -N will skip standard unwrapping (useful if reunw is planned)"
  echo "parameter -R will add rg offset tracking to processing"
+ echo "parameter -i ifgs.list should be file including the list of pairs (e.g. 20180101_20180303) "
  echo "----"
  echo "this will copy and process ifgs and store in \$BATCH_CACHE_DIR/subsets/\$sid/\$frameid directory"
- echo "NOTE: if you use ifgs.list, please provide FULL PATH. Also note, the ifgs.list should contain pairs in the form of e.g.:"
- echo "20180101_20180303"
+ echo "the start/end date should be in the form of yyyymmdd"
+ # echo "NOTE: if you use ifgs.list, please provide FULL PATH. Also note, the ifgs.list should contain pairs in the form of e.g.:"
+ # echo "20180101_20180303"
  exit
 fi
 
 extra=''
 shscript=''
 
-while getopts ":PRNs:" option; do
+while getopts ":PRNi:s:" option; do
  case "${option}" in
   P ) extra='-P ';
      ;;
@@ -27,21 +29,21 @@ while getopts ":PRNs:" option; do
      ;;
   N ) extra='-N ';
      ;;
+  i ) ifglist=`realpath $OPTARG`;
+      echo "using file "$ifglist" as input for ifgs";
+      extra=$extra'-i '$ifglist;
+     ;;
   s ) shscript=$OPTARG; echo "will run this script afterwards: "$shscript;
 #      shift
-      ;;
+     ;;
  esac
 done
 #shift
 shift $((OPTIND -1))
 
 if [ -z $1 ]; then echo "please check provided parameters"; exit; fi
-
-if [ ! -z $2 ]; then
- echo "using file "$2" as input for ifgs"
- ifglist=`realpath $2`
- extra=$extra'-i '$ifglist
-fi
+if [ ! -z $2 ]; then sdate=$2; else sdate=20141001; fi
+if [ ! -z $3 ]; then edate=$3; else edate=`date +%Y%m%d`; fi
 
 cd $1
 subsetpath=`pwd`
@@ -79,7 +81,11 @@ if [ ! -d GEOC/geo ]; then cp -r $subsetpath/GEOC.meta.$resol_m'm' GEOC/geo; cp 
 echo "copying existing clipped RSLCs"
 #for ddir in SLC RSLC; do
 ddir=RSLC
-rsync -r -u -l $subsetpath/$ddir .;
+for r in `ls $subsetpath/$ddir`; do
+  if [ $r -ge $sdate ] && [ $r -le $edate ]; then
+    rsync -r -u -l $subsetpath/$ddir/$r $ddir/.;
+  fi
+done
 # fix issue with different multilooking of ref epoch:
 rm *LC/$m/*mli*
 
