@@ -806,6 +806,7 @@ if [ $cancel == 1 ]; then
   echo "now storing back to LiCSAR base"
   cd ..
   store_to_curdir.sh $frame
+  batchcachedir_check_frame.sh $frame 1
  fi
  exit
 fi
@@ -1093,6 +1094,7 @@ fi
 if [ $store == 1 ]; then
   echo "echo 'storing to LiCSAR base'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
   echo "cd ..; store_to_curdir.sh $frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+  echo "batchcachedir_check_frame.sh "$frame" 1" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 fi
 #echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #echo "echo 'sync done, deleting TEMP folder'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
