@@ -8,13 +8,15 @@ if [ -z $1 ]; then
  echo "other parameters:"
  echo "-f ..... force override the 180 days gap limitation (that could cause wrong SD estimate)"
  echo "-F ..... full-force override (not recommended due to azimuth errors)"
+ echo "-b ..... for force-override solution (best with the iterative processing) setting the first SLC backwards in time"
  exit; fi
 
 
 force=0
 autocont=0
 extracoregparms=''
-while getopts ":fF" option; do
+backfill=0
+while getopts ":fFb" option; do
  case "${option}" in
   f) force=1;
      #autocont=1;
@@ -23,6 +25,8 @@ while getopts ":fF" option; do
      ;;
   F) extracoregparms='-E';
      #shift
+     ;;
+  b) backfill=1;
      ;;
  esac
 done
@@ -156,7 +160,12 @@ fi
 
 msize=`du -c SLC/$mstr/*IW?.slc | tail -n1 | gawk {'print $1'}`
 maxj=0
-for x in `cat coreg_its/tmp_reprocess.slc | sort`; do # -r`; do # with -r would be needed for backfilling...
+if [ $backfill -eq 0 ]; then
+  cat coreg_its/tmp_reprocess.slc | sort > coreg_its/tmp_reprocess.slc.sorted
+else
+  cat coreg_its/tmp_reprocess.slc | sort -r > coreg_its/tmp_reprocess.slc.sorted
+fi
+for x in `cat coreg_its/tmp_reprocess.slc.sorted`; do
  doit=0
  if [ $force == 0 ]; then
   cp coreg_its/tmp.rslc coreg_its/tmp.rslc.tmp
