@@ -35,7 +35,7 @@ edate=''
 
 while getopts ":PRlgpLS:n:i:C:M:s:e:v:" option; do
  case "${option}" in
-  P) extra='-P ';
+  P) extra=$extra' -P ';
      ;;
   g) lbextra=$lbextra' -g';
      ;;
