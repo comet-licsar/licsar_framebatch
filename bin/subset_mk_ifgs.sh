@@ -62,7 +62,7 @@ source local_config.py
 if [ -z $azlks ]; then echo 'error - probably no local_config.py file, exiting'; exit; fi
 
 tempdir=$BATCH_CACHE_DIR/subsets/$sid/$frameid
-mkdir -p $tempdir/log $tempdir/tab
+mkdir -p $tempdir/log $tempdir/tab $tempdir/RSLC
 cd $tempdir
 echo "copying needed core files"
 # fix the master SLC

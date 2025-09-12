@@ -229,7 +229,7 @@ fi
 
 if [ $locl == 0 ]; then
  echo "Executing gap filling routine (results will be saved in this folder: "$WORKFRAMEDIR" )."
- if [ `echo $frame | cut -c 5` != '_' ]; then echo "ERROR, you are not in FRAME folder. Exiting"; exit; fi
+ # if [ `echo $frame | cut -c 5` != '_' ]; then echo "ERROR, you are not in FRAME folder. Exiting"; exit; fi
 fi
 #if [ -z $BATCH_CACHE_DIR ]; then echo "BATCH_CACHE_DIR not set. Cancelling"; exit; fi
 
