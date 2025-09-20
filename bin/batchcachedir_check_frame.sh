@@ -14,7 +14,7 @@ if [ -d $frame/geo ]; then
  if [ `ls $frame/geo | wc -l` == 0 ]; then echo "empty frame, deleting"; rm -rf $frame; exit; fi
 elif [ -d $frame ]; then
  echo "no geo folder inside the frame directory - moving to todelete directory"
- mkdir todelete; mv $frame todelete/.; exit
+ mkdir -p todelete; if [ -d todelete/$frame ]; then rm -r todelete/$frame; fi; mv $frame todelete/.; exit
 else
  echo "no such frame dir, cancel"
  exit
@@ -35,6 +35,10 @@ else
    slcdates=`ls $frame/SLC | wc -l`
    rslcdates=`ls $frame/RSLC | wc -l`
    if [ $slcdates -gt 1 ]; then echo "this frame has SLCs to process: "$frame;
+      # check on sizes
+      #m=`ls $frame/geo/*.hgt | head -n 1 | rev | cut -d '.' -f 2 | cut -d '/' -f 1 | rev`
+      #szm=`du -c $frame/SLC/$m/*IW?.slc | tail -n 1 | gawk {'print $1'}`
+      #for r in `ls $frame/RSLC`; do
          if [ $PROC == 1 ]; then
            #if [ $slcdates -lt 5 ]; then
            #  batchcachedir_reprocess_from_slcs.sh $frame
