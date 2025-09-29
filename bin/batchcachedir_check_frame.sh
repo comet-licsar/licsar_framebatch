@@ -92,6 +92,15 @@ else
       #     batchcachedir_reprocess_ifgs.sh $frame
       #   fi
       #  else
+         for r in `ls $frame/RSLC | grep ^20 | head -n-1`; do
+           if [ `ls $frame/GEOC/$r* -d | wc -l` == 0 ]; then
+             echo "missing "$r"_* interferograms"
+                      if [ $PROC == 1 ]; then
+                         cd $frame; ./framebatch_05_gap_filling.nowait.sh; cd -
+                      fi
+             exit
+           fi
+         done
          echo "this frame should be stored and deleted: "$frame
          if [ $PROC == 1 ]; then
            store_to_curdir.sh $frame 1 0 0
