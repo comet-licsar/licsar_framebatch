@@ -368,7 +368,7 @@ if [ $volcs_south -eq 1 ]; then
   echo "preparing S American volcs connections (all Dec-Feb up to 1 yr)"
   rm gapfill_job/tmp_selrslcs 2>/dev/null
   for rslc in `cat gapfill_job/tmp_rslcs`; do
-    if [ ${rslc:4:2} == '11' ] || [ ${rslc:4:2} == '12' ] || [ ${rslc:4:2} == '01' ] || [ ${rslc:4:2} == '02' ]; then
+    if [ ${rslc:4:2} == '11' ] || [ ${rslc:4:2} == '12' ] || [ ${rslc:4:2} == '01' ] || [ ${rslc:4:2} == '02' ] || [ ${rslc:4:2} == '03' ]; then
       echo $rslc >> gapfill_job/tmp_selrslcs
     fi
   done
