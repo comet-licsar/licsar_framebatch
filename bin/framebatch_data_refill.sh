@@ -433,12 +433,27 @@ if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
     else
      sshdown $x
     fi
-   else
+   fi
+   # maybe the error is due to ssh to xfer server? the access disappears in tmux session, after some time...
+   if [ ! -f $sshout/$x ]; then
+     echo "still error - trying from this node (avoiding XFER server - are you in tmux? probably related)"
+     cd $sshout; wget_alaska $x; cd -;
+     if [ ! -f $sshout/$x ]; then
+       epp=`echo $x | cut -c 18-25`
+       if [ `datediff $epp` -lt 60 ]; then
+         echo "trying CDSE"
+         cd $sshout; wget_cdse $x; cd -;
+       fi
+     fi
+   fi
+
+   if [ -f $sshout/$x ]; then
     zipcheck=`7za l $sshout/$x | grep ERROR -A1 | tail -n1`
     if [ `echo $zipcheck | wc -c` -gt 1 ]; then 
      echo "download error, trying once more (verbosed)"
      #sshinst;
-     sshdown $x;
+     #sshdown $x;
+     cd $sshout; wget_alaska $x; cd -;
     fi
     zipcheck=`7za l $sshout/$x | grep ERROR -A1 | tail -n1`
     if [ `echo $zipcheck | wc -c` -gt 1 ]; then
