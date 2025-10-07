@@ -331,7 +331,7 @@ fi
 if [ $DOGEOC -eq 1 ]; then
  #move geoc
  if [ -d $frame/GEOC ]; then
-  echo "Moving geoifgs to public folder for frame "$frame
+  echo "Storing geoifgs to public folder for frame "$frame
   track=$tr
   for geoifg in `ls $frame/GEOC/20??????_20?????? -d | rev | cut -d '/' -f1 | rev`; do
     updated=0
