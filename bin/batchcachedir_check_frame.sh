@@ -28,6 +28,9 @@ for x in `ls $frame/SLC`; do
   fi;
 done
 
+m=`ls $frame/geo/*.hgt | head -n 1 | rev | cut -d '.' -f 2 | cut -d '/' -f 1 | rev`
+if [ -z $m ]; then echo "Something is wrong - no hgt file is in the frame geo directory - exiting"; exit; fi
+
  #check if it is empty
 if [ ! -d $frame/RSLC ]; then
   todel=1;
@@ -93,12 +96,15 @@ else
       #   fi
       #  else
          for r in `ls $frame/RSLC | grep ^20 | head -n-1`; do
-           if [ `ls $frame/GEOC/$r* -d | wc -l` == 0 ]; then
+           if [ `ls $frame/GEOC/$r* -d 2>/dev/null | wc -l` == 0 ]; then
              echo "missing "$r"_* interferograms"
+             if [ $r == $m ]; then echo "(but this is ref epoch - perhaps ok)";
+             else
                       if [ $PROC == 1 ]; then
                          cd $frame; ./framebatch_05_gap_filling.nowait.sh; cd -
                       fi
-             exit
+                exit
+             fi
            fi
          done
          echo "this frame should be stored and deleted: "$frame
