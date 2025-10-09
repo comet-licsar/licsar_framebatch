@@ -29,6 +29,7 @@ B=0
 ifglist=''
 ifglistonly=0
 clean=1
+storeclean=0
 
 #source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 #quality checker here is the basic one. but still it does problems! e.g. Iceland earthquake - took long to process due to tech complications
@@ -57,9 +58,10 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -s foo.sh ... run a shell script foo.sh automatically after ifg-gapfilling"
                    echo "parameter -N ... this will SKIP unwrapping (useful if you plan using LiCSBAS02to05_unwrap)"
                    echo "parameter -k ... keep the IFG and other data without cleaning (that is on by default)"
+                   echo "parameter -D ... this would DELETE after storing (will also activate -S)"
                    exit; fi
 
-while getopts ":wn:gSaABi:I:RPkos:lbTN" option; do
+while getopts ":wn:gSaABi:I:RPkos:lbTND" option; do
  case "${option}" in
   A) A=1; echo "S1A only";
       ;;
@@ -83,6 +85,8 @@ while getopts ":wn:gSaABi:I:RPkos:lbTN" option; do
       ;;
   S ) store=1; echo "parameter -S set: will store after the processing";
 #      shift
+      ;;
+  D ) storeclean=1; store=1; echo "setting store and clean after store.."
       ;;
   P ) prioritise=1; echo "Param -P does not do anything anymore"; #echo "parameter -P set: prioritising through cpom-comet";
 #      shift
@@ -806,7 +810,7 @@ if [ $cancel == 1 ]; then
   echo "now storing back to LiCSAR base"
   cd ..
   store_to_curdir.sh $frame
-  batchcachedir_check_frame.sh $frame 1
+  batchcachedir_check_frame.sh $frame 1 $storeclean
  fi
  exit
 fi
@@ -1095,7 +1099,7 @@ if [ $store == 1 ]; then
   echo "echo 'storing to LiCSAR base'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
   echo "cd ..; store_to_curdir.sh $frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
   if [ $dounw != 0 ]; then
-   echo "batchcachedir_check_frame.sh "$frame" 1" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
+   echo "batchcachedir_check_frame.sh "$frame" 1 "$storeclean >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
   fi
 fi
 #echo "rsync -r $SCRATCHDIR/$frame/IFG $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh

@@ -16,15 +16,18 @@ if [ -z $2 ]; then echo "parameters are frame and code (code is either upfill or
     echo "parameter -d would check only epochs on disk (no nla, no autodownload, actually not really recommended but might be ok for monthly"
     echo "param -U for autodownload only - seemingly temporary, it will just avoid nla and .. increase the time period a bit just to fill some extra gaps.."
     echo "param -D would override limits of autodownloader that will run after the NLA"
+    echo "param -A would automatically delete data after storing (some checks are in place..) "
     #echo "parameter -N will run licsar_make_frame with -N (process only if newer data exists)" # we will have it on by default for upfill
     #echo "hidden params: -E, -R for EIDP and to include range offsets"
     exit; fi
 
 storeparam='-S -G'
 extra=''
-while getopts ":kEuUPRdD" option; do
+while getopts ":kEuUPRdDA" option; do
  case "${option}" in
   k) storeparam=' ';
+     ;;
+  A) extra=$extra' -d';
      ;;
   E) tillnow=1;
      storeparam='-S -E -G';
