@@ -158,7 +158,10 @@ if [ -f coreg_its/noncoreg ]; then
  fi
 fi
 
-msize=`du -c SLC/$mstr/*IW?.slc | tail -n1 | gawk {'print $1'}`
+largestiw=`du -c SLC/$mstr/$mstr.IW?.slc | grep slc | sort | tail -n 1 | rev | cut -d '.' -f 2 | rev`
+# msize=`du -c SLC/$mstr/$mstr.IW?.slc | grep slc | gawk {'print $1'} | sort | tail -n 1`
+msize=`ls -al SLC/$mstr/$mstr.$largestiw.slc | gawk {'print $5'}`
+
 maxj=0
 if [ $backfill -eq 0 ]; then
   cat coreg_its/tmp_reprocess.slc | sort > coreg_its/tmp_reprocess.slc.sorted
@@ -287,6 +290,19 @@ if [ $autocont -eq 1 ]; then
    echo "framebatch_postproc_coreg.sh "$frame" 1" > postproc_coreg.sh; 
    #extraw='-Ep ./postproc_coreg.sh'
   else
+   echo "some SLCs could not be coregistered - finding ones with missing bursts and moving to SLC.missingbursts folder"
+   mkdir -p SLC.missingbursts
+   msizetol=`echo $msize-1024*1024*100 | bc` # tolerate 100 MB difference
+   for x in `ls SLC`; do
+      # check if the slc has similar size as master slc
+      ssize=`ls -al SLC/$x/$x.$largestiw.slc 2>/dev/null | gawk {'print $5'}`
+      if [ -z $ssize ]; then ssize=0; fi
+      if [ $ssize -lt $msizetol ]; then
+        echo $x" has missing bursts"
+        mv SLC/$x SLC.missingbursts/$x
+      fi
+   done
+   rmdir SLC.missingbursts 2>/dev/null
    echo "./framebatch_x_postcoreg_iteration.nowait.sh" > postproc_coreg.sh
    #extraw='-Ep ./framebatch_x_second_iteration.nowait.sh'
   fi
