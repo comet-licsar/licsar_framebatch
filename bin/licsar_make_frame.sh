@@ -27,7 +27,7 @@ if [ -z $1 ]; then
  echo "-f ............... force processing in case the frame is already running in framebatch"
  #echo "-E ............... after resampling, move to an area for copying to ARC4 EIDP"
  echo "-N ............... check if there are new acquisitions since the last run. If not, will cancel the processing"
- echo "-P ............... prioritise... i.e. run on comet queue (default: use short-serial where needed)"
+ #echo "-P ............... prioritise... i.e. run on comet queue (default: use short-serial where needed)"
  echo "-A or -B ......... perform ifg gapfill (4 ifgs + extras) for only S1A/S1B"
  echo "-b ............... also do burst overlaps"
  echo "-R ............... also do rg (and azi) offsets"
@@ -754,7 +754,7 @@ if [ $rgoff -eq 1 ]; then
  gpextra=$gpextra"-R "
 fi
 if [ $deleteafterstore -eq 1 ]; then
-  gpextra=$gpextra"-D "
+  gpextra=$gpextra"-d "
 fi
 cat << EOF > framebatch_05_gap_filling.nowait.sh
 echo "The gapfilling will use RSLCs in your work folder and update ifg or unw that were not generated (in background - check bjobs)"

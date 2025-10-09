@@ -12,7 +12,7 @@ onlyondisk=0
 if [ -z $2 ]; then echo "parameters are frame and code (code is either upfill or backfill.. or gapfill)"; 
     echo "running with parameter -k means Keep the frame in BATCH_CACHE_DIR (not store it automatically to the public dir)";
     echo "parameter -u would process upfilling till today"
-    echo "parameter -P will run through comet queue"
+    #echo "parameter -P will run through comet queue"
     echo "parameter -d would check only epochs on disk (no nla, no autodownload, actually not really recommended but might be ok for monthly"
     echo "param -U for autodownload only - seemingly temporary, it will just avoid nla and .. increase the time period a bit just to fill some extra gaps.."
     echo "param -D would override limits of autodownloader that will run after the NLA"

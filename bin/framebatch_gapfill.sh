@@ -46,7 +46,7 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -n ... set custom number of max ifg combinations. default is -n 4"
                    echo "parameter -g ... will run further framebatch step, i.e. geocoding"
                    echo "parameter -S ... will run store after geocoding.."
-                   echo "parameter -P ... prioritise (run through cpom-comet)"
+                   # echo "parameter -P ... prioritise (run through cpom-comet)"
                    echo "parameter -i ifgtoadd.list ... add ifg pairs from the given ifg.list file"
                    echo "parameter -I ifg.list ........ generate ONLY ifg pairs from the given ifg.list file"
                    echo "parameter -R ... include also range pixel offsets (careful, better use together with -I)"
@@ -58,10 +58,10 @@ if [ -z $1 ]; then echo "Usage: framebatch_gapfill.sh NBATCH [MAXBTEMP] [range_l
                    echo "parameter -s foo.sh ... run a shell script foo.sh automatically after ifg-gapfilling"
                    echo "parameter -N ... this will SKIP unwrapping (useful if you plan using LiCSBAS02to05_unwrap)"
                    echo "parameter -k ... keep the IFG and other data without cleaning (that is on by default)"
-                   echo "parameter -D ... this would DELETE after storing (will also activate -S)"
+                   echo "parameter -d ... this would DELETE after storing (will also activate -S)"
                    exit; fi
 
-while getopts ":wn:gSaABi:I:RPkos:lbTND" option; do
+while getopts ":wn:gSaABi:I:RPkos:lbTNd" option; do
  case "${option}" in
   A) A=1; echo "S1A only";
       ;;
@@ -86,7 +86,7 @@ while getopts ":wn:gSaABi:I:RPkos:lbTND" option; do
   S ) store=1; echo "parameter -S set: will store after the processing";
 #      shift
       ;;
-  D ) storeclean=1; store=1; echo "setting store and clean after store.."
+  d ) storeclean=1; store=1; echo "setting store and clean after store.."
       ;;
   P ) prioritise=1; echo "Param -P does not do anything anymore"; #echo "parameter -P set: prioritising through cpom-comet";
 #      shift
