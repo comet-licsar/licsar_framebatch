@@ -11,7 +11,7 @@ if [ -z $1 ]; then
  echo "-b ..... for force-override solution (best with the iterative processing) setting the first SLC backwards in time"
  exit; fi
 
-
+PREVJID=''
 force=0
 autocont=0
 extracoregparms=''
@@ -290,7 +290,7 @@ if [ $autocont -eq 1 ]; then
    echo "framebatch_postproc_coreg.sh "$frame" 1" > postproc_coreg.sh; 
    #extraw='-Ep ./postproc_coreg.sh'
   else
-   echo "some SLCs could not be coregistered - finding ones with missing bursts and moving to SLC.missingbursts folder"
+   echo "some SLCs could not be coregistered - checking if these have missing bursts (would move them to SLC.missingbursts folder)"
    mkdir -p SLC.missingbursts
    msizetol=`echo $msize-1024*1024*100 | bc` # tolerate 100 MB difference
    for x in `ls SLC`; do
@@ -302,21 +302,28 @@ if [ $autocont -eq 1 ]; then
         mv SLC/$x SLC.missingbursts/$x
       fi
    done
-   rmdir SLC.missingbursts 2>/dev/null
+   rmdir SLC.missingbursts 2>/dev/null # in case it is empty
    echo "./framebatch_x_postcoreg_iteration.nowait.sh" > postproc_coreg.sh
    #extraw='-Ep ./framebatch_x_second_iteration.nowait.sh'
   fi
   chmod 777 postproc_coreg.sh
 # fi
- fi
-if [ $autocont -eq 1 ]; then
- # add next iteration in waiting mode
- echo "bsub2slurm.sh -w '"$waitText"' -o coreg_its/coreg.wait.out -e coreg_its/coreg.wait.err -J coreg."$frame".wait -q "$que" -n 1 -W 00:30 ./postproc_coreg.sh" > postproc.coreg.wait.sh
- echo "sbatch -d afterany:"$PREVJID" --account=nceo_geohazards --partition=standard --qos=standard --time=00:45:00 --job-name="$frame".waitcoreg --output=coreg_its/coreg.wait2.out --error=coreg_its/coreg.wait2.err --wrap='./postproc_coreg.sh'" > postproc.coreg.wait2.sh
- chmod 777 postproc.coreg.wait.sh postproc.coreg.wait2.sh
- ./postproc.coreg.wait2.sh
-else
+fi
 
+if [ $autocont -eq 1 ]; then
+ if [ ! -z $PREVJID ]; then
+   # add next iteration in waiting mode
+   echo "bsub2slurm.sh -w '"$waitText"' -o coreg_its/coreg.wait.out -e coreg_its/coreg.wait.err -J coreg."$frame".wait -q "$que" -n 1 -W 00:30 ./postproc_coreg.sh" > postproc.coreg.wait.sh
+   echo "sbatch -d afterany:"$PREVJID" --account=nceo_geohazards --partition=standard --qos=standard --time=00:45:00 --job-name="$frame".waitcoreg --output=coreg_its/coreg.wait2.out --error=coreg_its/coreg.wait2.err --wrap='./postproc_coreg.sh'" > postproc.coreg.wait2.sh
+   chmod 777 postproc.coreg.wait.sh postproc.coreg.wait2.sh
+   ./postproc.coreg.wait2.sh
+ else
+   echo "nothing can be coregistered anymore - please check manually (maybe rerun with flag -f) - continuing postprocessing by running"
+   cat postproc_coreg.sh
+   echo ""
+   ./postproc_coreg.sh
+ fi
+else
  if [ `cat coreg_its/noncoreg 2>/dev/null | wc -l` -gt 0 ]; then
   echo "WARNING, this iteration should fix the frame only partially."
   echo "Please rerun this script after the coreg jobs finish, for a second iteration"
