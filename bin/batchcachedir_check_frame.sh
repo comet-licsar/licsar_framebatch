@@ -38,20 +38,38 @@ if [ -z $m ]; then echo "Something is wrong - no hgt file is in the frame geo di
 if [ ! -d $frame/RSLC ]; then
   todel=1;
 else
-   slcdates=`ls $frame/SLC | wc -l`
-   rslcdates=`ls $frame/RSLC | wc -l`
+   slcdates=`ls $frame/SLC/???????? -d | wc -l`
+   rslcdates=`ls $frame/RSLC/???????? -d | wc -l`
    if [ $slcdates -gt 1 ]; then echo "this frame has SLCs to process: "$frame;
       # check on sizes
       #m=`ls $frame/geo/*.hgt | head -n 1 | rev | cut -d '.' -f 2 | cut -d '/' -f 1 | rev`
       #szm=`du -c $frame/SLC/$m/*IW?.slc | tail -n 1 | gawk {'print $1'}`
-      #for r in `ls $frame/RSLC`; do
+      # for r in `ls $frame/RSLC/???????? | rev | cut -d '/' -f 1 | rev`; do
+      lastrslc=`ls $frame/RSLC/???????? -d | rev | cut -d '/' -f 1 | rev | sed '/'$m'/d' | tail -n 1`
+      firstslc=`ls $frame/SLC/???????? -d | rev | cut -d '/' -f 1 | rev | sed '/'$m'/d' | head -n 1`
+      if [ `datediff $firstslc $lastrslc` -lt 0 ]; then
+        lastslc=`ls $frame/SLC/???????? -d | rev | cut -d '/' -f 1 | rev | sed '/'$m'/d' | tail -n 1`
+        firstrslc=`ls $frame/RSLC/???????? -d | rev | cut -d '/' -f 1 | rev | sed '/'$m'/d' | head -n 1`
+        fdate=$firstrslc
+        ldate=$lastslc
+      else
+        fdate=$firstslc
+        ldate=$lastrslc
+      fi
+      postprocflag=''
+      if [ `datediff $fdate $ldate` -gt 180 ]; then
+        postprocflag='-f'
+        echo "there is a large gap - try running:"
+        echo "framebatch_update_frame.sh -U "$frame gapfill ${fdate:0:4}-${fdate:4:2}-${fdate:6:2} ${ldate:0:4}-${ldate:4:2}-${ldate:6:2}
+      fi
          if [ $PROC == 1 ]; then
+
            #if [ $slcdates -lt 5 ]; then
            #  batchcachedir_reprocess_from_slcs.sh $frame
            #else
            #  echo "quite a lot of not processed SLCs. performing through postproc_coreg only"
            echo "TODO - make some more intelligent checks, e.g. on missing bursts, or way too far-in-time epochs"
-             framebatch_postproc_coreg.sh $frame 1
+             framebatch_postproc_coreg.sh $postprocflag $frame 1
              #~ echo "quite a lot of not processed SLCs. switching to licsar_make_frame.sh reprocessing"
              #~ mstr=`ls $frame/geo/*.hgt | head -n1`
              #~ ls $frame/SLC | sed '/'`basename $mstr .hgt`'/d' > $frame/tmp_reprocess.slc
