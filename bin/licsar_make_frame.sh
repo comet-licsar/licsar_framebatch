@@ -22,11 +22,12 @@ if [ -z $1 ]; then
  echo "-n ............... norun (processing scripts are generated but they will not start automatically)"
  echo "-c ............... perform check if files are in neodc and ingested to licsar database (no download performed)"
  echo "-S ............... store to lics database - only for users in gws_lics_admin"
+ echo "-S -d ............ set autodelete if everything went fine (careful..)"
  #echo "-G ............... update GACOS data after store to lics database"
  echo "-f ............... force processing in case the frame is already running in framebatch"
  #echo "-E ............... after resampling, move to an area for copying to ARC4 EIDP"
  echo "-N ............... check if there are new acquisitions since the last run. If not, will cancel the processing"
- echo "-P ............... prioritise... i.e. run on comet queue (default: use short-serial where needed)"
+ #echo "-P ............... prioritise... i.e. run on comet queue (default: use short-serial where needed)"
  echo "-A or -B ......... perform ifg gapfill (4 ifgs + extras) for only S1A/S1B"
  echo "-b ............... also do burst overlaps"
  echo "-R ............... also do rg (and azi) offsets"
@@ -58,6 +59,7 @@ dogacos=1  # will do this now
 tienshan=0
 bovls=0
 terminal=0
+deleteafterstore=0
 #
 #if [ $USER == 'earmla' ]; then
 # prioritise=1
@@ -69,7 +71,7 @@ extradatarefill=''
 rgoff=0
 # fi
 
-while getopts ":cnSEfNPRGAbBDT" option; do
+while getopts ":cnSEfNPRGAbBDTd" option; do
  case "${option}" in
   D) extradatarefill='-A';
      ;;
@@ -84,9 +86,11 @@ while getopts ":cnSEfNPRGAbBDT" option; do
   S) STORE=1; echo "After the processing, data will be stored to db and public dir - but not deleted";
   #if [ $USER == 'yma' ]; then deleteafterstore=0; echo "(not deleting it after store..";
   #else
-     deleteafterstore=0;
+     # deleteafterstore=0;
   #fi
      NORUN=0;
+     ;;
+  d) deleteafterstore=1; STORE=1; NORUN=0;
      ;;
   G) dogacos=1; echo "after store-to-curdir, we will also update GACOS data";
      ;;
@@ -728,7 +732,7 @@ NBATCH=2  #max number of ifgs per job. it was 4 originally..
 NBATCH=1 # 2025/02 using no. 1 as some jobs get stuck indefinitely!
 gpextra=''
 #added skipping of check for existing scratchdir/frame for gapfilling - just automatically delete it...
-gpextra='-o '
+# gpextra='-o '
 #if [ $NORUN -eq 0 ]; then
  #update 04/2021 - use of geocoded products
 # gpextra=$gpextra"-g "
@@ -748,6 +752,9 @@ if [ $bovls -eq 1 ]; then
 fi
 if [ $rgoff -eq 1 ]; then
  gpextra=$gpextra"-R "
+fi
+if [ $deleteafterstore -eq 1 ]; then
+  gpextra=$gpextra"-d "
 fi
 cat << EOF > framebatch_05_gap_filling.nowait.sh
 echo "The gapfilling will use RSLCs in your work folder and update ifg or unw that were not generated (in background - check bjobs)"

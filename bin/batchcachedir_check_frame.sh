@@ -1,9 +1,12 @@
 #!/bin/bash
 PROC=0
-if [ -z $1 ]; then echo "set parameter - frame"; echo "if second parameter is 1, this script will perform reprocessing automatically"; exit; fi
+AUTODEL=1
+if [ -z $1 ]; then echo "set parameter - frame"; echo "if second parameter is 1, this script will perform reprocessing automatically";
+ echo "third parameter is to set autodelete in case all is checked OK - it is set to 1 by default, so careful"; exit; fi
 if [ ! -d $1 ]; then echo "you need to be in a folder (e.g. your BATCH_CACHE_DIR) with this frame data"; exit; fi
 frame=$1
 if [ ! -z $2 ]; then PROC=$2; fi
+if [ ! -z $3 ]; then AUTODEL=$2; fi
 #cd $BATCH_CACHE_DIR
 todel=0
 
@@ -35,20 +38,50 @@ if [ -z $m ]; then echo "Something is wrong - no hgt file is in the frame geo di
 if [ ! -d $frame/RSLC ]; then
   todel=1;
 else
-   slcdates=`ls $frame/SLC | wc -l`
-   rslcdates=`ls $frame/RSLC | wc -l`
+   slcdates=`ls $frame/SLC/???????? -d | wc -l`
+   rslcdates=`ls $frame/RSLC/???????? -d | wc -l`
    if [ $slcdates -gt 1 ]; then echo "this frame has SLCs to process: "$frame;
       # check on sizes
       #m=`ls $frame/geo/*.hgt | head -n 1 | rev | cut -d '.' -f 2 | cut -d '/' -f 1 | rev`
       #szm=`du -c $frame/SLC/$m/*IW?.slc | tail -n 1 | gawk {'print $1'}`
-      #for r in `ls $frame/RSLC`; do
+      # for r in `ls $frame/RSLC/???????? | rev | cut -d '/' -f 1 | rev`; do
+      if [ $rslcdates -gt 1 ]; then
+        lastrslc=`ls $frame/RSLC/???????? -d | rev | cut -d '/' -f 1 | rev | sed '/'$m'/d' | tail -n 1`
+      else
+        lastrslc=`ls $frame/RSLC/???????? -d | rev | cut -d '/' -f 1 | rev | tail -n 1`
+      fi
+      firstslc=`ls $frame/SLC/???????? -d | rev | cut -d '/' -f 1 | rev | sed '/'$m'/d' | head -n 1`
+      if [ `datediff $firstslc $lastrslc` -lt 0 ]; then
+        lastslc=`ls $frame/SLC/???????? -d | rev | cut -d '/' -f 1 | rev | sed '/'$m'/d' | tail -n 1`
+        if [ $rslcdates -gt 1 ]; then
+           firstrslc=`ls $frame/RSLC/???????? -d | rev | cut -d '/' -f 1 | rev | sed '/'$m'/d' | head -n 1`
+        else
+           firstrslc=`ls $frame/RSLC/???????? -d | rev | cut -d '/' -f 1 | rev | head -n 1`
+        fi
+        fdate=$firstrslc
+        ldate=$lastslc
+      else
+        fdate=$firstslc
+        ldate=$lastrslc
+      fi
+      postprocflag=''
+      if [ `datediff $fdate $ldate` -gt 180 ]; then
+        postprocflag='-f'
+        echo "there is a large gap - try running:"
+        echo "framebatch_update_frame.sh -U "$frame gapfill ${fdate:0:4}-${fdate:4:2}-${fdate:6:2} ${ldate:0:4}-${ldate:4:2}-${ldate:6:2}
+      fi
          if [ $PROC == 1 ]; then
+           if [ $postprocflag == '-f' ]; then echo "WARNING, we would now process through the long gap - probably causing SD error";
+              echo "well... on your responsibility... please run:"
+              echo framebatch_postproc_coreg.sh $postprocflag $frame 1
+              exit
+           fi
            #if [ $slcdates -lt 5 ]; then
            #  batchcachedir_reprocess_from_slcs.sh $frame
            #else
            #  echo "quite a lot of not processed SLCs. performing through postproc_coreg only"
            echo "TODO - make some more intelligent checks, e.g. on missing bursts, or way too far-in-time epochs"
-             framebatch_postproc_coreg.sh $frame 1
+             framebatch_postproc_coreg.sh $postprocflag $frame 1
              #~ echo "quite a lot of not processed SLCs. switching to licsar_make_frame.sh reprocessing"
              #~ mstr=`ls $frame/geo/*.hgt | head -n1`
              #~ ls $frame/SLC | sed '/'`basename $mstr .hgt`'/d' > $frame/tmp_reprocess.slc
@@ -120,4 +153,6 @@ else
    fi
 fi
 
+if [ $AUTODEL == 1 ]; then
 if [ $todel == 1 ]; then echo "this frame dir will be deleted now: " $frame; rm -rf $frame; fi
+fi

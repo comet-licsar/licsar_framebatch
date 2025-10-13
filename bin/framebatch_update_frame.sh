@@ -6,25 +6,28 @@ tillnow=0
 #tolerance of days to either only autodownload or use nla + waiting
 DAYSTOLERANCE=61
 extra=""
-onlyondisk=0
+trynla=1
 #DAYSTOLERANCE=961
 #STORE_AND_DELETE=1
 if [ -z $2 ]; then echo "parameters are frame and code (code is either upfill or backfill.. or gapfill)"; 
     echo "running with parameter -k means Keep the frame in BATCH_CACHE_DIR (not store it automatically to the public dir)";
     echo "parameter -u would process upfilling till today"
-    echo "parameter -P will run through comet queue"
+    #echo "parameter -P will run through comet queue"
     echo "parameter -d would check only epochs on disk (no nla, no autodownload, actually not really recommended but might be ok for monthly"
-    echo "param -U for autodownload only - seemingly temporary, it will just avoid nla and .. increase the time period a bit just to fill some extra gaps.."
+    echo "param -U for autodownload only, avoiding nla (it will override the limits of autodownloader - use with caution)"
     echo "param -D would override limits of autodownloader that will run after the NLA"
+    echo "param -A would automatically delete data after storing (some checks are in place so ok for automatic processing chain..) "
     #echo "parameter -N will run licsar_make_frame with -N (process only if newer data exists)" # we will have it on by default for upfill
     #echo "hidden params: -E, -R for EIDP and to include range offsets"
     exit; fi
 
 storeparam='-S -G'
 extra=''
-while getopts ":kEuUPRdD" option; do
+while getopts ":kEuUPRdDA" option; do
  case "${option}" in
   k) storeparam=' ';
+     ;;
+  A) extra=$extra' -d';
      ;;
   E) tillnow=1;
      storeparam='-S -E -G';
@@ -34,11 +37,11 @@ while getopts ":kEuUPRdD" option; do
   P) extra=$extra' -P';
      ;;
   d) extra=$extra' -c';
-     onlyondisk=1;
+     trynla=0;
      autodown=0;
      ;;
   U) autodown=1;
-     onlyondisk=1;
+     trynla=0;
      extra=$extra' -D';
      ;;
   D) extra=$extra' -D';
@@ -122,7 +125,7 @@ if [ ! -z $4 ]; then
 fi
 
 
-if [ $onlyondisk == 0 ]; then
+if [ $trynla == 1 ]; then
   #check if to start nla or just use autodownload
   nla_start=0
   nlamaxdate=`date -d "-89 days" +%Y-%m-%d`

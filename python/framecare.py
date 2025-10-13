@@ -977,6 +977,11 @@ def ingest_file_to_licsinfo(filepath, isfullpath = True, extradirs = [os.environ
         print('')
     extradirs = list(set(extradirs))
     if not isfullpath:
+        if not filepath.endswith('.zip'):
+            if filepath.endswith('.SAFE'):
+                filepath = filepath.replace('SAFE', 'zip')
+            else:
+                filepath = filepath+'.zip'
         filepath = s1.get_neodc_path_images(filepath, file_or_meta = True)[0]
     if not os.path.exists(filepath):
         for otherdir in extradirs:
