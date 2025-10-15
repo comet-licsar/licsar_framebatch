@@ -67,8 +67,15 @@ else
       postprocflag=''
       if [ `datediff $fdate $ldate` -gt 180 ]; then
         postprocflag='-f'
-        echo "there is a large gap - try running:"
+        echo "there is a large gap - try running:"             
         echo "framebatch_update_frame.sh -U "$frame gapfill ${fdate:0:4}-${fdate:4:2}-${fdate:6:2} ${ldate:0:4}-${ldate:4:2}-${ldate:6:2}
+        lutdir=$LiCSAR_procdir/`track_from_frame $frame`/$frame/LUT
+        lut=`ls $lutdir | grep '.7z' | cut -d '.' -f1 | tail -n 1`
+        if [ ! -z $lut ]; then
+          if [ $lut -gt $fdate ]; then
+           echo "(note the last LUT for the frame is "$lut" )"
+          fi
+        fi
       fi
          if [ $PROC == 1 ]; then
            if [ $postprocflag == '-f' ]; then echo "WARNING, we would now process through the long gap - probably causing SD error";
@@ -80,7 +87,7 @@ else
            #  batchcachedir_reprocess_from_slcs.sh $frame
            #else
            #  echo "quite a lot of not processed SLCs. performing through postproc_coreg only"
-           echo "TODO - make some more intelligent checks, e.g. on missing bursts, or way too far-in-time epochs"
+           # echo "TODO - make some more intelligent checks, e.g. on missing bursts, or way too far-in-time epochs"
              framebatch_postproc_coreg.sh $postprocflag $frame 1
              #~ echo "quite a lot of not processed SLCs. switching to licsar_make_frame.sh reprocessing"
              #~ mstr=`ls $frame/geo/*.hgt | head -n1`
