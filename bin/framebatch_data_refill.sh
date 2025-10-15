@@ -440,7 +440,7 @@ if [ `cat ${frame}_todown | wc -l` -gt 0 ]; then
      cd $sshout; wget_alaska $x; cd -;
      if [ ! -f $sshout/$x ]; then
        epp=`echo $x | cut -c 18-25`
-       if [ `datediff $epp` -lt 60 ]; then
+       if [ `datediff $epp` -lt 60 ] || [ $trycdse == 1 ]; then
          echo "trying CDSE"
          cd $sshout; wget_cdse $x; cd -;
        fi
