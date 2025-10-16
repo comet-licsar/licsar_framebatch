@@ -6,7 +6,7 @@ if [ -z $1 ]; then echo "set parameter - frame"; echo "if second parameter is 1,
 if [ ! -d $1 ]; then echo "you need to be in a folder (e.g. your BATCH_CACHE_DIR) with this frame data"; exit; fi
 frame=$1
 if [ ! -z $2 ]; then PROC=$2; fi
-if [ ! -z $3 ]; then AUTODEL=$2; fi
+if [ ! -z $3 ]; then AUTODEL=$3; fi
 #cd $BATCH_CACHE_DIR
 todel=0
 
