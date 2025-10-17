@@ -32,7 +32,7 @@ if [ -z $1 ]; then
  echo "-b ............... also do burst overlaps"
  echo "-R ............... also do rg (and azi) offsets"
  echo "-T ............... will run PROCESSING on terminal - workaround for LOTUS2 issues in Mar-Apr 2025"
-# echo "-D .............. ignore autodownload limit - careful..."
+ echo "-D .............. ignore autodownload limit - careful..."
  #echo "-R ............... prioritise through comet_responder queue"
 # echo "-k YYYY-MM-DD .... generate kml for the ifg pairs containing given date (e.g. earthquake..)"
  #echo "geocode_to_public_website=0"

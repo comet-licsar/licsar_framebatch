@@ -6,7 +6,7 @@ if [ -z $1 ]; then echo "set parameter - frame"; echo "if second parameter is 1,
 if [ ! -d $1 ]; then echo "you need to be in a folder (e.g. your BATCH_CACHE_DIR) with this frame data"; exit; fi
 frame=$1
 if [ ! -z $2 ]; then PROC=$2; fi
-if [ ! -z $3 ]; then AUTODEL=$2; fi
+if [ ! -z $3 ]; then AUTODEL=$3; fi
 #cd $BATCH_CACHE_DIR
 todel=0
 
@@ -161,5 +161,17 @@ else
 fi
 
 if [ $AUTODEL == 1 ]; then
-if [ $todel == 1 ]; then echo "this frame dir will be deleted now: " $frame; rm -rf $frame; fi
+if [ $todel == 1 ]; then
+  numbjobs=`bjobs | grep $frame | wc -l`
+  if [ $numbjobs -gt 1 ]; then
+    echo "there are LOTUS processes still running for this frame"
+  elif [ $numbjobs -eq 1 ]; then
+    # if there is only one job waiting and this is the one where we run batchcache checker, then just go on
+    if [ `bjobs | grep $frame'_gapfill_out' | wc -l` -gt 0 ]; then
+       echo "this frame dir will be deleted now: " $frame; rm -rf $frame
+    fi
+  else
+    echo "this frame dir will be deleted now: " $frame; rm -rf $frame
+  fi
+fi
 fi

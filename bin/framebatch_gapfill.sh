@@ -1025,7 +1025,7 @@ for corestr in ifg unw bovl offsets; do
     if [ $corestr == 'unw' ]; then maxmem=16384; exptimemax=$NBATCH; fi # assuming 1 unw per hour
     if [ $corestr == 'bovl' ]; then maxmem=16384; exptimemax=$NBATCH; # assuming 1 bovl per hour  # TODO: wait for create_soi ... or do it differently
       # bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 16000 -J $frame"_soi_00" create_soi_00.py >/dev/null
-      JOBIDSOI=$(sbatch $l2wait --account=nceo_geohazards --time=23:00:00 --job-name=$frame'_soi_00' --output=gapfill_job/soi_00.out --error=gapfill_job/soi_00.err --wrap="create_soi_00.py" --mem=16384 --partition=standard --qos=standard --parsable)
+      JOBIDSOI=$(sbatch $l2wait --account=nceo_geohazards --time=23:00:00 --job-name=$frame'_soi_00' --output=gapfill_job/soi_00.out --error=gapfill_job/soi_00.err --wrap="create_soi_00.py --n_para 1" --mem=16384 --partition=standard --qos=standard --parsable)
       l2wait='-d afterany:'$JOBIDSOI
     fi
     #bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 32768 -J $frame"_offsetsjob_"$job -e gapfill_job/offsetsjob_$job.err -o gapfill_job/offsetsjob_$job.out gapfill_job/offsetsjob_$job.sh >/dev/null
