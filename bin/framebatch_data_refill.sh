@@ -133,7 +133,8 @@ fi
 #
 startdate_str=`echo $startdate | sed 's/-//g'`
 enddate_str=`echo $enddate | sed 's/-//g'`
-echo "DEBUG 202507: it appears search_alaska does not return S1C data - using CDSE temporarily only to search for filenames"
+echo "DEBUG 202507: it appears search_alaska does not return S1C data - using both CDSE+ASF even if download is to be used only through ASF"
+echo "WARNING: we will probably download more than needed... this is in progress.."
 cat << EOF > s1_search.py
 from s1data import *
 a=get_images_for_frame('$frame', '$startdate_str', '$enddate_str', sensType='$mode', asf = False); # $flagasf);
@@ -150,11 +151,13 @@ python3 s1_search.py | grep neodc > ${frame}_scihub.list
  echo "double-checking for correct database entries (there were issues in 2025)"
  python3 -c "import framecare as fc; fc.check_reingest_filelist('"$frame'_scihub.list'"')"
 
-## make list from nla
+## make list from LiCSAR_0_get_Files
 rm ${frame}_db_query.list 2>/dev/null
 touch ${frame}_db_query.list 2>/dev/null
 #if [ ! -f ${frame}_db_query.list ]; then
- echo "getting expected filelist from NLA (takes quite long - coffee break)"
+ echo "getting expected filelist from what should be retrievable by NLA"
+ echo "(this procedure gets filenames from CDSE and compares to /neodc folder)"
+ echo "(it also ensures the CDSE-identified zip files really are connected to given frame ID)"
  echo "*******"
  if [ ! -z $enddate ]; then
    LiCSAR_0_getFiles.py -f $frame -s $startdate -e $enddate -z ${frame}_db_query.list
@@ -223,9 +226,11 @@ fi
      echo $file >> ${frame}_todown
    fi
  done
+ sort -u ${frame}_todown > ${frame}_todowntemp
+ mv ${frame}_todowntemp ${frame}_todown
  if [ $pom -gt 0 ]; then
   echo "There are "$pom" images that are indexed in licsinfo database but not existing on disk"
-  echo "Did you run NLA request already?? If not, cancel me and do it first"; sleep 5; 
+  echo "Did you run NLA request already?? If not, cancel me and do it first"; # sleep 5; 
  fi
 ## check what really is existing on disk (maybe we missed something?)
  pom=0

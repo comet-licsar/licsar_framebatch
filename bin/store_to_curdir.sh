@@ -501,8 +501,8 @@ if [ $updatedframe == 1 ]; then
  update_bperp_file.sh
  #fi
 
- echo "regenerating baseline plot and gaps.txt file"
- plot_network.py $pubDir $pubDir_meta/network.png $pubDir_meta/gaps.txt
+ echo "regenerating baseline plot and gaps.txt file (now updated for common bursts - might take bit longer)"
+ plot_network.py $pubDir $pubDir_meta/network.png $pubDir_meta/gaps.txt 1
  chmod -R 775 $pubDir_meta/* 2>/dev/null
  
  # checking if the frame is in framelist - if not, add it there
