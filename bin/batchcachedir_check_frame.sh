@@ -161,5 +161,17 @@ else
 fi
 
 if [ $AUTODEL == 1 ]; then
-if [ $todel == 1 ]; then echo "this frame dir will be deleted now: " $frame; rm -rf $frame; fi
+if [ $todel == 1 ]; then
+  numbjobs=`bjobs | grep $frame | wc -l`
+  if [ $numbjobs -gt 1 ]; then
+    echo "there are LOTUS processes still running for this frame"
+  elif [ $numbjobs -eq 1 ]; then
+    # if there is only one job waiting and this is the one where we run batchcache checker, then just go on
+    if [ `bjobs | grep $frame'_gapfill_out' | wc -l` -gt 0 ]; then
+       echo "this frame dir will be deleted now: " $frame; rm -rf $frame
+    fi
+  else
+    echo "this frame dir will be deleted now: " $frame; rm -rf $frame
+  fi
+fi
 fi
