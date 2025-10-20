@@ -732,7 +732,7 @@ for job in `seq 1 $nojobs`; do
             rm gapfill_job/bovljob_$job
         else
             # Add commands to the bovljob script
-            echo "for x in \`cat gapfill_job/bovljob_$job | sed 's/ /_/'\`; do create_soi.py \$x; done " >> gapfill_job/bovljob_$job.sh
+            echo "for x in \`cat gapfill_job/bovljob_$job | sed 's/ /_/'\`; do create_soi.py -p \$x; done " >> gapfill_job/bovljob_$job.sh
             echo "for x in \`cat gapfill_job/bovljob_$job | sed 's/ /_/'\`; do create_bovl_ifg.sh \$x; done" >> gapfill_job/bovljob_$job.sh
             echo "for x in \`cat gapfill_job/bovljob_$job | sed 's/ /_/'\`; do create_sbovl_ifg.py \$x; done" >> gapfill_job/bovljob_$job.sh
             chmod 777 gapfill_job/bovljob_$job.sh
@@ -965,15 +965,15 @@ fi
 fi
 
 ##adding sboi mosaiciking steps
-if [ $dobovl == 1 ]; then
+#if [ $dobovl == 1 ]; then
 #first run mosaicking
- waitTextcreate_soi="ended('"$frame"_soi_00')"
- waitcmdcreate_soi="-w \""$waitTextcreate_soi"\""
- echo "DEBUG: SOI will be created bit later"
- # bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 16000 -J $frame"_soi_00" create_soi_00.py >/dev/null
-else
- waitcmdcreate_soi='';
-fi
+# waitTextcreate_soi="ended('"$frame"_soi_00')"
+# waitcmdcreate_soi="-w \""$waitTextcreate_soi"\""
+# echo "DEBUG: SOI will be created bit later"
+# # bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 16000 -J $frame"_soi_00" create_soi_00.py >/dev/null
+#else
+# waitcmdcreate_soi='';
+#fi
 
 #now we can start jobs..
 echo "..running "$nojobs" jobs to generate ifgs/unws"
@@ -995,9 +995,10 @@ for job in `seq 1 $nojobs`; do
   #echo bsub2slurm.sh -q $bsubquery -n 1 -W 12:00 -M 25000 -R "rusage[mem=25000]" -J $frame'_unw_'$job -e `pwd`/$frame'_unw_'$job.err -o `pwd`/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh > tmptmp
   echo bsub2slurm.sh -q $bsubquery -n $bsubncores -W $wallt -M 16000 -J $frame'_unw_'$job -e gapfill_job/$frame'_unw_'$job.err -o gapfill_job/$frame'_unw_'$job.out $wait gapfill_job/unwjob_$job.sh >> bjobs.sh
  fi
- if [ -f gapfill_job/bovljob_$job.sh ]; then
-  echo bsub2slurm.sh -q $bsubquery -n 1 -W $wallt -M 16000 -J $frame'_bovl_'$job -e gapfill_job/$frame'_bovl_'$job.err -o gapfill_job/$frame'_bovl_'$job.out $waitcmdcreate_soi gapfill_job/bovljob_$job.sh >> bjobs.sh
- fi
+ # not using this as we now do job arrays....
+ #if [ -f gapfill_job/bovljob_$job.sh ]; then
+ # echo bsub2slurm.sh -q $bsubquery -n 1 -W $wallt -M 16000 -J $frame'_bovl_'$job -e gapfill_job/$frame'_bovl_'$job.err -o gapfill_job/$frame'_bovl_'$job.out $waitcmdcreate_soi gapfill_job/bovljob_$job.sh >> bjobs.sh
+ #fi
 done
 chmod 777 bjobs.sh
 echo "Warning, experimental job arrays in place - only testing now"
@@ -1054,7 +1055,7 @@ EOF
     chmod 770 gapfill_job/batch.lotus2.$corestr.sh
 
     echo "running LOTUS2 job array for "$corestr
-    if [ $corestr == 'unw' ]; then l2wait=$ifgwait' '$l2wait; fi
+    if [ $corestr == 'unw' ]; then l2wait=$ifgwait; fi # ' '$l2wait; fi  # no need to wait for mosaic or soi if i want to unwrap...
     PREVJID=$(sbatch $l2wait --parsable gapfill_job/batch.lotus2.$corestr.sh)
     echo $PREVJID
     waitcmdl2=$waitcmdl2':'$PREVJID # this for the final 'after all finishes' job
@@ -1098,7 +1099,7 @@ fi
 if [ $store == 1 ]; then
   echo "echo 'storing to LiCSAR base'" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
   echo "cd ..; store_to_curdir.sh $frame" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
-  if [ $dounw != 0 ]; then
+  if [ $dounw != 0 ]; then  # this will run postproc check only if there was something to process (unw...)
    echo "batchcachedir_check_frame.sh "$frame" 1 "$storeclean >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
   fi
 fi
