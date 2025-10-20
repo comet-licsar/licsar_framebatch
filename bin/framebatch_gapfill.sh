@@ -30,6 +30,7 @@ ifglist=''
 ifglistonly=0
 clean=1
 storeclean=0
+dosoi=0
 
 #source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 #quality checker here is the basic one. but still it does problems! e.g. Iceland earthquake - took long to process due to tech complications
@@ -170,6 +171,16 @@ mkdir -p $WORKFRAMEDIR/LOGS
 # ifg_combinations=
 #fi
 frame=`pwd | rev | cut -d '/' -f1 | rev`
+if [ $dobovl == 1 ]; then
+ dosoi=1
+ if [ `echo $frame | rev | cut -c 3-4` == "00" ]; then
+  echo "no swath 2 in frame, skipping soi"
+  dosoi=0
+ elif [ `echo $frame | rev | cut -c 1-2` == "00" ] && [ `echo $frame | rev | cut -c 5-6` == "00" ]; then
+  echo "only swath 2 in frame, skipping soi"
+  dosoi=0
+ fi
+fi
 
 if [ $locl == 1 ]; then
  frame=local_`pwd | rev | cut -d '/' -f2 | rev`_$frame
@@ -732,9 +743,13 @@ for job in `seq 1 $nojobs`; do
             rm gapfill_job/bovljob_$job
         else
             # Add commands to the bovljob script
-            echo "for x in \`cat gapfill_job/bovljob_$job | sed 's/ /_/'\`; do create_soi.py -p \$x; done " >> gapfill_job/bovljob_$job.sh
+            if [ $dosoi == 1 ]; then 
+             echo "for x in \`cat gapfill_job/bovljob_$job | sed 's/ /_/'\`; do create_soi.py -p \$x; done " >> gapfill_job/bovljob_$job.sh
+            fi
             echo "for x in \`cat gapfill_job/bovljob_$job | sed 's/ /_/'\`; do create_bovl_ifg.sh \$x; done" >> gapfill_job/bovljob_$job.sh
-            echo "for x in \`cat gapfill_job/bovljob_$job | sed 's/ /_/'\`; do create_sbovl_ifg.py \$x; done" >> gapfill_job/bovljob_$job.sh
+            if [ $dosoi == 1 ]; then 
+             echo "for x in \`cat gapfill_job/bovljob_$job | sed 's/ /_/'\`; do create_sbovl_ifg.py \$x; done" >> gapfill_job/bovljob_$job.sh
+            fi
             chmod 777 gapfill_job/bovljob_$job.sh
             waitText=$waitText" && ended('"$frame"_bovl_"$job"')"
         fi
@@ -1026,8 +1041,10 @@ for corestr in ifg unw bovl offsets; do
     if [ $corestr == 'unw' ]; then maxmem=16384; exptimemax=$NBATCH; fi # assuming 1 unw per hour
     if [ $corestr == 'bovl' ]; then maxmem=16384; exptimemax=$NBATCH; # assuming 1 bovl per hour  # TODO: wait for create_soi ... or do it differently
       # bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 16000 -J $frame"_soi_00" create_soi_00.py >/dev/null
-      JOBIDSOI=$(sbatch $l2wait --account=nceo_geohazards --time=23:00:00 --job-name=$frame'_soi_00' --output=gapfill_job/soi_00.out --error=gapfill_job/soi_00.err --wrap="create_soi_00.py --n_para 1" --mem=16384 --partition=standard --qos=standard --parsable)
-      l2wait='-d afterany:'$JOBIDSOI
+      if [ $dosoi == 1 ]; then
+        JOBIDSOI=$(sbatch $l2wait --account=nceo_geohazards --time=23:00:00 --job-name=$frame'_soi_00' --output=gapfill_job/soi_00.out --error=gapfill_job/soi_00.err --wrap="create_soi_00.py --n_para 1" --mem=16384 --partition=standard --qos=standard --parsable)
+        l2wait='-d afterany:'$JOBIDSOI
+      fi
     fi
     #bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 32768 -J $frame"_offsetsjob_"$job -e gapfill_job/offsetsjob_$job.err -o gapfill_job/offsetsjob_$job.out gapfill_job/offsetsjob_$job.sh >/dev/null
     if [ $corestr == 'offsets' ]; then maxmem=32768; let exptimemax=$NBATCH+1; fi # assuming 1 offset per hour, +1 extra hour
