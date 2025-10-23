@@ -147,9 +147,10 @@ else
              fi
            fi
          done
-         echo "this frame should be stored and deleted: "$frame
+         echo "this frame should be stored (and deleted): "$frame
          if [ $PROC == 1 ]; then
-           store_to_curdir.sh $frame 1 0 0
+           store_to_curdir.sh $frame # 1 0 0  # 2025/10 - only store, as deletion will now be ruled by AUTODEL
+           todel=1
          fi
 
         fi
