@@ -57,7 +57,8 @@ force=0
 dogacos=0
 dogacos=1  # will do this now
 tienshan=0
-bovls=0
+bovls=1
+echo "warning: setting bovls ON by default"
 terminal=0
 deleteafterstore=0
 #
