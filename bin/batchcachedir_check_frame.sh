@@ -109,7 +109,7 @@ else
      #    fi
      #else
       rmdir $frame/GEOC/* 2>/dev/null
-      ifgdates=`ls $frame/GEOC | wc -l`
+      ifgdates=`ls $frame/GEOC | grep ^20 | wc -l`
       let expifgdates=4*$rslcdates'-4-4-3-2-1-1'  # -4 due to ref epoch in RSLC folder, -4 for the last RSLC, etc., last -1 only to allow -lt
       if [ $ifgdates -lt $expifgdates ]; then
        echo "this frame needs ifg gapfilling: "$frame
@@ -117,7 +117,18 @@ else
            #batchcachedir_reprocess_ifgs.sh $frame
            cd $frame; ./framebatch_05_gap_filling.nowait.sh; cd -
          fi
+       exit
       else
+        # what if unws are missing?
+        unwdates=`ls $frame/GEOC/*/*.geo.unw.tif | wc -l`
+        if [ $unwdates != $ifgdates ]; then
+          echo "this frame has missing unws and needs gapfilling: "$frame
+          if [ $PROC == 1 ]; then
+           #batchcachedir_reprocess_ifgs.sh $frame
+           cd $frame; ./framebatch_05_gap_filling.nowait.sh; cd -
+          fi
+          exit
+        fi
       # if [ ! -d $frame/GEOC ]; then
       #  if [ ! -f $frame/framebatch_06_geotiffs.nowait.sh ]; then
       #   echo "this frame has geocoding script missing: "$frame;
