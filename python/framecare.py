@@ -451,7 +451,7 @@ def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = Fals
 
 def subset_initialise_centre_coords(frame, clon, clat, sid, is_volc = False, radius_km = 25/2, resol_m=30):
     """This will initialise a subset given by centre lon/lat and radius in km.
-    The results will be stored in \$LiCSAR_procdir/subsets
+    The results will be stored in $LiCSAR_procdir/subsets
     
     Args:
         frame (str): frame ID,
