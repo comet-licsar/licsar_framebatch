@@ -1852,7 +1852,7 @@ def get_frames_gpd(framelist):
     fgpd = gpd.geodataframe.GeoDataFrame()
     for frame in framelist:
         a = frame2geopandas(frame)
-        fgpd = fgpd.append(a)
+        fgpd = pd.concat([fgpd, a])   #fgpd.append(a)
     fgpd = fgpd.set_geometry('geometry')
     fgpd = fgpd.reset_index(drop=True)
     return fgpd
