@@ -60,7 +60,7 @@ else
          if [ `datediff $s $r 1` -lt 180 ]; then postprocflag=''; fi
         done
       done
-      if [ $postprocflag == '-f' ]; then
+      if [ ! -z $postprocflag ]; then
         echo "there is a large gap - try running:"
         if [ $firstrslc -lt $firstslc ]; then fdate=$firstrslc; else fdate=$firstslc; fi
         if [ $lastrslc -gt $lastslc ]; then ldate=$lastrslc; else ldate=$lastslc; fi
@@ -74,7 +74,7 @@ else
         fi
       fi
          if [ $PROC == 1 ]; then
-           if [ $postprocflag == '-f' ]; then echo "WARNING, we would now process through the long gap - probably causing SD error";
+           if [ ! -z $postprocflag ]; then echo "WARNING, we would now process through the long gap - probably causing SD error";
               echo "well... on your responsibility... please run:"
               echo framebatch_postproc_coreg.sh $postprocflag $frame 1
               exit
