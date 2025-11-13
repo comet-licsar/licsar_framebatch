@@ -14,7 +14,16 @@ if [ `pwd` == $LiCSAR_public ]; then echo "NO.."; exit; fi
 if [ `pwd` == $LiCSAR_procdir ]; then echo "NO.."; exit; fi
 # we may have files deleted in scratch...
 if [ -d $frame/geo ]; then
- if [ `ls $frame/geo | wc -l` == 0 ]; then echo "empty frame, deleting"; rm -rf $frame; exit; fi
+ if [ `ls $frame/geo | wc -l` == 0 ]; then
+   if [ `ls $frame/*LC | wc -l` -gt 2 ]; then
+     echo "WARNING, empty geo folder - check manually in todelete folder";
+     if [ -d todelete/$frame ]; then rm -r todelete/$frame; fi;
+     mv $frame todelete/.;
+   else
+     echo "empty frame, deleting"; rm -rf $frame;
+   fi;
+   exit;
+ fi
 elif [ -d $frame ]; then
  echo "no geo folder inside the frame directory - moving to todelete directory"
  mkdir -p todelete; if [ -d todelete/$frame ]; then rm -r todelete/$frame; fi; mv $frame todelete/.; exit
