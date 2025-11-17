@@ -323,7 +323,16 @@ echo "check for MLIs/regenerating if needed"
 for x in `ls RSLC`; do
  if [ ! -f RSLC/$x/$x.rslc.mli ]; then
   #echo "multilooking "$x
-  multilookRSLC $x $rlks $azlks 1 RSLC/$x
+  if [ ! -f RSLC/$x/$x.rslc ]; then
+    echo "warning, mosaic of "$x" does not exist - trying to regenerate it"
+    SLC_mosaic_ScanSAR tab/$x'R_tab' RSLC/$x/$x.rslc RSLC/$x/$x.rslc.par $rlks $azlks - tab/$master'_tab' >/dev/null 2>/dev/null
+  fi
+  if [ ! -f RSLC/$x/$x.rslc ]; then
+    echo "ERROR - the mosaic was not generated - please check manually:"
+    ls RSLC/$x -alh
+  else
+    multilookRSLC $x $rlks $azlks 1 RSLC/$x
+  fi
  fi
 done
 
