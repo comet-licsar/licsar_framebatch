@@ -325,6 +325,10 @@ for x in `ls RSLC`; do
   #echo "multilooking "$x
   if [ ! -f RSLC/$x/$x.rslc ]; then
     echo "warning, mosaic of "$x" does not exist - trying to regenerate it"
+    rm tab/$x'R_tab'
+    for ab in `ls RSLC/$x/$x.IW?.rslc`; do
+      echo $ab $ab.par $ab.TOPS_par >> tab/$x'R_tab'
+    done
     SLC_mosaic_ScanSAR tab/$x'R_tab' RSLC/$x/$x.rslc RSLC/$x/$x.rslc.par $rlks $azlks - tab/$master'_tab' >/dev/null 2>/dev/null
   fi
   if [ ! -f RSLC/$x/$x.rslc ]; then
