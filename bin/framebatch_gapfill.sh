@@ -1118,6 +1118,7 @@ echo "preparing postgapfill job"
 rm gapfill_job/copyjob.sh 2>/dev/null
 if [ $clean == 1 ]; then
  echo "rm -rf IFG/*" > $WORKFRAMEDIR/gapfill_job/copyjob.sh
+ echo "rm RSLC/*/*mod*" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 fi
 #echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #echo "cd $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
