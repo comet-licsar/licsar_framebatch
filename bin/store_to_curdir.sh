@@ -153,7 +153,7 @@ if [ $DORSLC -eq 1 ]; then
       if [ ! -f $out7z ]; then
        echo "compressing RSLC of "$date" to keep last 2 dates"
        cd $frame/RSLC
-       7za -mmt=1 a -mx=1 '-xr!*.lt' '-xr!20??????.rslc' $out7z $date >/dev/null 2>/dev/null
+       7za -mmt=1 a -mx=1 '-xr!*.lt' '-xr!20??????.rslc' '-xr!*mod*' '-xr!*mli*' $out7z $date >/dev/null 2>/dev/null
        chmod 775 $out7z 2>/dev/null
        chgrp gws_lics_admin $out7z 2>/dev/null
        cd - 2>/dev/null
