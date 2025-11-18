@@ -1094,9 +1094,12 @@ EOF
   fi
 done
 
-waitcmdl2=`echo $waitcmdl2 | cut -c 2-`
-waitcmdl2='-w '$waitcmdl2
 
+for x in `bjobs | grep $frame'_gapfill_out' | gawk {'print $1'}`; do echo "waiting for existing gapfill_out job"; waitcmdl2=$waitcmdl2':'$x; done
+waitcmdl2=`echo $waitcmdl2 | cut -c 2-`
+if [ ! -z $waitcmdl2 ]; then
+  waitcmdl2='-w '$waitcmdl2
+fi
 
 
 # copying and cleaning job
