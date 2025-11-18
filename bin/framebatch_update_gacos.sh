@@ -6,7 +6,8 @@ work_dir=$LiCSAR_GACOS
 mkdir -p $work_dir 2>/dev/null
 
 if [ -z $work_dir ]; then
-   work_dir='/work/scratch-pw3/licsar/GACOS'
+   work_dir=$BATCH_CACHE_DIR/GACOS #'/work/scratch-pw3/licsar/GACOS'
+   mkdir -p $work_dir
 fi
 
 if [ -z $1 ]; then
