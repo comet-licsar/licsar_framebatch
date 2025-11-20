@@ -40,20 +40,20 @@ while getopts ":cAf" option; do
  case "${option}" in
   c ) CHECKONLY=1;
       echo "Checking if files are properly ingested to licsar database";
-      shift
+      #shift
       ;;
   A ) NOCHECKMAX=1;
       echo "overriding check for max images";
-      shift
+      #shift
       ;;
   f ) trycdse=1;
       use_cdse=1;
       echo "overriding CDSE blocker. Download might take long";
-      shift
+      #shift
       ;;
 esac
 done
-
+shift $((OPTIND -1))
 
 frame=$1
 startdate=$2 #should be as 2014-10-10

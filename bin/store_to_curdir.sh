@@ -135,16 +135,16 @@ if [ $DORSLC -eq 1 ]; then
   #first of all check and move last three RSLCs - if they are full-bursted
   if [ $KEEPRSLC -eq 1 ]; then
     #check only last 10 rslcs
-    ls $frame/RSLC/20?????? -d | cut -d '/' -f3 | tail -n 10 > $BATCH_CACHE_DIR/temp_$frame'_keeprslc'
+    ls $frame/RSLC/20?????? -d | cut -d '/' -f3 | tail -n 10 > temp_$frame'_keeprslc'
     master=`ls $frame/geo/20??????.hgt | cut -d '.' -f1 | cut -d '/' -f3`
     mastersize=`grep azimuth_lines $frame/SLC/$master/$master.slc.par | gawk {'print $2'}`
-    sed -i '/'$master'/d' $BATCH_CACHE_DIR/temp_$frame'_keeprslc'
-    for date in `cat $BATCH_CACHE_DIR/temp_$frame'_keeprslc' `; do
+    sed -i '/'$master'/d' temp_$frame'_keeprslc'
+    for date in `cat temp_$frame'_keeprslc' `; do
       if [ ! `grep azimuth_lines $frame/RSLC/$date/$date.rslc.par | gawk {'print $2'}` -eq $mastersize ]; then
-       sed -i '/'$date'/d' $BATCH_CACHE_DIR/temp_$frame'_keeprslc'
+       sed -i '/'$date'/d' temp_$frame'_keeprslc'
       fi
     done
-    for date in `sort -r $BATCH_CACHE_DIR/temp_$frame'_keeprslc' | head -n2`; do
+    for date in `sort -r temp_$frame'_keeprslc' | head -n2`; do
      #let's keep only newer 2 ones - and if the datediff is at least 21 days from the scripts... (precise orbits)
      #if [ $date -gt $master ] && [ `datediff $date $today` -ge 21 ]; then
      if [ $date -gt $master ] && [ `datediff $date $firstrun` -ge 21 ] && [ `datediff $date $today` -ge 21 ]; then
@@ -153,7 +153,7 @@ if [ $DORSLC -eq 1 ]; then
       if [ ! -f $out7z ]; then
        echo "compressing RSLC of "$date" to keep last 2 dates"
        cd $frame/RSLC
-       7za -mmt=1 a -mx=1 '-xr!*.lt' '-xr!20??????.rslc' $out7z $date >/dev/null 2>/dev/null
+       7za -mmt=1 a -mx=1 '-xr!*.lt' '-xr!20??????.rslc' '-xr!*mod*' '-xr!*mli*' $out7z $date >/dev/null 2>/dev/null
        chmod 775 $out7z 2>/dev/null
        chgrp gws_lics_admin $out7z 2>/dev/null
        cd - 2>/dev/null
@@ -162,12 +162,12 @@ if [ $DORSLC -eq 1 ]; then
     done
     if [ `ls $frameDir/RSLC/*7z 2>/dev/null | wc -l` -gt 2 ]; then
      #delete more rslc 7z files than last 2 dates
-     ls $frameDir/RSLC/*7z > $BATCH_CACHE_DIR/temp_$frame'_keeprslc2'
-     for todel in `head -n-2 $BATCH_CACHE_DIR/temp_$frame'_keeprslc2'`; do
+     ls $frameDir/RSLC/*7z > temp_$frame'_keeprslc2'
+     for todel in `head -n-2 temp_$frame'_keeprslc2'`; do
       rm -f $todel
      done
     fi
-    rm -f $BATCH_CACHE_DIR/temp_$frame'_keeprslc' $BATCH_CACHE_DIR/temp_$frame'_keeprslc2' 2>/dev/null
+    rm -f temp_$frame'_keeprslc' temp_$frame'_keeprslc2' 2>/dev/null
   fi
   #now do the routine export
   master=`ls $frame/geo/20??????.hgt | cut -d '.' -f1 | cut -d '/' -f3`
@@ -578,7 +578,7 @@ then
  fi
  if [ $store_logs -eq 1 ]; then
   echo "storing log files"
-  logoutf=$BATCH_CACHE_DIR/LOGS/$frame'.7z'
+  logoutf=LOGS/$frame'.7z'
   rm -f $logoutf 2>/dev/null
   7za -mmt=1 a $logoutf $frame/LOGS/* >/dev/null 2>/dev/null
  fi

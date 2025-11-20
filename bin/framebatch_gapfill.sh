@@ -323,7 +323,20 @@ echo "check for MLIs/regenerating if needed"
 for x in `ls RSLC`; do
  if [ ! -f RSLC/$x/$x.rslc.mli ]; then
   #echo "multilooking "$x
-  multilookRSLC $x $rlks $azlks 1 RSLC/$x
+  if [ ! -f RSLC/$x/$x.rslc ]; then
+    echo "warning, mosaic of "$x" does not exist - trying to regenerate it"
+    rm tab/$x'R_tab'
+    for ab in `ls RSLC/$x/$x.IW?.rslc`; do
+      echo $ab $ab.par $ab.TOPS_par >> tab/$x'R_tab'
+    done
+    SLC_mosaic_ScanSAR tab/$x'R_tab' RSLC/$x/$x.rslc RSLC/$x/$x.rslc.par $rlks $azlks - tab/$master'_tab' >/dev/null 2>/dev/null
+  fi
+  if [ ! -f RSLC/$x/$x.rslc ]; then
+    echo "ERROR - the mosaic was not generated - please check manually:"
+    ls RSLC/$x -alh
+  else
+    multilookRSLC $x $rlks $azlks 1 RSLC/$x
+  fi
  fi
 done
 
@@ -1081,9 +1094,12 @@ EOF
   fi
 done
 
-waitcmdl2=`echo $waitcmdl2 | cut -c 2-`
-waitcmdl2='-w '$waitcmdl2
 
+for x in `bjobs | grep $frame'_gapfill_out' | gawk {'print $1'}`; do echo "waiting for existing gapfill_out job"; waitcmdl2=$waitcmdl2':'$x; done
+waitcmdl2=`echo $waitcmdl2 | cut -c 2-`
+if [ ! -z $waitcmdl2 ]; then
+  waitcmdl2='-w '$waitcmdl2
+fi
 
 
 # copying and cleaning job
@@ -1105,6 +1121,7 @@ echo "preparing postgapfill job"
 rm gapfill_job/copyjob.sh 2>/dev/null
 if [ $clean == 1 ]; then
  echo "rm -rf IFG/*" > $WORKFRAMEDIR/gapfill_job/copyjob.sh
+ echo "rm RSLC/*/*mod*" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 fi
 #echo "rsync -r $SCRATCHDIR/$frame/gapfill_job $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh
 #echo "cd $WORKFRAMEDIR" >> $WORKFRAMEDIR/gapfill_job/copyjob.sh

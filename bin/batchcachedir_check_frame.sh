@@ -14,7 +14,16 @@ if [ `pwd` == $LiCSAR_public ]; then echo "NO.."; exit; fi
 if [ `pwd` == $LiCSAR_procdir ]; then echo "NO.."; exit; fi
 # we may have files deleted in scratch...
 if [ -d $frame/geo ]; then
- if [ `ls $frame/geo | wc -l` == 0 ]; then echo "empty frame, deleting"; rm -rf $frame; exit; fi
+ if [ `ls $frame/geo | wc -l` == 0 ]; then
+   if [ `ls $frame/*LC | wc -l` -gt 2 ]; then
+     echo "WARNING, empty geo folder - check manually in todelete folder";
+     if [ -d todelete/$frame ]; then rm -r todelete/$frame; fi;
+     mv $frame todelete/.;
+   else
+     echo "empty frame, deleting"; rm -rf $frame;
+   fi;
+   exit;
+ fi
 elif [ -d $frame ]; then
  echo "no geo folder inside the frame directory - moving to todelete directory"
  mkdir -p todelete; if [ -d todelete/$frame ]; then rm -r todelete/$frame; fi; mv $frame todelete/.; exit
@@ -47,38 +56,38 @@ else
       # for r in `ls $frame/RSLC/???????? | rev | cut -d '/' -f 1 | rev`; do
       if [ $rslcdates -gt 1 ]; then
         lastrslc=`ls $frame/RSLC/???????? -d | rev | cut -d '/' -f 1 | rev | sed '/'$m'/d' | tail -n 1`
+        firstrslc=`ls $frame/RSLC/???????? -d | rev | cut -d '/' -f 1 | rev | sed '/'$m'/d' | head -n 1`
       else
-        lastrslc=`ls $frame/RSLC/???????? -d | rev | cut -d '/' -f 1 | rev | tail -n 1`
+        lastrslc=$m #`ls $frame/RSLC/???????? -d | rev | cut -d '/' -f 1 | rev | tail -n 1`
+        firstrslc=$m
       fi
       firstslc=`ls $frame/SLC/???????? -d | rev | cut -d '/' -f 1 | rev | sed '/'$m'/d' | head -n 1`
-      if [ `datediff $firstslc $lastrslc` -lt 0 ]; then
-        lastslc=`ls $frame/SLC/???????? -d | rev | cut -d '/' -f 1 | rev | sed '/'$m'/d' | tail -n 1`
-        if [ $rslcdates -gt 1 ]; then
-           firstrslc=`ls $frame/RSLC/???????? -d | rev | cut -d '/' -f 1 | rev | sed '/'$m'/d' | head -n 1`
-        else
-           firstrslc=`ls $frame/RSLC/???????? -d | rev | cut -d '/' -f 1 | rev | head -n 1`
-        fi
-        fdate=$firstrslc
-        ldate=$lastslc
-      else
-        fdate=$firstslc
-        ldate=$lastrslc
-      fi
-      postprocflag=''
-      if [ `datediff $fdate $ldate` -gt 180 ]; then
-        postprocflag='-f'
-        echo "there is a large gap - try running:"             
+      lastslc=`ls $frame/SLC/???????? -d | rev | cut -d '/' -f 1 | rev | sed '/'$m'/d' | tail -n 1`
+      postprocflag='-f'
+        ls $frame/SLC > $frame/slcs.t.txt
+        echo $firstrslc >> $frame/slcs.t.txt
+        echo $lastrslc >> $frame/slcs.t.txt
+        sort -u $frame/slcs.t.txt > $frame/slcs.t2.txt
+        for r in $firstrslc $lastrslc; do
+          for s in `grep -A 1 -B 1 $r $frame/slcs.t2.txt | sed '/'$m'/d'`; do
+            if [ `datediff $s $r 1` -lt 180 ]; then postprocflag=''; break; fi
+          done
+        done
+      if [ ! -z $postprocflag ]; then
+        echo "there is a large gap - try running:"
+        if [ $firstrslc -lt $firstslc ]; then fdate=$firstrslc; else fdate=$firstslc; fi
+        if [ $lastrslc -gt $lastslc ]; then ldate=$lastrslc; else ldate=$lastslc; fi
         echo "framebatch_update_frame.sh -U "$frame gapfill ${fdate:0:4}-${fdate:4:2}-${fdate:6:2} ${ldate:0:4}-${ldate:4:2}-${ldate:6:2}
         lutdir=$LiCSAR_procdir/`track_from_frame $frame`/$frame/LUT
         lut=`ls $lutdir | grep '.7z' | cut -d '.' -f1 | tail -n 1`
         if [ ! -z $lut ]; then
-          if [ $lut -gt $fdate ]; then
+          #if [ $lut -gt $fdate ]; then
            echo "(note the last LUT for the frame is "$lut" )"
-          fi
+          #fi
         fi
       fi
          if [ $PROC == 1 ]; then
-           if [ $postprocflag == '-f' ]; then echo "WARNING, we would now process through the long gap - probably causing SD error";
+           if [ ! -z $postprocflag ]; then echo "WARNING, we would now process through the long gap - probably causing SD error";
               echo "well... on your responsibility... please run:"
               echo framebatch_postproc_coreg.sh $postprocflag $frame 1
               exit

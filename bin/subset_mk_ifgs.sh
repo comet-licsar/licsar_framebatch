@@ -81,6 +81,7 @@ if [ ! -d GEOC/geo ]; then cp -r $subsetpath/GEOC.meta.$resol_m'm' GEOC/geo; cp 
 echo "copying existing clipped RSLCs"
 #for ddir in SLC RSLC; do
 ddir=RSLC
+rsync -r -u -l $subsetpath/$ddir/$m $ddir/.;
 for r in `ls $subsetpath/$ddir`; do
   if [ $r -ge $sdate ] && [ $r -le $edate ]; then
     rsync -r -u -l $subsetpath/$ddir/$r $ddir/.;
