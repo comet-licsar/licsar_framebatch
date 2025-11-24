@@ -228,6 +228,7 @@ if [ $DORSLC -eq 1 ]; then
 fi
 
 if [ $DOSUBSETS -eq 1 ]; then
+ subsetsupdated=0
  if [ -d $frameDir/subsets ]; then
   echo "clipping for subsets"
   for subset in `ls $frameDir/subsets`; do
@@ -247,6 +248,7 @@ if [ $DOSUBSETS -eq 1 ]; then
        #for x in `ls RSLC | grep 20`; do 
         if [ -f $frame/RSLC/$sdate/$sdate.rslc ]; then
         if [ ! -d $subdir/RSLC/$sdate ]; then
+          subsetsupdated=1
           echo "clipping "$sdate
           mkdir -p $subdir/RSLC/$sdate;
           SLC_copy $frame/RSLC/$sdate/$sdate.rslc $frame/RSLC/$sdate/$sdate.rslc.par $subdir/RSLC/$sdate/$sdate.rslc $subdir/RSLC/$sdate/$sdate.rslc.par - - $rg1 $rgdiff $azi1 $azidiff - - >/dev/null 2>/dev/null
@@ -307,6 +309,8 @@ if [ $DOIFG -eq 1 ]; then
   done
  fi
 fi
+
+
 
 # echo "Stored "$frame" on "`date +'%Y-%m-%d'`>> $thisDir/stored_to_curdir.txt
  #local_config.py file
@@ -457,6 +461,16 @@ if [ $DOGEOC -eq 1 ]; then
  fi
 fi
 
+# now check and update volcano clips.. ok, still might get skipped (hope not)
+if [ ! -z $subsetsupdated ]; then
+  if [ $subsetsupdated -gt 0 ]; then
+    cntry=`python3 -c "import volcdb as v; a=v.get_volcanoes_in_frame('"$frame"').vportal_area; print(list(set(list(a[~a.isna()])))[0])" 2>/dev/null`
+    if [ ! -z $cntry ]; then
+      echo "Clipping ifgs for volcano portal"
+      falbino_volc_clip_figs.py $cntry $frame
+    fi
+  fi
+fi
 
 
 if [ $STORE50m -eq 1 ]; then

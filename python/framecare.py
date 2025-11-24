@@ -530,6 +530,17 @@ def check_and_fix_burst(mburst, framebursts):
     return changed
 
 
+def merge_two_frames(fr1, fr2):
+    frame1bursts = lq.sqlout2list(get_bidtanxs_in_frame(fr1))
+    frame2bursts = lq.sqlout2list(get_bidtanxs_in_frame(fr2))
+    framebursts = frame1bursts + frame2bursts
+    framebursts = list(set(framebursts))
+    print('check using fc.vis_bidtanxs(framebursts)')
+    print('before doing:')
+    print('fc.generate_new_frame(framebursts, False)')
+    return framebursts
+
+
 
 def check_and_fix_all_bursts_in_frame(frame):
     t1 = '2014-10-01'
