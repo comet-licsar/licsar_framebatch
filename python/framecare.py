@@ -184,7 +184,7 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True, return_alphas = 
         Bperp = np.sqrt(B * B - Bpar * Bpar)
         #
         # get sign.. should investigate alpha-H-90 for right looking sat, thus cosinus
-        alpha = ploc.distance_and_azimuth(eloc, long_unroll=True, degrees=True)[2] # no big diff between 1 and 2, should be 2 i think
+        alpha = ploc.distance_and_azimuth(eloc, degrees=True)[2] # no big diff between 1 and 2, should be 2 i think
         #Bperpsign = -1 * np.sign(np.cos(np.deg2rad(alpha - H)))  # check sign - OK... but maybe not???
         # improve by adding the 90 deg just for clarity:
         #Bperpsign = -1 * np.sign(np.sin(np.deg2rad(H + 90 - alpha)))   # this SHOULD be correct... but GaMMA switches sign! (opposite to doris standard)
