@@ -90,7 +90,7 @@ if [ $regime == 'licsar' ]; then
   if [ -z $sid ]; then
    tempfile=$BATCH_CACHE_DIR/$vid.frames
    python3 -c "import volcdb; vid="$vid"; volcid=volcdb.get_volcano_from_vid(vid); print(volcdb.get_volcano_frames(volcid))"> $tempfile.bb
-   for x in `grep '\[' $tempfile.bb | sed "s/'//g" | sed 's/\[//' | sed 's/\]//' | sed 's/\,//'`; do
+   for x in `grep '\[' $tempfile.bb | sed "s/'//g" | sed 's/\[//' | sed 's/\]//' | sed 's/\,//g'`; do
      echo $x >> $tempfile
    done
    rm $tempfile.b
