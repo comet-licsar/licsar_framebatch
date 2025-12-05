@@ -1204,6 +1204,12 @@ def vis_frame(frame):
     bidtanxs = lq.sqlout2list(ai)
     vis_bidtanxs(bidtanxs)
 
+
+def vis_framelist(framelist):
+    gfrs = get_frames_gpd(framelist)
+    gfrs.plot()
+
+
 def extract_bursts_by_track(bidtanxs, track):
     newbids = []
     for bidtanx in bidtanxs:

@@ -13,3 +13,7 @@ This documentation is still only a stab. But you may check the 'help' of followi
 ``framebatch_update_frame.sh``
 
 ``framebatch_postproc_coreg.sh``
+
+(dev comments)
+--------------
+pandf.sh - check on your disk (and NLA) quotas status
