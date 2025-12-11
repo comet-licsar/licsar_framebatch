@@ -135,7 +135,7 @@ if [ $lowres == 1 ]; then
     echo $frame
     #licsar2licsbas.sh -M 1 -s -g -u -W -T -d -n 4 -G $cliparea $extra $frame
     #licsar2licsbas.sh -M 1 -g -u -W -T -n 4 -G $cliparea $extra $frame
-    licsar2licsbas.sh -M 1 -u -d -T -n 4 -t 0.15 -G $cliparea $lbextra $frame $sdate $edate
+    licsar2licsbas.sh -M 1 -u -d -T -n 4 -f -t 0.15 -G $cliparea $lbextra $frame $sdate $edate
   done
 exit
 fi
@@ -161,9 +161,9 @@ for subfr in `ls $vidpath`; do
   # 2024/01/31 - NOPE! ADF2 is horrible! using smooth, and from unfiltered - best results over Fogo! (or cascade, but that takes too long)
   #echo "licsar2licsbas.sh -M 3 -s -g -u -W -T -d -n 4 "$extra >> $procpath/l2l.sh
   if [ ! -z $cliparea ]; then
-    echo "licsar2licsbas.sh -M "$ml" -G "$cliparea" -u -d -T -t 0.2 -h 23 -n 4 "$lbextra >> $procpath/l2l.sh
+    echo "licsar2licsbas.sh -M "$ml" -G "$cliparea" -u -f -d -T -t 0.2 -h 23 -n 4 "$lbextra >> $procpath/l2l.sh
   else
-    echo "licsar2licsbas.sh -M "$ml" -u -d -T -t 0.2 -h 23 -n 4 "$lbextra >> $procpath/l2l.sh
+    echo "licsar2licsbas.sh -M "$ml" -u -d -f -T -t 0.2 -h 23 -n 4 "$lbextra >> $procpath/l2l.sh
   fi
   chmod 777 $procpath/l2l.sh
   subset_mk_ifgs.sh $extra -s $procpath/l2l.sh -N $vidpath/$subfr $sdate $edate
