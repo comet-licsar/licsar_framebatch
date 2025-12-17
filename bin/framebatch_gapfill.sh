@@ -838,7 +838,7 @@ if [ $cancel == 1 ]; then
   echo "now storing back to LiCSAR base"
   cd ..
   store_to_curdir.sh $frame
-  batchcachedir_check_frame.sh $frame 1 $storeclean
+  # batchcachedir_check_frame.sh $frame 1 $storeclean
  fi
  exit
 fi
