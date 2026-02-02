@@ -272,9 +272,12 @@ class LicsEnv():
     def __enter__(self):
         #Create temporary dir if not present
         if not os.path.exists(self.frameTmp):
-            os.system('mkdir -p '+self.frameTmp)  # os.mkdir often fails due to paralellism..
-            time.sleep(1)  # for sync
-            #os.mkdir(self.frameTmp)
+            # os.system('mkdir -p '+self.frameTmp)  # os.mkdir often fails due to paralellism..
+            # time.sleep(1)  # for sync
+            try:
+                os.mkdir(self.frameTmp)
+            except:
+                time.sleep(1)  # for sync
         #Find prexisting 
         crtEnvs = glob.glob('{}/[0-9]*'.format(self.frameTmp))
         self.actEnv = os.path.join(self.frameTmp,self.envID)
