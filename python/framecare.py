@@ -1184,11 +1184,18 @@ def vis_aoi(aoi):
     world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
     base = world.plot(color='lightgrey', edgecolor='white')
     aoi_gpd.plot(ax=base, color='None', edgecolor='black')
+    #aoi=aoi_gpd.iloc[-1].geometry
+    #aoi2=aoi_gpd.iloc[2].geometry
+    #tata=gpd.GeoDataFrame(index=[0], crs=crs, geometry=[aoi2])
+    #tete=gpd.GeoDataFrame(index=[0], crs=crs, geometry=[aoi])
+    #tete.plot(ax=base, color='None', edgecolor='red')
+    #tata.plot(ax=base, color='None', edgecolor='blue')
     bounds = aoi_gpd.geometry.bounds
     plt.xlim([bounds.minx.min()-2, bounds.maxx.max()+2])
     plt.ylim([bounds.miny.min()-2, bounds.maxy.max()+2])
     plt.grid(color='grey', linestyle='-', linewidth=0.2)
     plt.show()
+
 
 def vis_bidtanxs(bidtanxs):
     """Visualize list of bursts (use bidtanx id, i.e. e.g. '73_IW1_1234')"""

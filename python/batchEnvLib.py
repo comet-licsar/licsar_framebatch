@@ -4,6 +4,7 @@
 #imports
 ################################################################################
 import os
+import time
 import fnmatch
 import re
 import shutil
@@ -262,16 +263,18 @@ class LicsEnv():
         self.cleanHook = None
         try:
             try:
-                JOBID = os.environ['LSB_JOBID']
-            except:
                 JOBID = os.environ['SLURM_JOBID']
+            except:
+                JOBID = os.environ['LSB_JOBID']
             self.envID = '{}_{}'.format(jobID,JOBID)
         except:
             self.envID = str(jobID)
     def __enter__(self):
         #Create temporary dir if not present
         if not os.path.exists(self.frameTmp):
-            os.mkdir(self.frameTmp)
+            os.system('mkdir -p '+self.frameTmp)  # os.mkdir often fails due to paralellism..
+            time.sleep(1)  # for sync
+            #os.mkdir(self.frameTmp)
         #Find prexisting 
         crtEnvs = glob.glob('{}/[0-9]*'.format(self.frameTmp))
         self.actEnv = os.path.join(self.frameTmp,self.envID)

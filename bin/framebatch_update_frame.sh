@@ -89,6 +89,11 @@ fi
 
 if [ $code == "upfill" ]; then
  startdate=`date -d $lastepoch"-37 days" +%Y-%m-%d`
+ m=`get_master $frame`
+ if [ `datediff $m $startdate 1` -ge 180 ]; then
+   # need to re-set startdate..
+   lastlut=`ls $LiCSAR_procdir/$track/$frame/`
+ fi
  if [ $tillnow -eq 1 ]; then
   enddate=`date -d "+1 days" +%Y-%m-%d`
  else

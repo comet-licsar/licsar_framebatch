@@ -464,11 +464,12 @@ fi
 # now check and update volcano clips.. ok, still might get skipped (hope not)
 if [ ! -z $subsetsupdated ]; then
   if [ $subsetsupdated -gt 0 ]; then
-    cntry=`python3 -c "import volcdb as v; a=v.get_volcanoes_in_frame('"$frame"').vportal_area; print(list(set(list(a[~a.isna()])))[0])" 2>/dev/null`
-    if [ ! -z $cntry ]; then
-      echo "Clipping ifgs for volcano portal"
-      falbino_volc_clip_figs.py $cntry $frame
-    fi
+    falbino_volc_clip_figs.py autoframe $frame
+    #cntry=`python3 -c "import volcdb as v; a=v.get_volcanoes_in_frame('"$frame"').vportal_area; print(list(set(list(a[~a.isna()])))[0])" 2>/dev/null`
+    #if [ ! -z $cntry ]; then
+    #  echo "Clipping ifgs for volcano portal"
+    #  falbino_volc_clip_figs.py $cntry $frame
+    #fi
   fi
 fi
 

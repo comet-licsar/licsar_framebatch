@@ -126,10 +126,26 @@ if [ -z $BATCH_CACHE_DIR ] || [ ! -d $BATCH_CACHE_DIR ]; then
  exit
 fi
 
+if [ `echo $BATCH_CACHE_DIR | cut -d '-' -f 2 | cut -c -2` == 'pw' ]; then
+  if [ `echo $BATCH_CACHE_DIR | cut -d '-' -f 2 | cut -c 3` -lt 4 ]; then
+    echo "ERROR - you use old path in your BATCH_CACHE_DIR - you need to change it to the new scratch-pw4 or 5 disk in your ~/.bashrc"
+    echo "you should then re-source the bashrc file, or re-log to JASMIN "
+    exit
+  fi
+fi
+
 #2021/02 - fix to have batchdir at LiCSAR_temp
 if [ -z $LiCSAR_temp ]; then
  echo "LiCSAR_temp not set - did you do module load licsar_framebatch?"
  exit
+else
+  if [ `echo $LiCSAR_temp | cut -d '-' -f 2 | cut -c -2` == 'pw' ]; then
+  if [ `echo $LiCSAR_temp | cut -d '-' -f 2 | cut -c 3` -lt 4 ]; then
+    echo "ERROR - you have set some old LiCSAR_temp - please remove it from your ~/.bashrc (just comment out the line starting export LiCSAR_temp)"
+    echo "you should then re-source the bashrc file, or re-log to JASMIN "
+    exit
+  fi
+  fi
 fi
 
 # 03/2019 - we started to use scratch-nopw disk as a possible solution for constant stuck job problems
