@@ -767,7 +767,7 @@ if [ $tienshan -eq 1 ]; then
  gpextra=$gpextra"-T "
 fi
 if [ $bovls -eq 1 ]; then
- gpextra=$gpextra"-b -k"
+ gpextra=$gpextra"-b "
 fi
 if [ $rgoff -eq 1 ]; then
  gpextra=$gpextra"-R "
