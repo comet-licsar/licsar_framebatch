@@ -133,8 +133,8 @@ fi
 #
 startdate_str=`echo $startdate | sed 's/-//g'`
 enddate_str=`echo $enddate | sed 's/-//g'`
-echo "DEBUG 202507: it appears search_alaska does not return S1C data - using both CDSE+ASF even if download is to be used only through ASF"
-echo "WARNING: we will probably download more than needed... this is in progress.."
+# echo "DEBUG 202507: it appears search_alaska does not return S1C data - using both CDSE+ASF even if download is to be used only through ASF"
+# echo "WARNING: we will probably download more than needed... this is in progress.."
 cat << EOF > s1_search.py
 from s1data import *
 a=get_images_for_frame('$frame', '$startdate_str', '$enddate_str', sensType='$mode', asf = False); # $flagasf);
@@ -142,20 +142,20 @@ a=get_neodc_path_images(a);
 for b in a:
     print(b)
 EOF
-python3 s1_search.py | grep neodc > ${frame}_scihub.list
+# python3 s1_search.py | grep neodc > ${frame}_scihub.list
 
 
- sort -o ${frame}_scihub2.list ${frame}_scihub.list
- mv ${frame}_scihub2.list ${frame}_scihub.list
+# sort -o ${frame}_scihub2.list ${frame}_scihub.list
+# mv ${frame}_scihub2.list ${frame}_scihub.list
 
- echo "double-checking for correct database entries (there were issues in 2025)"
- python3 -c "import framecare as fc; fc.check_reingest_filelist('"$frame'_scihub.list'"')"
+ #echo "double-checking for correct database entries (there were issues in 2025)"
+ #python3 -c "import framecare as fc; fc.check_reingest_filelist('"$frame'_scihub.list'"')"
 
 ## make list from LiCSAR_0_get_Files
-rm ${frame}_db_query.list 2>/dev/null
+rm ${frame}_db_query.list ${frame}_db_query.list.todown $frame'_todown' ${frame}_db_query.list.notrequested 2>/dev/null
 touch ${frame}_db_query.list 2>/dev/null
 #if [ ! -f ${frame}_db_query.list ]; then
- echo "getting expected filelist from what should be retrievable by NLA"
+ echo "getting expected filelist"
  echo "(this procedure gets filenames from CDSE and compares to /neodc folder)"
  echo "(it also ensures the CDSE-identified zip files really are connected to given frame ID)"
  echo "*******"
@@ -166,9 +166,14 @@ touch ${frame}_db_query.list 2>/dev/null
  fi
  echo "*******"
 #fi
- sort -o ${frame}_db_query2.list ${frame}_db_query.list
- mv ${frame}_db_query2.list ${frame}_db_query.list
- diff  ${frame}_scihub.list ${frame}_db_query.list | grep '^<' | cut -c 3- > ${frame}_todown
+echo "checking existence of identified files"
+cp ${frame}_db_query.list.todown $frame'_todown' 2>/dev/null
+ for fl in `cat ${frame}_db_query.list ${frame}_db_query.list.notrequested 2>/dev/null | sort -u `; do
+   if [ ! -f $fl ]; then echo $fl >> $frame'_todown'; fi;
+ done
+ #sort -o ${frame}_db_query2.list ${frame}_db_query.list
+ #mv ${frame}_db_query2.list ${frame}_db_query.list
+ # diff  ${frame}_scihub.list ${frame}_db_query.list | grep '^<' | cut -c 3- > ${frame}_todown
  echo "There are "`cat ${frame}_todown | wc -l`" extra images, not currently existing on CEMS (neodc) disk"
 # checking if the files from scihub exist in RSLC or SLC folders..
 rm tmp_processed.txt 2>/dev/null
@@ -177,7 +182,7 @@ pom=0
 for rslcdir in RSLC SLC $curdir/$tr/$frame/RSLC; do
  if [ -d $rslcdir ]; then
   #echo "Previous processing exists. Checking"
-  ls $rslcdir >> tmp_existing.txt
+  #ls $rslcdir >> tmp_existing.txt
   for rslcdatedir in `ls -d $rslcdir/20??????`; do
    if [ `ls $rslcdatedir/*slc 2>/dev/null | wc -l` -gt 0 ]; then
     echo $rslcdatedir | rev | cut -d '/' -f1 | rev >> tmp_processed.txt
@@ -188,61 +193,96 @@ for rslcdir in RSLC SLC $curdir/$tr/$frame/RSLC; do
 done
 if [ $pom -eq 1 ]; then
  cp tmp_processed.txt tmp_tmp; sort -u tmp_tmp > tmp_processed.txt; rm tmp_tmp
- cp tmp_existing.txt tmp_tmp; sort -u tmp_tmp > tmp_existing.txt; rm tmp_tmp
- if [ -d geo ]; then
-  master=`ls geo/20??????.hgt | cut -d '/' -f2 | cut -d '.' -f1`
-  sed -i '/'$master'/d' tmp_existing.txt
-  sed -i '/'$master'/d' tmp_processed.txt
- fi
- echo "You have "`cat tmp_existing.txt | wc -l`" already processed images,"
- if [ `cat tmp_existing.txt | wc -l` -gt `cat tmp_processed.txt | wc -l` ]; then
-  echo "the RSLCs are physically existing for "`cat tmp_processed.txt | wc -l`" of them"
-  echo "(data will be downloaded only for those non-existing ones)"
-  #do you like the existing X processed paradox?
-  #check this then, you will like it too: https://www.youtube.com/watch?v=2uHNSuGeTpM
- fi
+ #cp tmp_existing.txt tmp_tmp; sort -u tmp_tmp > tmp_existing.txt; rm tmp_tmp
+ #if [ -d geo ]; then
+ # master=`ls geo/20??????.hgt | cut -d '/' -f2 | cut -d '.' -f1`
+ # sed -i '/'$master'/d' tmp_existing.txt
+ # sed -i '/'$master'/d' tmp_processed.txt
+ #fi
+ # echo "You have "`cat tmp_existing.txt | wc -l`" already processed images,"
+  echo "You have "`cat tmp_processed.txt | wc -l`" already processed images,"
+ #if [ `cat tmp_existing.txt | wc -l` -gt `cat tmp_processed.txt | wc -l` ]; then
+ # echo "the RSLCs are physically existing for "`cat tmp_processed.txt | wc -l`" of them"
+ # echo "(data will be downloaded only for those non-existing ones)"
+  ##do you like the existing X processed paradox?
+  ##check this then, you will like it too: https://www.youtube.com/watch?v=2uHNSuGeTpM
+ #fi
 fi
  if [ $pom -eq 1 ]; then
-  cp ${frame}_db_query.list tmp_dbquery.list
+  # cp ${frame}_db_query.list tmp_dbquery.list
+  mv $frame'_todown' tmp_dbquery.list
+  # cp $frame'_todown'
   # i know i should do it opposite, but it works anyway..
   for file in `cat tmp_dbquery.list`; do 
    filedate=`echo $file | rev | cut -d '/' -f1 | rev | cut -c 18-25`
    #if the filedate is in 'already processed and existing' files, then ignore it
-   if [ `grep -c $filedate tmp_processed.txt` -gt 0 ]; then
+   #if [ `grep -c $filedate tmp_processed.txt` -gt 0 ]; then
+   if [ `grep -c $filedate tmp_processed.txt` -lt 1 ]; then
     #echo "The image from "$filedate" has been already processed, ignoring."
-    sed -i '/'$filedate'/d' ${frame}_db_query.list
-    sed -i '/'$filedate'/d' ${frame}_todown
+    # sed -i '/'$filedate'/d' ${frame}_db_query.list
+    # sed -i '/'$filedate'/d' ${frame}_todown
+    # if not processed, set it here:
+    echo $file >> $frame'_todown'
    fi
   done
-  rm tmp_processed.txt tmp_dbquery.list tmp_existing.txt 2>/dev/null
+  rm tmp_processed.txt tmp_dbquery.list 2>/dev/null
  fi
  echo "This means you have now "`cat ${frame}_todown | wc -l`" images to download."
- echo "Checking if the NLA-registered files exist on the disk. If not, include them for redownload"
- pom=0
- for file in `cat ${frame}_db_query.list`; do 
-   if [ ! -f $file ]; then
-     #echo "A file that should be restored from NLA is not existing and will be downloaded"; 
-     let pom=$pom+1;
-     echo $file >> ${frame}_todown
-   fi
- done
+ # echo "Checking if the NLA-registered files exist on the disk. If not, include them for redownload"
+ #pom=0
+ #for file in `cat ${frame}_db_query.list`; do
+ #  if [ ! -f $file ]; then
+ #    #echo "A file that should be restored from NLA is not existing and will be downloaded";
+ #    let pom=$pom+1;
+ #    echo $file >> ${frame}_todown
+ #  fi
+ #done
  sort -u ${frame}_todown > ${frame}_todowntemp
  mv ${frame}_todowntemp ${frame}_todown
- if [ $pom -gt 0 ]; then
-  echo "There are "$pom" images that are indexed in licsinfo database but not existing on disk"
-  echo "Did you run NLA request already?? If not, cancel me and do it first"; # sleep 5; 
- fi
+ #if [ $pom -gt 0 ]; then
+ # echo "There are "$pom" images that are indexed in licsinfo database but not existing on disk"
+  # echo "Did you run NLA request already?? If not, cancel me and do it first"; # sleep 5;
+ #fi
 ## check what really is existing on disk (maybe we missed something?)
  pom=0
  for file in `cat ${frame}_todown`; do 
    filename=`echo $file | rev | cut -d '/' -f1 | rev`
    if [ -f $file ]; then
-     echo "A file "$filename" is actually existing in /neodc. It will be indexed to licsinfo instead of downloading."
-     arch2DB.py -f $file >/dev/null 2>/dev/null
-     pom=1;
-     sed -i '/'$filename'/d' ${frame}_todown
+     echo "A file "$filename" is actually existing in /neodc."
+     zipcheck=`7za l $file 2> tmp_zipcheck | grep Error | tail -n1`
+     if [ `echo $zipcheck | wc -m` -gt 1 ]; then
+       echo "..however it is broken and will be downloaded"
+     else
+       echo "It will be indexed to licsinfo instead of downloading."
+       arch2DB.py -f $file >/dev/null 2>/dev/null
+       pom=1;
+       sed -i '/'$filename'/d' ${frame}_todown
+     fi
    else
-    if [ -f $SLCdir/$filename ]; then
+
+    if [ -f $LiCSAR_SLC/$filename ]; then
+     echo "The file "$filename" has already been downloaded"
+     zipcheck=`7za l $SLCdir/$filename 2> tmp_zipcheck | grep Error | tail -n1`
+     if [ `echo $zipcheck | wc -m` -gt 1 ]; then
+       echo "..however it is broken:"
+       ls -alh $SLCdir/$filename
+       echo "zip error: "
+       echo "----------"
+       cat tmp_zipcheck
+       echo "----------"
+       rm tmp_zipcheck
+       echo "so it will be redownloaded"
+       rm -rf $SLCdir/$filename
+     else
+       sed -i '/'$filename'/d' ${frame}_todown
+       if [ `grep -c $SLCdir/$filename ${frame}_db_query.list` -eq 0 ]; then
+        echo "..ingesting to database"
+        arch2DB.py -f $SLCdir/$filename >/dev/null 2>/dev/null
+       fi
+       sed -i '/'$filename'/d' ${frame}_todown
+       pom=1
+     fi
+    elif [ -f $SLCdir/$filename ]; then
      echo "The file "$filename" has already been downloaded"
      zipcheck=`7za l $SLCdir/$filename 2> tmp_zipcheck | grep Error | tail -n1`
      if [ `echo $zipcheck | wc -m` -gt 1 ]; then
