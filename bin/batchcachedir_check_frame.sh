@@ -10,6 +10,8 @@ if [ ! -z $3 ]; then AUTODEL=$3; fi
 #cd $BATCH_CACHE_DIR
 todel=0
 
+if [ `bjobs | grep -c $frame` -gt 0 ]; then echo "WARNING - this frame is under processing already - better check manually"; fi
+
 if [ `pwd` == $LiCSAR_public ]; then echo "NO.."; exit; fi
 if [ `pwd` == $LiCSAR_procdir ]; then echo "NO.."; exit; fi
 # we may have files deleted in scratch...
@@ -60,7 +62,8 @@ else
      echo "recommended approach:"
      d1=`head -n 1 $frame/slccheck.list`
      d2=`tail -n 1 $frame/slccheck.list`
-     echo "licsar_make_frame.sh -f -S -D $frame 0 1 "`date -d $d1" - 1 day" +%Y-%m-%d` `date -d $d2" + 1 day" +%Y-%m-%d`
+     echo "licsar_make_frame.sh -f -S -D $frame 0 1 "`date -d $d1" - 1 day" +%Y-%m-%d` `date -d $d2" + 1 day" +%Y-%m-%d` > $frame/slccheck.reproc.sh; chmod 777 $frame/slccheck.reproc.sh;
+     if [ $PROC == 1 ]; then ./$frame/slccheck.reproc.sh; exit; fi
      echo "for now, only continuing"
    fi
    if [ $slcdates -gt 1 ]; then echo "this frame has SLCs to process: "$frame;
