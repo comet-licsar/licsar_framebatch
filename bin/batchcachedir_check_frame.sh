@@ -49,6 +49,20 @@ if [ ! -d $frame/RSLC ]; then
 else
    slcdates=`ls $frame/SLC/???????? -d | wc -l`
    rslcdates=`ls $frame/RSLC/???????? -d | wc -l`
+   # check for unfinished SLCs:
+   rm -f $frame/slccheck.list 2>/dev/null
+   for ep in `gawk {'print $3'} $frame/framebatch_01_mk_image.list | sed 's/-//g' | sort`; do
+    if [ ! -d $frame/SLC/$ep ] && [ ! -d $frame/RSLC/$ep ] && [ ! -d $frame/SLC.missingbursts/$ep ]; then echo $ep >> $frame/slccheck.list; fi
+   done
+   if [ -f $frame/slccheck.list ]; then
+     echo "this frame has unprocessed SLCs:"
+     cat $frame/slccheck.list
+     echo "recommended approach:"
+     d1=`head -n 1 $frame/slccheck.list`
+     d2=`tail -n 1 $frame/slccheck.list`
+     echo "licsar_make_frame.sh -f -S -D $frame 0 1 "`date -d $d1" - 1 day" +%Y-%m-%d` `date -d $d2" + 1 day" +%Y-%m-%d`
+     echo "for now, only continuing"
+   fi
    if [ $slcdates -gt 1 ]; then echo "this frame has SLCs to process: "$frame;
       # check on sizes
       #m=`ls $frame/geo/*.hgt | head -n 1 | rev | cut -d '.' -f 2 | cut -d '/' -f 1 | rev`
