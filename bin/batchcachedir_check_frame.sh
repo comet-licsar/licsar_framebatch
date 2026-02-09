@@ -62,7 +62,9 @@ else
      echo "recommended approach:"
      d1=`head -n 1 $frame/slccheck.list`
      d2=`tail -n 1 $frame/slccheck.list`
-     echo "licsar_make_frame.sh -f -S -D $frame 0 1 "`date -d $d1" - 1 day" +%Y-%m-%d` `date -d $d2" + 1 day" +%Y-%m-%d` > $frame/slccheck.reproc.sh; chmod 777 $frame/slccheck.reproc.sh;
+     echo "licsar_make_frame.sh -f -S $frame 0 0 "`date -d $d1" - 1 day" +%Y-%m-%d` `date -d $d2" + 1 day" +%Y-%m-%d` > $frame/slccheck.reproc.sh;
+     chmod 777 $frame/slccheck.reproc.sh;
+     cat $frame/slccheck.reproc.sh
      if [ $PROC == 1 ]; then ./$frame/slccheck.reproc.sh; exit; fi
      echo "for now, only continuing"
    fi

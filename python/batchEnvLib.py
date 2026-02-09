@@ -65,11 +65,12 @@ def create_lics_cache_dir(frame,srcDir,cacheDir,masterDate=None):
                 'SLC/{:%Y%m%d}'.format(masterDate)]
         # Sync src geo,dem and master rslc
         sync(frameDir,frameCacheDir,'sync',create=True,only=subPats)
-        if not os.path.exists(os.path.join(frameCacheDir, 'DEM')):
-            try:
-                os.symlink(os.path.join(frameDir, 'DEM'), os.path.join(frameCacheDir, 'DEM'))
-            except:
-                print('no DEM folder in LiCSAR sys for this frame. Continuing anyway')
+        print('2026/02: not linking DEM anymore - any new issues?')
+        #if not os.path.exists(os.path.join(frameCacheDir, 'DEM')):
+        #    try:
+        #        os.symlink(os.path.join(frameDir, 'DEM'), os.path.join(frameCacheDir, 'DEM'))
+        #    except:
+        #        print('no DEM folder in LiCSAR sys for this frame. Continuing anyway')
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
         # regenerate SLC mosaic for the master (needed later, for ifgs.
         # coregistration would work without it)
