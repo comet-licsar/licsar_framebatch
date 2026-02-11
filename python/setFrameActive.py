@@ -13,10 +13,17 @@ except KeyError as error:
     print('Somehow the current processing directory is not set')
     raise error
 
+
 #check if framename is initialized, i.e. exists in curdir
 track = framename.split('_')[0][:-1]
 track = str(int(track))
 frameDir = os.path.join(curDir,track,framename)
+
+# 2026/02 issue:
+if not os.path.exists(curDir):
+    print('no gws disk attached - trying find in batchdir')
+    frameDir = os.path.join(os.environ['BATCH_CACHE_DIR'], framename)
+
 try:
     master = fnmatch.filter(os.listdir(frameDir+'/geo'), '????????.hgt')[0].split('.')[0]
 except KeyError as error:

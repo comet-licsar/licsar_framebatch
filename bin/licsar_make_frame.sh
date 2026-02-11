@@ -186,10 +186,11 @@ if [ `echo $frame | cut -d '_' -f2` == "SM" ]; then SM=1; echo "processing strip
 track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
 if [ ! -d $LiCSAR_procdir ]; then if [ ! -d $BATCH_CACHE_DIR/$frame/geo ]; then echo "Frame data not accessible, sorry"; exit; fi
 else
-if [ ! -d $LiCSAR_procdir/$track/$frame/geo ]; then echo "This frame has not been initialized. Please contact your LiCSAR admin (Milan)"; exit; fi
+ if [ ! -d $LiCSAR_procdir/$track/$frame/geo ]; then echo "This frame has not been initialized. Please contact your LiCSAR admin (Milan)"; exit; fi
 fi
 
 # fix empty slc file
+if [ -d $LiCSAR_procdir ]; then  # for the 02/2026 issue
 m=`ls $LiCSAR_procdir/$track/$frame/SLC | head -n 1`
 if [ -f $BATCH_CACHE_DIR/$frame/SLC/$m/$m.slc.par ]; then
  if [ `ls -al $BATCH_CACHE_DIR/$frame/SLC/$m/$m.slc.par | gawk {'print $5'}` -eq 0 ]; then
@@ -200,7 +201,7 @@ if [ -f $BATCH_CACHE_DIR/$frame/SLC/$m/$m.slc.par ]; then
 fi
 #some older frames would not have this folder
 mkdir $LiCSAR_procdir/$track/$frame/LUT 2>/dev/null
-
+fi
 
 #run only if the frame is not in active processing..
 if [ $force -eq 0 ]; then

@@ -57,7 +57,12 @@ user = os.environ['USER']
 #Create cache copy
 ################################################################################
 print('copying frame data from licsar database')
-create_lics_cache_dir(frame,srcDir,cacheDir)
+try:
+    create_lics_cache_dir(frame,srcDir,cacheDir)
+except:
+    print('warning, exception in create_lics_cache_dir')
+    if not os.path.exists(srcDir):
+        print('due to '+srcDir+' not existing - trying to continue anyway')
 
 ################################################################################
 # Get master date
@@ -103,7 +108,10 @@ date_strings = [dt.strftime("%Y%m%d") for dt in pd.to_datetime(acq_imgs['acq_dat
 #get acquisitions existing in lics db
 #(this will make links and decompress the lics db files to cacheDir)
 print('Getting existing RSLCs from LiCS database')
-existing_acq_lics = get_rslcs_from_lics(frame,srcDir,cacheDir,date_strings)
+try:
+    existing_acq_lics = get_rslcs_from_lics(frame,srcDir,cacheDir,date_strings)
+except:
+    print('warning, exception in get_rslcs_from_lics')
 
 #get final acquisitions list for those existing in the RSLC processing directory
 existing_acq = fnmatch.filter(os.listdir(cacheDir+'/'+frame+'/RSLC'), '20??????')
@@ -212,7 +220,12 @@ ifgs = create_ifgs(polyid,acq_imgs.append(mstrline))
 unws = create_unws(polyid,acq_imgs.append(mstrline))
 
 print('Getting existing interferograms from LiCS database')
-existing_ifgs_lics = get_ifgs_from_lics(frame,srcDir,cacheDir,startdate,enddate)
+try:
+    existing_ifgs_lics = get_ifgs_from_lics(frame,srcDir,cacheDir,startdate,enddate)
+except:
+    print('warning - exception in get_ifgs_from_lics')
+
+
 existing_ifgs = fnmatch.filter(os.listdir(cacheDir+'/'+frame+'/IFG'), '20??????_20??????')
 ifgids = get_all_ifgs(polyid)
 unwids = get_all_unws(polyid)
