@@ -617,9 +617,9 @@ fi
 # deleting log file lock and empty log file
 if [ `ls -al $list_added | gawk {'print $5'}` == 0 ]; then
  echo "nothing changed in the public directory"
- rm $list_added
+ rm -f $list_added
 fi
-rm $list_added'.lock'
+rm -f $list_added'.lock'
 
 # exceptions
 if [ $frame == '140D_SM_FGBR_S4' ]; then

@@ -65,8 +65,9 @@ else
      echo "licsar_make_frame.sh -f -S $frame 0 0 "`date -d $d1" - 1 day" +%Y-%m-%d` `date -d $d2" + 1 day" +%Y-%m-%d` > $frame/slccheck.reproc.sh;
      chmod 777 $frame/slccheck.reproc.sh;
      cat $frame/slccheck.reproc.sh
-     if [ $PROC == 1 ]; then ./$frame/slccheck.reproc.sh; exit; fi
-     echo "for now, only continuing"
+     if [ $PROC == 1 ]; then ./$frame/slccheck.reproc.sh; fi
+     exit
+     # echo "for now, only continuing"
    fi
    if [ $slcdates -gt 1 ]; then echo "this frame has SLCs to process: "$frame;
       # check on sizes
@@ -105,7 +106,7 @@ else
           #fi
         fi
       fi
-         if [ $PROC == 1 ]; then
+      if [ $PROC == 1 ]; then
            if [ ! -z $postprocflag ]; then echo "WARNING, we would now process through the long gap - probably causing SD error";
               echo "well... on your responsibility... please run:"
               echo framebatch_postproc_coreg.sh $postprocflag $frame 1
@@ -126,7 +127,9 @@ else
              #~ licsar_make_frame.sh -f $extral $frame 1 0 `date -d $startdate +'%Y-%m-%d'` `date -d $enddate +'%Y-%m-%d'`
              #~ rm $frame/tmp_reprocess.slc
            #fi
-         fi
+      else
+         ls $frame/*LC
+      fi
    else
     if [ $rslcdates -lt 2 ]; then todel=1;
     else
