@@ -184,7 +184,11 @@ if [ -f $BATCH_CACHE_DIR/$frame/lmf_locked ]; then echo "the frame is locked - c
 mkdir -p $LiCSAR_temp/$frame'_envs' # need for step 01
 if [ `echo $frame | cut -d '_' -f2` == "SM" ]; then SM=1; echo "processing stripmap frame - WARNING, EXPERIMENTAL FEATURE"; else SM=0; fi
 track=`echo $frame | cut -c -3 | sed 's/^0//' | sed 's/^0//'`
+if [ ! -d $LiCSAR_procdir ]; then if [ ! -d $BATCH_CACHE_DIR/$frame/geo ]; then echo "Frame data not accessible, sorry"; exit; fi
+else
 if [ ! -d $LiCSAR_procdir/$track/$frame/geo ]; then echo "This frame has not been initialized. Please contact your LiCSAR admin (Milan)"; exit; fi
+fi
+
 # fix empty slc file
 m=`ls $LiCSAR_procdir/$track/$frame/SLC | head -n 1`
 if [ -f $BATCH_CACHE_DIR/$frame/SLC/$m/$m.slc.par ]; then
