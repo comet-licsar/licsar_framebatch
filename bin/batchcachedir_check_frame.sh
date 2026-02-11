@@ -10,7 +10,14 @@ if [ ! -z $3 ]; then AUTODEL=$3; fi
 #cd $BATCH_CACHE_DIR
 todel=0
 
-if [ `bjobs | grep -c $frame` -gt 0 ]; then echo "WARNING - this frame is under processing already - better check manually"; fi
+# check for existing jobs in LOTUS on this frame:
+rm -f $frame/check_lotus_jobs 2>/dev/null
+bjobs | grep $frame > $frame/check_lotus_jobs
+
+if [ `cat $frame/check_lotus_jobs | wc -l` -gt 0 ]; then
+  if [ `grep gapfill_out $frame/check_lotus_jobs | grep -c PENDING` -gt 0 ]; then echo "the processing already runs in queue - exiting"; exit; fi
+  echo "WARNING - this frame is under processing already - better check manually";
+fi
 
 if [ `pwd` == $LiCSAR_public ]; then echo "NO.."; exit; fi
 if [ `pwd` == $LiCSAR_procdir ]; then echo "NO.."; exit; fi
