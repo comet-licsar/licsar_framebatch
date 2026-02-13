@@ -1,6 +1,9 @@
 #!/bin/bash
 PROC=0
-AUTODEL=1
+AUTODEL=0
+
+if [ $AUTODEL -lt 1 ]; then echo "FYI, this script will not delete the processed frame."; fi
+
 if [ -z $1 ]; then echo "set parameter - frame"; echo "if second parameter is 1, this script will perform reprocessing automatically";
  echo "third parameter is to set autodelete in case all is checked OK - it is set to 1 by default, so careful"; exit; fi
 if [ ! -d $1 ]; then echo "you need to be in a folder (e.g. your BATCH_CACHE_DIR) with this frame data"; exit; fi
