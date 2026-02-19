@@ -353,10 +353,6 @@ def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = Fals
         is_volc (bool): if true, it will set the output folder $LiCSAR_procdir/subsets/volc
         resol_m (float): output resolution in metres to have geocoding table ready in (note, RSLCs are anyway in full res)
     """
-    if is_volc:
-        sidpath = 'volc/'+sid
-    else:
-        sidpath = sid
     #
     resol=resol_m/111111 #0.00027
     resol=round(resol,6)
@@ -400,7 +396,10 @@ def subset_initialise_corners(frame, lon1, lon2, lat1, lat2, sid, is_volc = Fals
     if not os.path.exists(framedir):
         print('error, seems the frame was not initialised, cancelling')
         return False
-    subsetdir = os.path.join(os.environ['LiCSAR_procdir'],'subsets',sidpath,frame[:4])
+    if is_volc:
+        subsetdir = os.path.join(os.environ['LiCSAR_volc'],sid,frame[:4])
+    else:
+        subsetdir = os.path.join(os.environ['LiCSAR_procdir'],'subsets',sid,frame[:4])
     if os.path.exists(subsetdir):
         print('the subset directory exists. cancelling - please delete manually. path:') #'continuing anyway..')
         print(subsetdir)
