@@ -303,7 +303,8 @@ if [ $autocont -eq 1 ]; then
 # if [ $x == $lastslc ]; then
   echo "setting the post-coreg iteration"
   if [ ! $diffprev == 0 ]; then   # so if there are still some SLCs left to coreg, run the iteration...
-   echo "framebatch_postproc_coreg.sh "$frame" 1" > postproc_coreg.sh; 
+  if [ $ignorezero == 1 ]; then extrac2='-E'; else extrac2=''; fi
+   echo "framebatch_postproc_coreg.sh "$extrac2 $frame" 1" > postproc_coreg.sh;
    #extraw='-Ep ./postproc_coreg.sh'
   else
    echo "some SLCs could not be coregistered - checking if these have missing bursts (would move them to SLC.missingbursts folder)"
