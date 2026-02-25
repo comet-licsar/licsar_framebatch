@@ -16,6 +16,7 @@ force=0
 autocont=0
 extracoregparms=''
 backfill=0
+ignorezero=0
 while getopts ":fFb" option; do
  case "${option}" in
   f) force=1;
@@ -24,6 +25,7 @@ while getopts ":fFb" option; do
      #shift
      ;;
   F) extracoregparms='-E';
+     ignorezero=1;
      #shift
      ;;
   b) backfill=1;
@@ -71,6 +73,8 @@ if [ $force -eq 1 ]; then
 fi
 
 mkdir -p coreg_its
+
+
 if [ `grep -c comet framebatch_02_coreg.nowait.sh` -gt 0 ]; then que='comet'; else que='short-serial'; fi
 mstr=`get_master`
 # fix empty slc file
@@ -83,7 +87,23 @@ if [ -f $BATCH_CACHE_DIR/$frame/SLC/$m/$m.slc.par ]; then
    cp $LiCSAR_procdir/$track/$frame/SLC/$m/$m.slc.par $BATCH_CACHE_DIR/$frame/RSLC/$m/$m.rslc.par
  fi
 fi
+rm -f coreg_its/tmp_reprocess.slc.sorted.prev 2>/dev/null
+cp coreg_its/tmp_reprocess.slc.sorted coreg_its/tmp_reprocess.slc.sorted.prev 2>/dev/null
 ls SLC | sed '/'$mstr'/d' > coreg_its/tmp_reprocess.slc
+if [ $backfill -eq 0 ]; then
+  cat coreg_its/tmp_reprocess.slc | sort > coreg_its/tmp_reprocess.slc.sorted
+else
+  cat coreg_its/tmp_reprocess.slc | sort -r > coreg_its/tmp_reprocess.slc.sorted
+fi
+# check if the prev attempt had the same slcs
+if [ $ignorezero -lt 1 ]; then
+  if [ -f coreg_its/tmp_reprocess.slc.sorted.prev ]; then
+    if [ `diff coreg_its/tmp_reprocess.slc.sorted coreg_its/tmp_reprocess.slc.sorted.prev | wc -l` -lt 1 ]; then
+       echo "error - the previous iteration used exactly same data to process. you can still run manually deleting coreg_its first if you think the rerun would help"
+       exit
+    fi
+  fi
+fi
 #clean first
 for x in `ls RSLC | sed '/'$mstr'/d'`; do 
  if [ -f RSLC/$x/$x.lock ] || [ `ls RSLC/$x | wc -l` -eq 0 ]; then rm -rf RSLC/$x; fi;
@@ -163,11 +183,7 @@ largestiw=`du -c SLC/$mstr/$mstr.IW?.slc | grep slc | sort | tail -n 1 | rev | c
 msize=`ls -al SLC/$mstr/$mstr.$largestiw.slc | gawk {'print $5'}`
 
 maxj=0
-if [ $backfill -eq 0 ]; then
-  cat coreg_its/tmp_reprocess.slc | sort > coreg_its/tmp_reprocess.slc.sorted
-else
-  cat coreg_its/tmp_reprocess.slc | sort -r > coreg_its/tmp_reprocess.slc.sorted
-fi
+
 for x in `cat coreg_its/tmp_reprocess.slc.sorted`; do
  doit=0
  if [ $force == 0 ]; then
