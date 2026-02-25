@@ -7,11 +7,11 @@
 # ... and since 06/2020 also gapfill
 
 code=$1
-batchesdir=/gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current/batches
+batchesdir=/gws/ssde/j25a/nceo_geohazards/vol1/projects/LiCS/proc/current/batches
 cd $batchesdir
 
 if [ $code == 'weekly' ] || [ $code == 'monthly' ]; then
- volcfile=/gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/volc-proc/active_frames.txt
+ volcfile=/gws/ssde/j25a/nceo_geohazards/vol1/projects/LiCS/volc-proc/active_frames.txt
  if [ $code == 'weekly' ]; then
   updatefile=$batchesdir/alive/$code.txt
   #echo "running volc updates only first"

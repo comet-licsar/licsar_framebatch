@@ -57,7 +57,7 @@ code=$2
 if [ $code == 'upfill' ]; then extra=$extra' -N'; fi
 #if [ ! -z $2 ]; then PROCESSING=0; fi
 maxwaithours=168
-batchesdir='/gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current/batches'
+batchesdir='/gws/ssde/j25a/nceo_geohazards/vol1/projects/LiCS/proc/current/batches'
 
 #check for writing rights
 touch pokuspokus_$frame

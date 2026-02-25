@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # old gacos dir:
-#work_dir="/gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/GACOS"
+#work_dir="/gws/ssde/j25a/nceo_geohazards/vol2/LiCS/temp/GACOS"
 work_dir=$LiCSAR_GACOS
 mkdir -p $work_dir 2>/dev/null
 

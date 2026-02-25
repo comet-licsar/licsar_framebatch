@@ -41,7 +41,7 @@ procdir = os.environ['LiCSAR_procdir']
 #'''
 # notes:
 # this is how i imported burst db - first i converted them from sqlite3 to geojson
-# then i did, in /gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current/burst_database/IW/sqlite:
+# then i did, in /gws/ssde/j25a/nceo_geohazards/vol1/projects/LiCS/proc/current/burst_database/IW/sqlite:
 
 #import geopandas as gpd
 #import shapely
@@ -600,7 +600,7 @@ def check_and_fix_all_bursts_in_frame(frame):
             #print('remove_from_lics.sh {0} {1}'.format(frame, fdate))
 
 
-def export_all_bursts_to_kmls(outpath='/gws/nopw/j04/nceo_geohazards_vol1/public/shared/test/bursts2'):
+def export_all_bursts_to_kmls(outpath='/gws/ssde/j25a/nceo_geohazards/vol1/public/shared/test/bursts2'):
     # to export all bursts:
     for ddir in ['A','D']:
         for can in range(175):
@@ -1334,7 +1334,7 @@ def frame2geopandas_brute(frame):
     #outgpd = outgpd.append(gpan, ignore_index=True)
     return gpan
 
-def rename_frame_main(framename,newname, reportcsv = '/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/frameid_changes.txt'):
+def rename_frame_main(framename,newname, reportcsv = '/gws/ssde/j25a/nceo_geohazards/vol1/public/LiCSAR_products/frameid_changes.txt'):
     """
     this function will physically rename a frame (and move folders etc.) - oh, but it doesn't touch the frame def in database! for this, use lq.rename_frame
     """
@@ -1439,7 +1439,7 @@ def get_ifg_list_pubdir_limit(framename, startdate = '20141001', enddate = dt.da
     return ifgdates
 
 
-def export_frames_to_licsar_csv(framesgpd, outcsv = '/gws/nopw/j04/nceo_geohazards_vol1/public/shared/frames/frames.csv', store_zero = False):
+def export_frames_to_licsar_csv(framesgpd, outcsv = '/gws/ssde/j25a/nceo_geohazards/vol1/public/shared/frames/frames.csv', store_zero = False):
     #print('now we would export the frame to outcsv, including wkb')
     # this will update the csv, not rewrite it..
     if not os.path.exists(outcsv):
@@ -1805,14 +1805,14 @@ def load_xy(intxt, onlyminmax = True):
 
 
 def load_bursts_from_kml(inputkml):
-    #inputkml = '/gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/insar_temp/frames_redef/kmls/test_146a.kml'
+    #inputkml = '/gws/ssde/j25a/nceo_geohazards/vol2/LiCS/temp/insar_temp/frames_redef/kmls/test_146a.kml'
     newbursts = gpd.read_file(inputkml, driver='KML')
     newbursts = newbursts[newbursts.columns[0]].tolist()
     return newbursts
 
 
 
-def export_bidtanxs_to_kml(bidtanxs, outpath = '/gws/nopw/j04/nceo_geohazards_vol1/public/shared/test', projname = 'track', merge = False):
+def export_bidtanxs_to_kml(bidtanxs, outpath = '/gws/ssde/j25a/nceo_geohazards/vol1/public/shared/test', projname = 'track', merge = False):
     """Exports list of burst IDs (bidtanxs) to an outpath/projname_TRACK.kml file. If merge=True, the bursts will be merged to one polygon"""
     #kmlout name will be auto_completed
     bidtanxs.sort()
@@ -1839,7 +1839,7 @@ def export_bidtanxs_to_kml(bidtanxs, outpath = '/gws/nopw/j04/nceo_geohazards_vo
         print('done. please edit the kmls - delete not wanted bursts, save and return')
 
 
-def export_frame_to_kml(frame, outpath = '/gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/insar_temp/frames_redef/kmls', merge=False):
+def export_frame_to_kml(frame, outpath = '/gws/ssde/j25a/nceo_geohazards/vol2/LiCS/temp/insar_temp/frames_redef/kmls', merge=False):
     """ Exports the frame polygon to kml. Currently only the uglier version (coarse burst polygons)
     """
     if not os.path.exists(outpath):
@@ -1849,7 +1849,7 @@ def export_frame_to_kml(frame, outpath = '/gws/nopw/j04/nceo_geohazards_vol2/LiC
     export_bidtanxs_to_kml(bidtanxs, outpath, projname = frame, merge=merge)
 
 
-def export_all_frames_to_framecsv(outcsv = '/gws/nopw/j04/nceo_geohazards_vol1/public/shared/frames/frames.csv', store_zero = False):
+def export_all_frames_to_framecsv(outcsv = '/gws/ssde/j25a/nceo_geohazards/vol1/public/shared/frames/frames.csv', store_zero = False):
     asc_gpd, desc_gpd = get_all_frames()
     rc = export_frames_to_licsar_csv(asc_gpd, outcsv, store_zero)
     rc = export_frames_to_licsar_csv(desc_gpd, outcsv, store_zero)
@@ -1965,7 +1965,7 @@ def export_framelist_to_kml(txtfile, outkmlfile):
     export_geopandas_to_kml(framesgpd, outkmlfile)
 
 
-def export_all_frames_to_kmls(kmldirpath = '/gws/nopw/j04/nceo_geohazards_vol1/public/shared/test/bursts'): #'/gws/nopw/j04/nceo_geohazards_vol1/public/shared/frames/'):
+def export_all_frames_to_kmls(kmldirpath = '/gws/ssde/j25a/nceo_geohazards/vol1/public/shared/test/bursts'): #'/gws/ssde/j25a/nceo_geohazards/vol1/public/shared/frames/'):
     asc_gpd, desc_gpd = get_all_frames()
     if os.path.exists(os.path.join(kmldirpath,'ascending.kml')):
         os.remove(os.path.join(kmldirpath,'ascending.kml'))
@@ -2126,11 +2126,11 @@ def delete_frame(frame):
         print('no subsets for this frame')
     if os.path.exists(procdir):
         os.system('rm -rf $LiCSAR_procdir/{0}/{1} $LiCSAR_public/{0}/{1} $BATCH_CACHE_DIR/{1}'.format(track,frame))
-        os.system('echo {0} >> /gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/volc-portal/processing_scripts/excluded_frames/excluded_frames_extras'.format(frame))
+        os.system('echo {0} >> /gws/ssde/j25a/nceo_geohazards/vol1/projects/LiCS/volc-portal/processing_scripts/excluded_frames/excluded_frames_extras'.format(frame))
         os.system('mv $LiCSAR_procdir/{0}/{1} $LiCSAR_procdir/{0}/todel.{1} 2>/dev/null'.format(track, frame))
         os.system('mv $LiCSAR_public/{0}/{1} $LiCSAR_public/{0}/todel.{1} 2>/dev/null'.format(track, frame))
-        os.system("sed -i '/{}/d' /gws/nopw/j04/nceo_geohazards_vol1/public/shared/frames/frames.csv".format(frame))
-        os.system("sed -i '/{}/d' /gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/EQ/eqframes.csv".format(frame))
+        os.system("sed -i '/{}/d' /gws/ssde/j25a/nceo_geohazards/vol1/public/shared/frames/frames.csv".format(frame))
+        os.system("sed -i '/{}/d' /gws/ssde/j25a/nceo_geohazards/vol1/public/LiCSAR_products/EQ/eqframes.csv".format(frame))
     else:
         print('this frame was probably not initialised. Deleting only from database')
     #polyid = lq.get_frame_polyid(frame)[0][0]
@@ -2162,7 +2162,7 @@ def delete_frame_commands(frame):
     print('setFrameInactive.py {0}'.format(frame))
     track=str(int(frame[0:3]))
     print('rm -rf $LiCSAR_procdir/{0}/{1} $LiCSAR_public/{0}/{1}'.format(track,frame))
-    print("sed -i '/{}/d' /gws/nopw/j04/nceo_geohazards_vol1/public/shared/frames/frames.csv".format(frame))
+    print("sed -i '/{}/d' /gws/ssde/j25a/nceo_geohazards/vol1/public/shared/frames/frames.csv".format(frame))
     print('lics_mysql.sh')
     sql = "select polyid from polygs where polyid_name = '{0}';".format(frame)
     polyid = lq.do_query(sql)[0][0]

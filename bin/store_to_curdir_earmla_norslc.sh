@@ -1,5 +1,5 @@
 #!/bin/bash
-#curdir=/gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current
+#curdir=/gws/ssde/j25a/nceo_geohazards/vol1/projects/LiCS/proc/current
 curdir=$LiCSAR_procdir
 public=$LiCSAR_public
 if [ -z $1 ]; then echo "Parameter: *_*_* frame folder.. MUST BE IN THIS FOLDER"; exit;
@@ -15,7 +15,7 @@ DOIFG=1
 DELETEAFTER=0
 if [ ! -z $2 ]; then if [ $2 -eq 1 ]; then DELETEAFTER=1; echo "setting to delete"; fi; fi
 
-#for thisDir in /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc/frames; do
+#for thisDir in /gws/ssde/j25a/nceo_geohazards/vol2/LiCS/temp/volc /gws/ssde/j25a/nceo_geohazards/vol2/LiCS/temp/volc/frames; do
 #cd $thisDir
 #for frame in `ls [0-9]*_?????_?????? -d`; do
 cd $frame
@@ -197,8 +197,8 @@ then
  echo "Deleting downloaded files (if any)"
  if [ -f $frame/$frame'_todown' ]; then
   for zipf in `cat $frame/$frame'_todown' | rev | cut -d '/' -f1 | rev`; do
-   if [ -f /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/SLC/$zipf ]; then
-    rm /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/SLC/$zipf
+   if [ -f /gws/ssde/j25a/nceo_geohazards/vol2/LiCS/temp/SLC/$zipf ]; then
+    rm /gws/ssde/j25a/nceo_geohazards/vol2/LiCS/temp/SLC/$zipf
    fi
   done
  fi

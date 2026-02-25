@@ -6,7 +6,7 @@
 master=`basename geo/20??????.hgt .hgt`
 WORKFRAMEDIR=`pwd`
 frame=`pwd | rev | cut -d '/' -f1 | rev`
-EQRDIR='/gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current/EQR'
+EQRDIR='/gws/ssde/j25a/nceo_geohazards/vol1/projects/LiCS/proc/current/EQR'
 eqrframedir=$EQRDIR/$frame
 
 if [ ! -d $eqrframedir ]; then

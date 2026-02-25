@@ -2,7 +2,7 @@
 rm -r $BATCH_CACHE_DIR/volc 2>/dev/null
 mkdir $BATCH_CACHE_DIR/volc
 echo "preparing list of frames to update"
-for x in `ls /gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/volc-proc/list_database/*frame.txt`; do
+for x in `ls /gws/ssde/j25a/nceo_geohazards/vol1/projects/LiCS/volc-proc/list_database/*frame.txt`; do
  cat $x >> $BATCH_CACHE_DIR/volc/allframes.tmp
 done
 #additional requests
@@ -11,7 +11,7 @@ echo 088A_03925_131313 >> $BATCH_CACHE_DIR/volc/allframes.tmp
 echo 139D_04017_131313 >> $BATCH_CACHE_DIR/volc/allframes.tmp
 
 #let's update also turkey frames..
-#cat /gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/turkey_frames.txt >> $BATCH_CACHE_DIR/volc/allframes.tmp
+#cat /gws/ssde/j25a/nceo_geohazards/vol1/projects/LiCS/turkey_frames.txt >> $BATCH_CACHE_DIR/volc/allframes.tmp
 
 sed -i 's/000D_/175D_/' $BATCH_CACHE_DIR/volc/allframes.tmp
 sed -i 's/000A_/175A_/' $BATCH_CACHE_DIR/volc/allframes.tmp
@@ -26,7 +26,7 @@ totalno=`wc -l $BATCH_CACHE_DIR/volc/allframes.txt | gawk {'print $1'}`
 echo "there are "`wc -l $BATCH_CACHE_DIR/volc/allframes.txt`" frames to update"
 
 
-#volcdir=/gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current/../../volc-proc/current
+#volcdir=/gws/ssde/j25a/nceo_geohazards/vol1/projects/LiCS/proc/current/../../volc-proc/current
 
 #for country in `ls $volcdir`; do
 #for country in europe southeast_asia south_america northern_asia eastern_asia central_america pacific_island africa oceania north_america atlantic_island; do
@@ -80,7 +80,7 @@ done
 #echo "now we have following disk space:"
 #pan_df -h /work/scratch
 #pan_df -h /work/scratch-nompiio
-#pan_df -h /gws/nopw/j04/nceo_geohazards_vol1
-#pan_df -h /gws/nopw/j04/nceo_geohazards_vol2
+#pan_df -h /gws/ssde/j25a/nceo_geohazards/vol1
+#pan_df -h /gws/ssde/j25a/nceo_geohazards/vol2
 
 #done

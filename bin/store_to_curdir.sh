@@ -4,7 +4,7 @@ echo "2026/02: Disabling store script due to migration (you may secure your data
 echo ""
 exit
 
-#curdir=/gws/nopw/j04/nceo_geohazards_vol1/projects/LiCS/proc/current
+#curdir=/gws/ssde/j25a/nceo_geohazards/vol1/projects/LiCS/proc/current
 module load LiCSBAS
 source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 
@@ -28,8 +28,8 @@ function comparefiles() {
 
 
 #check for changed frame IDs
-framechanges=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/frameid_changes.txt
-list_added=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/updates/`date +'%Y%m%d'`.$frame.added
+framechanges=/gws/ssde/j25a/nceo_geohazards/vol1/public/LiCSAR_products/frameid_changes.txt
+list_added=/gws/ssde/j25a/nceo_geohazards/vol1/public/LiCSAR_products/updates/`date +'%Y%m%d'`.$frame.added
 if [ -f $list_added'.lock' ]; then
  numprevlines=`ls -al $list_added | gawk {'print $5'}`
  echo "the store process is locked, trying again in 5 seconds"
@@ -46,7 +46,7 @@ if [ -f $list_added'.lock' ]; then
  #else
    # if it is active, just create new outfile
    #numm=`ls $list_added.{0-9} 2>/dev/null | wc -l`
-   #list_added=/gws/nopw/j04/nceo_geohazards_vol1/public/LiCSAR_products/updates/`date +'%Y%m%d'`.$frame.added.$numm
+   #list_added=/gws/ssde/j25a/nceo_geohazards/vol1/public/LiCSAR_products/updates/`date +'%Y%m%d'`.$frame.added.$numm
    #touch $list_added'.lock'
    # but this would cause multiple writes... so cancelling instead
  #  echo "error, someone is storing the frame at this moment, please repeat a bit later"
@@ -94,7 +94,7 @@ if [ ! -z $4 ]; then if [ $4 -eq 0 ] || [ $4 -eq 1 ]; then DOGACOS=$4; echo "DOG
 #have to remove this line ASAP:
 #DELETEAFTER=0
 
-#for thisDir in /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/volc/frames; do
+#for thisDir in /gws/ssde/j25a/nceo_geohazards/vol2/LiCS/temp/volc /gws/ssde/j25a/nceo_geohazards/vol2/LiCS/temp/volc/frames; do
 #cd $thisDir
 #for frame in `ls [0-9]*_?????_?????? -d`; do
 #cd $frame
@@ -590,8 +590,8 @@ then
  echo "Deleting downloaded files (if any)"
  if [ -f $frame/$frame'_todown' ]; then
   for zipf in `cat $frame/$frame'_todown' | rev | cut -d '/' -f1 | rev`; do
-   if [ -f /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/SLC/$zipf ]; then
-    rm -f /gws/nopw/j04/nceo_geohazards_vol2/LiCS/temp/SLC/$zipf
+   if [ -f /gws/ssde/j25a/nceo_geohazards/vol2/LiCS/temp/SLC/$zipf ]; then
+    rm -f /gws/ssde/j25a/nceo_geohazards/vol2/LiCS/temp/SLC/$zipf
    fi
   done
  fi
