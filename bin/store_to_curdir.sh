@@ -1,9 +1,5 @@
 #!/bin/bash
 
-echo "2026/02: Disabling store script due to migration (you may secure your data by touchscratch \$BATCH_CACHE_DIR/\$frame - yes, please use full path)"
-echo ""
-exit
-
 #curdir=/gws/ssde/j25a/nceo_geohazards/vol1/projects/LiCS/proc/current
 module load LiCSBAS
 source $LiCSARpath/lib/LiCSAR_bash_lib.sh
