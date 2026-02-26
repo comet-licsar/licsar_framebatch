@@ -36,8 +36,9 @@ shift $((OPTIND -1))
 
 frame=$1
 if [ `echo $frame | cut -d '_' -f2` == 'SM' ]; then
-  echo "Stripmap - might not work ..better just rerun licsar_make_frame"
-  force=1
+  # echo "Stripmap - might not work ..better just rerun licsar_make_frame"
+  # force=1;
+  extracoregparms='-E'; # maybe not needed?
   #exit
 fi
 if [ ! -z $2 ]; then 
@@ -100,6 +101,7 @@ if [ $ignorezero -lt 1 ]; then
   if [ -f coreg_its/tmp_reprocess.slc.sorted.prev ]; then
     if [ `diff coreg_its/tmp_reprocess.slc.sorted coreg_its/tmp_reprocess.slc.sorted.prev | wc -l` -lt 1 ]; then
        echo "error - the previous iteration used exactly same data to process. you can still run manually deleting coreg_its first if you think the rerun would help"
+       ./framebatch_x_postcoreg_iteration.nowait.sh
        exit
     fi
   fi
@@ -303,7 +305,7 @@ if [ $autocont -eq 1 ]; then
 # if [ $x == $lastslc ]; then
   echo "setting the post-coreg iteration"
   if [ ! $diffprev == 0 ]; then   # so if there are still some SLCs left to coreg, run the iteration...
-  if [ $ignorezero == 1 ]; then extrac2='-E'; else extrac2=''; fi
+   if [ $ignorezero == 1 ]; then extrac2='-F'; else extrac2=''; fi
    echo "framebatch_postproc_coreg.sh "$extrac2 $frame" 1" > postproc_coreg.sh;
    #extraw='-Ep ./postproc_coreg.sh'
   else
