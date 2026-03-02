@@ -650,8 +650,17 @@ fi
 
 
 if [ $dobovl -eq 1 ]; then
- cp gapfill_job/tmp_ifg_all gapfill_job/tmp_bovl_todo
- for x in `ls GEOC/*/*.cc.tif 2>/dev/null | cut -d '/' -f2`; do
+ # cp gapfill_job/tmp_ifg_all gapfill_job/tmp_bovl_todo
+ rm gapfill_job/tmp_bovl_todo 2>/dev/null
+ # limiting bovls to up to 60 days...
+ for x in `cat gapfill_job/tmp_ifg_all`; do
+   m=`echo $x | cut -d '_' -f 1`;
+   s=`echo $x | cut -d '_' -f 2`;
+   if [ `datediff $m $s` -lt 61 ]; then
+     echo $x >> gapfill_job/tmp_bovl_todo
+   fi
+ done
+ for x in `cat gapfill_job/tmp_bovl_todo`; do
   if [ -f GEOC/$x/$x.geo.sbovldiff.adf.mm.tif ]; then
    sed -i '/'$x'/d' gapfill_job/tmp_bovl_todo
   fi
