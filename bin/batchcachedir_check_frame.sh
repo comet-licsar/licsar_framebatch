@@ -1,8 +1,9 @@
 #!/bin/bash
 PROC=0
-AUTODEL=0
+AUTODEL=1
 
-if [ $AUTODEL -lt 1 ]; then echo "FYI, this script will not delete the processed frame."; fi
+if [ $AUTODEL -lt 1 ]; then echo "FYI, this script will not delete the processed frame (unless you use third param set to 1)";
+  else echo "warning, the script will autodelete the frame if all looks ok and gets stored "; fi
 
 if [ -z $1 ]; then echo "set parameter - frame"; echo "if second parameter is 1, this script will perform reprocessing automatically";
  echo "third parameter is to set autodelete in case all is checked OK - it is set to 1 by default, so careful"; exit; fi

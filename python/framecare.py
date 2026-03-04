@@ -2034,7 +2034,7 @@ def post_init_frame(frame, volc_full_overlap=True):
     init_volcs_in_frame(frame, full_overlap=volc_full_overlap)
 """
 
-def delete_frame(frame):
+def delete_frame(frame, auto_reinit_subset = True):
     ''' This will delete given frame from LiCSAR system:
     - physically all data in LiCSAR_procdir and public
     - including from frames.csv files
@@ -2109,9 +2109,10 @@ def delete_frame(frame):
                     if len(framesok2) == 1:
                         # found frame to clip!
                         fr = framesok2[0]
-                        print('initialising subset with the (new) frame '+fr)
-                        subset_initialise_corners(fr, lon1, lon2, lat1, lat2, sid=str(clip), is_volc=is_volc,
-                                                     resol_m=resol_m)
+                        if auto_reinit_subset:
+                            print('initialising subset with the (new) frame '+fr)
+                            subset_initialise_corners(fr, lon1, lon2, lat1, lat2, sid=str(clip), is_volc=is_volc,
+                                                         resol_m=resol_m)
                     else:
                         print('no substitute frame found for the subset')
                 # now delete the clipath data
