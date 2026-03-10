@@ -37,6 +37,10 @@ except:
 pubdir = os.environ['LiCSAR_public']
 procdir = os.environ['LiCSAR_procdir']
 
+worldshape = '/gws/smf/j04/nceo_geohazards/software/GIS/ne_10m_land.shp'
+if not os.path.exists(worldshape):
+    print('warning, GIS layer worldshape does not exist - previews will be without background')
+    worldshape = None
 
 #'''
 # notes:
@@ -1180,8 +1184,9 @@ def vis_aoi(aoi):
     else:
         aoi_gpd = gpd.GeoDataFrame(index=[0], crs=crs, geometry=[aoi])
     # load world borders for background
-    world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
-    base = world.plot(color='lightgrey', edgecolor='white')
+    if worldshape:
+        world = gpd.read_file(worldshape)
+        base = world.plot(color='lightgrey', edgecolor='white')
     aoi_gpd.plot(ax=base, color='None', edgecolor='black')
     #aoi=aoi_gpd.iloc[-1].geometry
     #aoi2=aoi_gpd.iloc[2].geometry
