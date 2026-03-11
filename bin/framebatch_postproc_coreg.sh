@@ -76,7 +76,8 @@ fi
 mkdir -p coreg_its
 
 
-if [ `grep -c comet framebatch_02_coreg.nowait.sh` -gt 0 ]; then que='comet'; else que='short-serial'; fi
+# if [ `grep -c comet framebatch_02_coreg.nowait.sh` -gt 0 ]; then que='comet'; else que='short-serial'; fi
+que='short-serial'
 mstr=`get_master`
 # fix empty slc file
 m=$mstr
