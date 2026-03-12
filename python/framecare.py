@@ -1174,13 +1174,15 @@ def get_frame_master_s1ab(frame, metafile = None):
     return out
 
 
-def vis_aoi(aoi):
+def vis_aoi(aoi, show=True):
     """to visualize a polygon element ('aoi')
     Note: aoi might be a list of polygons, see subset_get_frames"""
     crs = {'init': 'epsg:4326'}
     if type(aoi)==list:
         aoi_gpd = gpd.GeoDataFrame(crs=crs, geometry=aoi)
         #for a in aoi:
+    elif type(aoi)==gpd.GeoDataFrame:
+        aoi_gpd = aoi
     else:
         aoi_gpd = gpd.GeoDataFrame(index=[0], crs=crs, geometry=[aoi])
     # load world borders for background
@@ -1198,7 +1200,10 @@ def vis_aoi(aoi):
     plt.xlim([bounds.minx.min()-2, bounds.maxx.max()+2])
     plt.ylim([bounds.miny.min()-2, bounds.maxy.max()+2])
     plt.grid(color='grey', linestyle='-', linewidth=0.2)
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        return plt
 
 
 def vis_bidtanxs(bidtanxs):
@@ -1218,7 +1223,7 @@ def vis_frame(frame):
 
 def vis_framelist(framelist):
     gfrs = get_frames_gpd(framelist)
-    gfrs.plot()
+    return vis_aoi(gfrs)
 
 
 def extract_bursts_by_track(bidtanxs, track):
