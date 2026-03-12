@@ -499,7 +499,7 @@ def link_ifg_to_job(ifgId,jobId):
     #update
     ifgUpd = ifg.update().where(ifg.c.ifg_id==ifgId).values(job_id=jobId)
     with engine.begin() as conn:
-        res = conn.execute(ifgcUpd)
+        res = conn.execute(ifgUpd)
     # conn.execute(ifgUpd)
     # conn.commit()
     # conn.close()
