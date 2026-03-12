@@ -214,7 +214,7 @@ def set_inactive(polyid):
     #conn.execute(jobDlt)
     #conn.commit()
     with engine.begin() as conn:
-        res = conn.execute(polyUpd)
+        a = conn.execute(polyUpd)
         res = conn.execute(acqDlt)
         res = conn.execute(slcDlt)
         res = conn.execute(rslcDlt)
