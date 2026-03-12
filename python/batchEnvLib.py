@@ -33,8 +33,8 @@ class InvalidFrameError(Exception):
 #Create Cache Dir
 ################################################################################
 def create_lics_cache_dir(frame,srcDir,cacheDir,masterDate=None):
-    trackPat = '^(?P<trk>\d+)[AD].*'
-    mstrDatePat = '(?P<dt>\d+)\.\w+$'
+    trackPat = r'^(?P<trk>\d+)[AD].*'
+    mstrDatePat = r'(?P<dt>\d+)\.\w+$'
     mtch = re.search(trackPat,frame)
     # If Frame name right format
     if mtch:

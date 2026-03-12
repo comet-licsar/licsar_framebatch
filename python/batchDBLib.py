@@ -121,15 +121,18 @@ def create_job(polyid,user,jobType):
     jobIns = jobs.insert().values(polyid=polyid,
                                     user=user,
                                     job_type=jobTypes[jobType])
-    conn = engine.connect()
-    sqlRes = conn.execute(jobIns)
+    # conn = engine.connect()
+    # sqlRes = conn.execute(jobIns)
     try:
-        res = sqlRes.inserted_primary_key[0]
-        conn.commit()
+        # res = sqlRes.inserted_primary_key[0]
+        # conn.commit()
+        with engine.begin() as conn:
+            res = conn.execute(jobIns)
+            res = res.inserted_primary_key[0]
     except:
         res = None
         print('error fetching sql result')
-    conn.close()
+    # conn.close()
     return res
 
 ################################################################################
@@ -143,6 +146,7 @@ def set_master(polyid,mstrDate):
     #check previous existing records over the polyid
     polycheckQry = select(polygs2master.c.polyid).where(polygs2master.c.polyid==polyid)
     polycheck = conn.execute(polycheckQry).fetchone()
+    conn.close()
     if polycheck:
         #Update polygon if there is already a master
         polyDo = polygs2master.update().where(polygs2master.c.polyid==polyid).values(master_img_id=mstrID)
@@ -150,26 +154,29 @@ def set_master(polyid,mstrDate):
         #Insert info about master and polygon
         polyDo = polygs2master.insert().values(polyid=polyid,master_img_id=mstrID)
     try:
-        res = conn.execute(polyDo)
-        conn.commit()
+        # res = conn.execute(polyDo)
+        # conn.commit()
+        with engine.begin() as conn:
+            res = conn.execute(polyDo)
     except:
         res = None
         print('error fetching sql result')
-    conn.close()
     return res
 
 ################################################################################
 def set_active(polyid):
-    conn = engine.connect()
+    # conn = engine.connect()
     #Update polygon
     polyUpd = polygs.update().where(polygs.c.polyid==polyid).values(active=True)
     try:
-        res = conn.execute(polyUpd)
-        conn.commit()
+        # res = conn.execute(polyUpd)
+        # conn.commit()
+        with engine.begin() as conn:
+            res = conn.execute(polyUpd)
     except:
         res = None
         print('error fetching sql result')
-    conn.close()
+    # conn.close()
     return res
 
 ################################################################################
@@ -182,31 +189,39 @@ def set_active(polyid):
 
 ################################################################################
 def set_inactive(polyid):
-    conn = engine.connect()
+    # conn = engine.connect()
     #Update polygon
     polyUpd = polygs.update().where(polygs.c.polyid==polyid).values(active=False)
-    a=conn.execute(polyUpd)
-    conn.commit()
+    #a=conn.execute(polyUpd)
+    #conn.commit()
     #but i will also remove the non-active data:
     acqDlt = acq_img.delete().where(acq_img.c.polyid==polyid)
-    conn.execute(acqDlt)
-    conn.commit()
+    #conn.execute(acqDlt)
+    #conn.commit()
     slcDlt = slc.delete().where(slc.c.polyid==polyid)
-    conn.execute(slcDlt)
-    conn.commit()
+    #conn.execute(slcDlt)
+    #conn.commit()
     rslcDlt = rslc.delete().where(rslc.c.polyid==polyid)
-    conn.execute(rslcDlt)
-    conn.commit()
+    #conn.execute(rslcDlt)
+    #conn.commit()
     ifgDlt = ifg.delete().where(ifg.c.polyid==polyid)
-    conn.execute(ifgDlt)
-    conn.commit()
+    #conn.execute(ifgDlt)
+    #conn.commit()
     unwDlt = unw.delete().where(unw.c.polyid==polyid)
-    conn.execute(unwDlt)
-    conn.commit()
+    #conn.execute(unwDlt)
+    #conn.commit()
     jobDlt = jobs.delete().where(jobs.c.polyid==polyid)
-    conn.execute(jobDlt)
-    conn.commit()
-    conn.close()
+    #conn.execute(jobDlt)
+    #conn.commit()
+    with engine.begin() as conn:
+        res = conn.execute(polyUpd)
+        res = conn.execute(acqDlt)
+        res = conn.execute(slcDlt)
+        res = conn.execute(rslcDlt)
+        res = conn.execute(ifgDlt)
+        res = conn.execute(unwDlt)
+        res = conn.execute(jobDlt)
+    # conn.close()
     return a
 
 ################################################################################
@@ -245,13 +260,13 @@ def get_user(frameName):
 ################################################################################
 def add_acq_images(polyid, startdate = None, enddate = None, masterdate = None):
     #startdate and enddate MUST be of type date!!!
-    conn = engine.connect()
     acq_dates = get_acq_dates(polyid)
-    
     #clean data in db
     imgDlt = acq_img.delete().where(acq_img.c.polyid==polyid)
-    conn.execute(imgDlt)
-    conn.commit()
+    # conn.execute(imgDlt)
+    # conn.commit()
+    with engine.begin() as conn:
+        res = conn.execute(imgDlt)
     if masterdate:
         masteracq = acq_dates[acq_dates['acq_date']==masterdate]
         if startdate:
@@ -279,7 +294,7 @@ def add_acq_images(polyid, startdate = None, enddate = None, masterdate = None):
             else:
                 todel = date2
             acq_dates = acq_dates[acq_dates['acq_date']!=todel]
-    
+    conn = engine.connect()
     #Rebuild
     polyidSrs = pd.Series(polyid,index=acq_dates.index,name='polyid')
     imgDtFrm = pd.concat([polyidSrs,acq_dates],axis=1)
@@ -295,13 +310,14 @@ def add_acq_images(polyid, startdate = None, enddate = None, masterdate = None):
 
 ################################################################################
 def create_slcs(polyid,imgDtFrm):
-    conn = engine.connect()
-
     #clean data
     slcDlt = slc.delete().where(slc.c.polyid==polyid)
-    conn.execute(slcDlt)
-    conn.commit()
+    # conn.execute(slcDlt)
+    # conn.commit()
+    with engine.begin() as conn:
+        res = conn.execute(slcDlt)
     #Rebuild
+    conn = engine.connect()
     polyidSrs = pd.Series(polyid,index=imgDtFrm.index,name='polyid')
     statSrs = pd.Series(-1,index=imgDtFrm.index,name='slc_status')
     slcDtFrm = pd.concat([polyidSrs,statSrs,imgDtFrm['img_id']],axis=1)
@@ -315,13 +331,14 @@ def create_slcs(polyid,imgDtFrm):
 
 ################################################################################
 def create_rslcs(polyid,imgDtFrm):
-    conn = engine.connect()
-
     #clean data
     rslcDlt = rslc.delete().where(rslc.c.polyid==polyid)
-    conn.execute(rslcDlt)
-    conn.commit()
+    #conn.execute(rslcDlt)
+    #conn.commit()
+    with engine.begin() as conn:
+        res = conn.execute(rslcDlt)
     #Rebuild
+    conn = engine.connect()
     polyidSrs = pd.Series(polyid,index=imgDtFrm.index,name='polyid')
     statSrs = pd.Series(-1,index=imgDtFrm.index,name='rslc_status')
     rslcDtFrm = pd.concat([polyidSrs,statSrs,imgDtFrm['img_id']],axis=1)
@@ -335,13 +352,12 @@ def create_rslcs(polyid,imgDtFrm):
 
 ################################################################################
 def create_ifgs(polyid,imgDtFrm):
-    conn = engine.connect()
-
     #clean data
     ifgDlt = ifg.delete().where(ifg.c.polyid==polyid)
-    conn.execute(ifgDlt)
-    conn.commit()
+    with engine.begin() as conn:
+        res = conn.execute(ifgDlt)
     #Rebuild
+    conn = engine.connect()
     imgDtFrm = imgDtFrm.sort_values('acq_date')
     imgSrsA = pd.concat( [
         imgDtFrm['img_id'].iloc[:-1],
@@ -370,13 +386,14 @@ def create_ifgs(polyid,imgDtFrm):
 
 ################################################################################
 def create_unws(polyid,imgDtFrm):
-    conn = engine.connect()
-
     #clean data
     unwDlt = unw.delete().where(unw.c.polyid==polyid)
-    conn.execute(unwDlt)
-    conn.commit()
+    #conn.execute(unwDlt)
+    #conn.commit()
+    with engine.begin() as conn:
+        res = conn.execute(unwDlt)
     #Rebuild
+    conn = engine.connect()
     imgDtFrm = imgDtFrm.sort_values('acq_date')
     imgSrsA = pd.concat( [
         imgDtFrm['img_id'].iloc[:-1],
@@ -405,12 +422,15 @@ def create_unws(polyid,imgDtFrm):
 
 ################################################################################
 def link_slc_to_job(slcId,jobId):
-    conn = engine.connect()
+    # conn = engine.connect()
     #update
     slcUpd = slc.update().where(slc.c.slc_id==slcId).values(job_id=jobId)
-    conn.execute(slcUpd)
-    conn.commit()
-    conn.close()
+    with engine.begin() as conn:
+        res = conn.execute(slcUpd)
+    # conn.execute(slcUpd)
+    # conn.commit()
+    # conn.close()
+
 
 def batch_link_slcs_to_new_jobs(polyid,user,slcIds,batchN):
     slcIds['bin'] = pd.cut(slcIds['slc_id'],batchN,labels=False)
@@ -425,12 +445,14 @@ def batch_link_slcs_to_new_jobs(polyid,user,slcIds,batchN):
 
 ################################################################################
 def link_rslc_to_job(rslcId,jobId):
-    conn = engine.connect()
+    # conn = engine.connect()
     #update
     rslcUpd = rslc.update().where(rslc.c.rslc_id==rslcId).values(job_id=jobId)
-    conn.execute(rslcUpd)
-    conn.commit()
-    conn.close()
+    with engine.begin() as conn:
+        res = conn.execute(rslcUpd)
+    #conn.execute(rslcUpd)
+    #conn.commit()
+    #conn.close()
 
 def batch_link_rslcs_to_new_jobs(polyid,user,rslcIds,batchN):
     maxperjob=15
@@ -473,12 +495,15 @@ def batch_link_rslcs_to_new_jobs_todo(polyid,user,rslcs_pd,batchN):
 
 ################################################################################
 def link_ifg_to_job(ifgId,jobId):
-    conn = engine.connect()
+    # conn = engine.connect()
     #update
     ifgUpd = ifg.update().where(ifg.c.ifg_id==ifgId).values(job_id=jobId)
-    conn.execute(ifgUpd)
-    conn.commit()
-    conn.close()
+    with engine.begin() as conn:
+        res = conn.execute(ifgcUpd)
+    # conn.execute(ifgUpd)
+    # conn.commit()
+    # conn.close()
+
 
 def batch_link_ifgs_to_new_jobs(polyid,user,ifgIds,batchN):
     ifgIds['bin'] = pd.cut(ifgIds['ifg_id'],batchN,labels=False)
@@ -489,12 +514,14 @@ def batch_link_ifgs_to_new_jobs(polyid,user,ifgIds,batchN):
 
 ################################################################################
 def link_unw_to_job(unwId,jobId):
-    conn = engine.connect()
+    # conn = engine.connect()
     #update
     unwUpd = unw.update().where(unw.c.unw_id==unwId).values(job_id=jobId)
-    conn.execute(unwUpd)
-    conn.commit()
-    conn.close()
+    with engine.begin() as conn:
+        res = conn.execute(unwUpd)
+    # conn.execute(unwUpd)
+    # conn.commit()
+    # conn.close()
 
 def batch_link_unws_to_new_jobs(polyid,user,unwIds,batchN):
     unwIds['bin'] = pd.cut(unwIds['unw_id'],batchN,labels=False)
@@ -889,21 +916,23 @@ def get_burst_no(frame,date):
 
 ################################################################################
 def set_slc_status(slcID,slcStat):
-    conn = engine.connect()
-    
+    # conn = engine.connect()
     slcUpd = slc.update().where(slc.c.slc_id==slcID).values(slc_status=slcStat)
-    conn.execute(slcUpd)
-    conn.commit()
-    conn.close()
+    with engine.begin() as conn:
+        res = conn.execute(slcUpd)
+    # conn.execute(slcUpd)
+    # conn.commit()
+    # conn.close()
 
 ################################################################################
 def set_rslc_status(rslcID,rslcStat):
-    conn = engine.connect()
-    
+    # conn = engine.connect()
     rslcUpd = rslc.update().where(rslc.c.rslc_id==rslcID).values(rslc_status=rslcStat)
-    conn.execute(rslcUpd)
-    conn.commit()
-    conn.close()
+    with engine.begin() as conn:
+        res = conn.execute(rslcUpd)
+    # conn.execute(rslcUpd)
+    # conn.commit()
+    # conn.close()
 
 def get_rslc_status(rslcID):
     conn = engine.connect()
@@ -923,48 +952,53 @@ def get_slc_status(slcID):
 
 ################################################################################
 def set_ifg_status(ifgID,ifgStat):
-    conn = engine.connect()
-    
+    # conn = engine.connect()
     ifgUpd = ifg.update().where(ifg.c.ifg_id==ifgID).values(ifg_status=ifgStat)
-    conn.execute(ifgUpd)
-    conn.commit()
-    conn.close()
+    with engine.begin() as conn:
+        res = conn.execute(ifgUpd)
+    # conn.execute(ifgUpd)
+    # conn.commit()
+    # conn.close()
 
 ################################################################################
 def set_unw_status(unwID,unwStat):
-    conn = engine.connect()
-    
+    # conn = engine.connect()
     unwUpd = unw.update().where(unw.c.unw_id==unwID).values(unw_status=unwStat)
-    conn.execute(unwUpd)
-    conn.commit()
-    conn.close()
+    with engine.begin() as conn:
+        res = conn.execute(unwUpd)
+    # conn.execute(unwUpd)
+    # conn.commit()
+    # conn.close()
 
 ################################################################################
 def set_unw_perc_unwrpd(unwID,unwPerc):
-    conn = engine.connect()
-    
+    # conn = engine.connect()
     unwUpd = unw.update().where(unw.c.unw_id==unwID).values(unw_perc=unwPerc)
-    conn.execute(unwUpd)
-    conn.commit()
-    conn.close()
+    with engine.begin() as conn:
+        res = conn.execute(unwUpd)
+    # conn.execute(unwUpd)
+    # conn.commit()
+    # conn.close()
 
 ################################################################################
 def set_job_started(jobID):
-    conn = engine.connect()
-    
+    # conn = engine.connect()
     jobUpd = jobs.update().where(jobs.c.job_id==jobID).values(job_status=2,time_started=dt.datetime.now())
-    conn.execute(jobUpd)
-    conn.commit()
-    conn.close()
+    with engine.begin() as conn:
+        res = conn.execute(jobUpd)
+    # conn.execute(jobUpd)
+    # conn.commit()
+    # conn.close()
 
 ################################################################################
 def set_job_finished(jobID,jobStat):
-    conn = engine.connect()
-    
+    # conn = engine.connect()
     jobUpd = jobs.update().where(jobs.c.job_id==jobID).values(job_status=jobStat,time_finished=dt.datetime.now())
-    conn.execute(jobUpd)
-    conn.commit()
-    conn.close()
+    with engine.begin() as conn:
+        res = conn.execute(jobUpd)
+    # conn.execute(jobUpd)
+    # conn.commit()
+    # conn.close()
 
 ################################################################################
 def get_job_status(jobID):
@@ -991,7 +1025,7 @@ def get_baseline(polyID):
 
 ################################################################################
 def set_baseline(polyid,baselineDataframe):
-    conn = engine.connect()
+    # conn = engine.connect()
     bsLnUpd = acq_img.update().\
             where(and_(
                 acq_img.c.polyid==polyid,
@@ -1000,6 +1034,9 @@ def set_baseline(polyid,baselineDataframe):
     baselineDataframe['Date']=baselineDataframe['Date'].map(
             lambda x: x.date())
     bsLnDict = baselineDataframe.to_dict(orient='records')
-    conn.execute(bsLnUpd,bsLnDict)
-    conn.commit()
-    conn.close()
+    with engine.begin() as conn:
+        res = conn.execute(bsLnUpd)
+        res = conn.execute(bsLnDict)
+    # conn.execute(bsLnUpd,bsLnDict)
+    # conn.commit()
+    # conn.close()
