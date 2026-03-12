@@ -74,8 +74,10 @@ def get_acq_dates(polyid):
                         onclause=files2bursts.c.bid==polygs2bursts.c.bid)
                 ).where(polygs2bursts.c.polyid==polyid)
     conn = engine.connect()
-    acqDats = pd.read_sql_query(acqDtSel,conn)
+    # acqDats = pd.read_sql_query(acqDtSel,conn)
+    result = conn.execute(acqDtSel)
     conn.close()
+    acqDats = pd.DataFrame(result.fetchall())
     acqDats.columns = ['acq_date']
     acqDats = acqDats.sort_values(by='acq_date')
     return acqDats
@@ -285,8 +287,10 @@ def add_acq_images(polyid, startdate = None, enddate = None, masterdate = None):
     imgQry = select(acq_img.c.img_id,acq_img.c.acq_date).select_from(
             acq_img.join(polygs,onclause=acq_img.c.polyid==polygs.c.polyid)).where(
         acq_img.c.polyid==polyid)
-    out = pd.read_sql_query(imgQry,conn)
+    # out = pd.read_sql_query(imgQry,conn)
+    result = conn.execute(imgQry)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
     return out
 
 ################################################################################
@@ -303,8 +307,10 @@ def create_slcs(polyid,imgDtFrm):
     slcDtFrm = pd.concat([polyidSrs,statSrs,imgDtFrm['img_id']],axis=1)
     slcDtFrm.to_sql('slc',engine,index=False,if_exists='append')
     slcQry = select(slc.c.slc_id).where(slc.c.polyid==polyid)
-    out = pd.read_sql_query(slcQry,conn)
+    # out = pd.read_sql_query(slcQry,conn)
+    result = conn.execute(slcQry)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
     return out
 
 ################################################################################
@@ -321,8 +327,10 @@ def create_rslcs(polyid,imgDtFrm):
     rslcDtFrm = pd.concat([polyidSrs,statSrs,imgDtFrm['img_id']],axis=1)
     rslcDtFrm.to_sql('rslc',engine,index=False,if_exists='append')
     rslcQry = select(rslc.c.rslc_id, rslc.c.img_id).where(rslc.c.polyid==polyid)
-    out = pd.read_sql_query(rslcQry,conn)
+    # out = pd.read_sql_query(rslcQry,conn)
+    result = conn.execute(rslcQry)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
     return out
 
 ################################################################################
@@ -354,8 +362,10 @@ def create_ifgs(polyid,imgDtFrm):
     ifgDtFrm = pd.concat([polyidSrs,statSrs,imgSrsA,imgSrsB],axis=1)
     ifgDtFrm.to_sql('ifg',engine,index=False,if_exists='append')
     ifgQry = select(ifg.c.ifg_id).where(ifg.c.polyid==polyid)
-    out = pd.read_sql_query(ifgQry,conn)
+    # out = pd.read_sql_query(ifgQry,conn)
+    result = conn.execute(ifgQry)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
     return out
 
 ################################################################################
@@ -387,8 +397,10 @@ def create_unws(polyid,imgDtFrm):
     unwDtFrm = pd.concat([polyidSrs,statSrs,imgSrsA,imgSrsB],axis=1)
     unwDtFrm.to_sql('unw',engine,index=False,if_exists='append')
     unwQry = select(unw.c.unw_id).where(unw.c.polyid==polyid)
-    out = pd.read_sql_query(unwQry,conn)
+    # out = pd.read_sql_query(unwQry,conn)
+    result = conn.execute(unwQry)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
     return out
 
 ################################################################################
@@ -499,8 +511,11 @@ def get_unbuilt_slcs(jobID):
             ).where(and_(slc.c.job_id==jobID,slc.c.slc_status!=0,
                 slc.c.slc_status!=-6))
     conn = engine.connect()
-    out = pd.read_sql_query(slcSel,conn,parse_dates=['acq_date'])
+    # out = pd.read_sql_query(slcSel,conn,parse_dates=['acq_date'])
+    result = conn.execute(slcSel)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
+    out['acq_date'] = pd.to_datetime(out['acq_date'])
     return out
 
 ################################################################################
@@ -512,8 +527,11 @@ def get_unreq_slcs(polyID):
             ).where(and_(slc.c.polyid==polyID,slc.c.slc_status==0,
                 rslc.c.rslc_status==0))
     conn = engine.connect()
-    out = pd.read_sql_query(slcSel,conn,parse_dates=['acq_date'])
+    # out = pd.read_sql_query(slcSel,conn,parse_dates=['acq_date'])
+    result = conn.execute(slcSel)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
+    out['acq_date'] = pd.to_datetime(out['acq_date'])
     return out
 
 ################################################################################
@@ -525,8 +543,11 @@ def get_unreq_slc_on_date(polyID,date):
             ).where(and_(slc.c.polyid==polyID,slc.c.slc_status==0,
                 rslc.c.rslc_status==0,func.date(acq_img.c.acq_date)==date.date()))
     conn = engine.connect()
-    out = pd.read_sql_query(slcSel,conn,parse_dates=['acq_date'])
+    # out = pd.read_sql_query(slcSel,conn,parse_dates=['acq_date'])
+    result = conn.execute(slcSel)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
+    out['acq_date'] = pd.to_datetime(out['acq_date'])
     return out
 
 ################################################################################
@@ -538,8 +559,11 @@ def get_unbuilt_rslcs(jobID):
             ).where(and_(rslc.c.job_id==jobID,rslc.c.rslc_status!=0,
                 rslc.c.rslc_status!=-6,slc.c.slc_status==0))
     conn = engine.connect()
-    out = pd.read_sql_query(rslcSel,conn,parse_dates=['acq_date'])
+    # out = pd.read_sql_query(rslcSel,conn,parse_dates=['acq_date'])
+    result = conn.execute(rslcSel)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
+    out['acq_date'] = pd.to_datetime(out['acq_date'])
     return out
 
 def get_all_slcs(polyid):
@@ -548,8 +572,11 @@ def get_all_slcs(polyid):
             slc.join(acq_img,onclause=acq_img.c.img_id==slc.c.img_id)\
             ).where(slc.c.polyid==polyid)
     conn = engine.connect()
-    out = pd.read_sql_query(slcSel,conn,parse_dates=['acq_date'])
+    # out = pd.read_sql_query(slcSel,conn,parse_dates=['acq_date'])
+    result = conn.execute(slcSel)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
+    out['acq_date'] = pd.to_datetime(out['acq_date'])
     return out
 
 def get_all_rslcs(polyid):
@@ -558,8 +585,11 @@ def get_all_rslcs(polyid):
             rslc.join(acq_img,onclause=acq_img.c.img_id==rslc.c.img_id)\
             ).where(rslc.c.polyid==polyid)
     conn = engine.connect()
-    out = pd.read_sql_query(rslcSel,conn,parse_dates=['acq_date'])
+    # out = pd.read_sql_query(rslcSel,conn,parse_dates=['acq_date'])
+    result = conn.execute(rslcSel)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
+    out['acq_date'] = pd.to_datetime(out['acq_date'])
     return out
 
 def get_all_ifgs(polyid):
@@ -577,8 +607,12 @@ def get_all_ifgs(polyid):
             #and_(ifg.c.job_id==jobID,ifg.c.ifg_status!=0,
             #     rslcA.c.rslc_status==0,rslcB.c.rslc_status==0))
     conn = engine.connect()
-    out = pd.read_sql_query(ifgSel,conn,parse_dates=['acq_date_1','acq_date_2'])
+    # out = pd.read_sql_query(ifgSel,conn,parse_dates=['acq_date_1','acq_date_2'])
+    result = conn.execute(ifgSel)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
+    out['acq_date_1'] = pd.to_datetime(out['acq_date_1'])
+    out['acq_date_2'] = pd.to_datetime(out['acq_date_2'])
     return out
 
 def get_all_unws(polyid):
@@ -596,8 +630,12 @@ def get_all_unws(polyid):
             #and_(ifg.c.job_id==jobID,ifg.c.ifg_status!=0,
             #     rslcA.c.rslc_status==0,rslcB.c.rslc_status==0))
     conn = engine.connect()
-    out = pd.read_sql_query(unwSel,conn,parse_dates=['acq_date_1','acq_date_2'])
+    # ut = pd.read_sql_query(unwSel,conn,parse_dates=['acq_date_1','acq_date_2'])
+    result = conn.execute(unwSel)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
+    out['acq_date_1'] = pd.to_datetime(out['acq_date_1'])
+    out['acq_date_2'] = pd.to_datetime(out['acq_date_2'])
     return out
 
 ################################################################################
@@ -608,8 +646,11 @@ def get_built_rslcs(polyid):
             .join(slc,onclause=slc.c.img_id==rslc.c.img_id)
             ).where(and_(rslc.c.polyid==polyid,rslc.c.rslc_status==0))
     conn = engine.connect()
-    out = pd.read_sql_query(rslcSel,conn,parse_dates=['acq_date'])
+    # out = pd.read_sql_query(rslcSel,conn,parse_dates=['acq_date'])
+    result = conn.execute(rslcSel)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
+    out['acq_date'] = pd.to_datetime(out['acq_date'])
     return out
 
 ################################################################################
@@ -624,8 +665,11 @@ def get_unreq_rslcs(polyID):
             ).where(and_(rslc.c.polyid==polyID,rslc.c.rslc_status==0,
                 ifgA.c.ifg_status==0,ifgB.c.ifg_status==0))
     conn = engine.connect()
-    out = pd.read_sql_query(rslcSel,conn,parse_dates=['acq_date'])
+    # out = pd.read_sql_query(rslcSel,conn,parse_dates=['acq_date'])
+    result = conn.execute(rslcSel)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
+    out['acq_date'] = pd.to_datetime(out['acq_date'])
     return out
 
 ################################################################################
@@ -652,8 +696,12 @@ def get_unbuilt_ifgs(jobID):
             .join(rslcB,onclause=rslcB.c.img_id==ifg.c.img_id_2)
             ).where(and_(ifg.c.job_id==jobID,ifg.c.ifg_status!=0))
     conn = engine.connect()
-    out = pd.read_sql_query(ifgSel,conn,parse_dates=['acq_date_1','acq_date_2'])
+    # out = pd.read_sql_query(ifgSel,conn,parse_dates=['acq_date_1','acq_date_2'])
+    result = conn.execute(ifgSel)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
+    out['acq_date_1'] = pd.to_datetime(out['acq_date_1'])
+    out['acq_date_2'] = pd.to_datetime(out['acq_date_2'])
     return out
 
 ################################################################################
@@ -679,8 +727,12 @@ def get_unbuilt_unws(jobID):
                     ifg.c.img_id_2==unw.c.img_id_2))
             ).where(and_(unw.c.job_id==jobID,unw.c.unw_status!=0))
     conn = engine.connect()
-    out = pd.read_sql_query(unwSel,conn,parse_dates=['acq_date_1','acq_date_2'])
+    # out = pd.read_sql_query(unwSel,conn,parse_dates=['acq_date_1','acq_date_2'])
+    result = conn.execute(unwSel)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
+    out['acq_date_1'] = pd.to_datetime(out['acq_date_1'])
+    out['acq_date_2'] = pd.to_datetime(out['acq_date_2'])
     return out
 
 ################################################################################
@@ -697,8 +749,12 @@ def get_built_unws(polyID):
                     ifg.c.img_id_2==unw.c.img_id_2))
             ).where(and_(unw.c.polyid==polyID,unw.c.unw_status==0))
     conn = engine.connect()
-    out = pd.read_sql_query(unwSel,conn,parse_dates=['acq_date_1','acq_date_2'])
+    # out = pd.read_sql_query(unwSel,conn,parse_dates=['acq_date_1','acq_date_2'])
+    result = conn.execute(unwSel)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
+    out['acq_date_1'] = pd.to_datetime(out['acq_date_1'])
+    out['acq_date_2'] = pd.to_datetime(out['acq_date_2'])
     return out
 
 ################################################################################
@@ -927,8 +983,10 @@ def get_baseline(polyID):
                 acq_img.c.bperp!=None
                 ))
     conn = engine.connect()
-    out = pd.read_sql_query(bsLnSel,conn)
+    # out = pd.read_sql_query(bsLnSel,conn)
+    result = conn.execute(bsLnSel)
     conn.close()
+    out = pd.DataFrame(result.fetchall())
     return out
 
 ################################################################################
