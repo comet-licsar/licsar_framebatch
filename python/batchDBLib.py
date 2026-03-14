@@ -30,7 +30,8 @@ engine = create_engine(
         ),
     poolclass=NullPool,
     #connect_args={'connect_timeout': 60*60*24},  # using 24 hours timeout - coreg may take so long. still weird, as i close and reopen connection, but.. ok.. whatever
-    pool_pre_ping=True
+    pool_pre_ping=True,
+    future=True
     )
 
 ################################################################################
@@ -294,15 +295,16 @@ def add_acq_images(polyid, startdate = None, enddate = None, masterdate = None):
             else:
                 todel = date2
             acq_dates = acq_dates[acq_dates['acq_date']!=todel]
-    conn = engine.connect()
     #Rebuild
     polyidSrs = pd.Series(polyid,index=acq_dates.index,name='polyid')
     imgDtFrm = pd.concat([polyidSrs,acq_dates],axis=1)
-    imgDtFrm.to_sql('acq_img',engine,index=False,if_exists='append')
+    with engine.begin() as conn:
+        imgDtFrm.to_sql('acq_img', conn, index=False, if_exists='append')
     imgQry = select(acq_img.c.img_id,acq_img.c.acq_date).select_from(
             acq_img.join(polygs,onclause=acq_img.c.polyid==polygs.c.polyid)).where(
         acq_img.c.polyid==polyid)
     # out = pd.read_sql_query(imgQry,conn)
+    conn = engine.connect()
     result = conn.execute(imgQry)
     conn.close()
     out = pd.DataFrame(result.fetchall())
@@ -317,11 +319,13 @@ def create_slcs(polyid,imgDtFrm):
     with engine.begin() as conn:
         res = conn.execute(slcDlt)
     #Rebuild
-    conn = engine.connect()
+    # conn = engine.connect()
     polyidSrs = pd.Series(polyid,index=imgDtFrm.index,name='polyid')
     statSrs = pd.Series(-1,index=imgDtFrm.index,name='slc_status')
     slcDtFrm = pd.concat([polyidSrs,statSrs,imgDtFrm['img_id']],axis=1)
-    slcDtFrm.to_sql('slc',engine,index=False,if_exists='append')
+    with engine.begin() as conn:
+        slcDtFrm.to_sql('slc',conn,index=False,if_exists='append')
+    conn = engine.connect()
     slcQry = select(slc.c.slc_id).where(slc.c.polyid==polyid)
     # out = pd.read_sql_query(slcQry,conn)
     result = conn.execute(slcQry)
@@ -338,11 +342,13 @@ def create_rslcs(polyid,imgDtFrm):
     with engine.begin() as conn:
         res = conn.execute(rslcDlt)
     #Rebuild
-    conn = engine.connect()
+    #conn = engine.connect()
     polyidSrs = pd.Series(polyid,index=imgDtFrm.index,name='polyid')
     statSrs = pd.Series(-1,index=imgDtFrm.index,name='rslc_status')
     rslcDtFrm = pd.concat([polyidSrs,statSrs,imgDtFrm['img_id']],axis=1)
-    rslcDtFrm.to_sql('rslc',engine,index=False,if_exists='append')
+    with engine.begin() as conn:
+        rslcDtFrm.to_sql('rslc',conn,index=False,if_exists='append')
+    conn = engine.connect()
     rslcQry = select(rslc.c.rslc_id, rslc.c.img_id).where(rslc.c.polyid==polyid)
     # out = pd.read_sql_query(rslcQry,conn)
     result = conn.execute(rslcQry)
@@ -357,7 +363,7 @@ def create_ifgs(polyid,imgDtFrm):
     with engine.begin() as conn:
         res = conn.execute(ifgDlt)
     #Rebuild
-    conn = engine.connect()
+    #
     imgDtFrm = imgDtFrm.sort_values('acq_date')
     imgSrsA = pd.concat( [
         imgDtFrm['img_id'].iloc[:-1],
@@ -376,7 +382,9 @@ def create_ifgs(polyid,imgDtFrm):
     polyidSrs = pd.Series(polyid,index=imgSrsA.index,name='polyid')
     statSrs = pd.Series(-1,index=imgSrsA.index,name='ifg_status')
     ifgDtFrm = pd.concat([polyidSrs,statSrs,imgSrsA,imgSrsB],axis=1)
-    ifgDtFrm.to_sql('ifg',engine,index=False,if_exists='append')
+    with engine.begin() as conn:
+        ifgDtFrm.to_sql('ifg',conn,index=False,if_exists='append')
+    conn = engine.connect()
     ifgQry = select(ifg.c.ifg_id).where(ifg.c.polyid==polyid)
     # out = pd.read_sql_query(ifgQry,conn)
     result = conn.execute(ifgQry)
@@ -393,7 +401,7 @@ def create_unws(polyid,imgDtFrm):
     with engine.begin() as conn:
         res = conn.execute(unwDlt)
     #Rebuild
-    conn = engine.connect()
+    #conn = engine.connect()
     imgDtFrm = imgDtFrm.sort_values('acq_date')
     imgSrsA = pd.concat( [
         imgDtFrm['img_id'].iloc[:-1],
@@ -412,7 +420,9 @@ def create_unws(polyid,imgDtFrm):
     polyidSrs = pd.Series(polyid,index=imgSrsA.index,name='polyid')
     statSrs = pd.Series(-1,index=imgSrsA.index,name='unw_status')
     unwDtFrm = pd.concat([polyidSrs,statSrs,imgSrsA,imgSrsB],axis=1)
-    unwDtFrm.to_sql('unw',engine,index=False,if_exists='append')
+    with engine.begin() as conn:
+        unwDtFrm.to_sql('unw',conn,index=False,if_exists='append')
+    conn = engine.connect()
     unwQry = select(unw.c.unw_id).where(unw.c.polyid==polyid)
     # out = pd.read_sql_query(unwQry,conn)
     result = conn.execute(unwQry)
