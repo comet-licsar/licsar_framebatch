@@ -351,14 +351,14 @@ cat << EOF > getit.py
 import pandas as pd
 from batchDBLib import engine
 from configLib import config
-# from sqlalchemy import text
+from sqlalchemy import text
 sqlPath = config.get('Config','SQLPath')
 QryFile = open(sqlPath+'/$stepsql.sql','r')
 if QryFile:
     Qry = QryFile.read()
     Qry = Qry.split('WHERE')[0]+'WHERE polygs.polyid_name = "$frame" and jobs.user = "$USER" and polygs.active = TRUE;'
     with engine.connect() as conn:
-        result = conn.execute(Qry)
+        result = conn.execute(text(Qry))
     DatFrm = pd.DataFrame(result.fetchall())
     #
     # DatFrm = DatFrm.query('Frame == "$frame" and User == "$USER"')
