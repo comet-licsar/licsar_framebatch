@@ -216,8 +216,9 @@ if slcids.slc_id.count():
             set_slc_status(slcID,0)
 
 #reingesting the master here
-ifgs = create_ifgs(polyid,acq_imgs.append(mstrline))
-unws = create_unws(polyid,acq_imgs.append(mstrline))
+acq_imgs_with_m = pd.concat([acq_imgs, mstrline], ignore_index=True)
+ifgs = create_ifgs(polyid,acq_imgs_with_m)
+unws = create_unws(polyid,acq_imgs_with_m)
 
 print('Getting existing interferograms from LiCS database')
 try:
