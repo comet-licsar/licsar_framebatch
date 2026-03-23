@@ -4,7 +4,7 @@ PROCESSING=1
 #should we process till now or use safe 21 days delay ?
 tillnow=0
 #tolerance of days to either only autodownload or use nla + waiting
-DAYSTOLERANCE=61
+DAYSTOLERANCE=6 #1  # but JASMIN stopped getting S1 data since mid-2025...
 extra=""
 trynla=1
 #DAYSTOLERANCE=961
