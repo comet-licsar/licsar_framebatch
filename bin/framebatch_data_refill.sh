@@ -167,8 +167,8 @@ touch ${frame}_db_query.list 2>/dev/null
  echo "*******"
 #fi
 echo "checking existence of identified files"
-cp ${frame}_db_query.list.todown $frame'_todown' 2>/dev/null
- for fl in `cat ${frame}_db_query.list ${frame}_db_query.list.notrequested 2>/dev/null | sort -u `; do
+cp ${frame}_db_query.list.todown $frame'_todown' # 2>/dev/null
+ for fl in `cat ${frame}_db_query.list ${frame}_db_query.list.notrequested | sort -u `; do
    if [ ! -f $fl ]; then echo $fl >> $frame'_todown'; fi;
  done
  #sort -o ${frame}_db_query2.list ${frame}_db_query.list
@@ -176,8 +176,8 @@ cp ${frame}_db_query.list.todown $frame'_todown' 2>/dev/null
  # diff  ${frame}_scihub.list ${frame}_db_query.list | grep '^<' | cut -c 3- > ${frame}_todown
  echo "There are "`cat ${frame}_todown | wc -l`" extra images, not currently existing on CEMS (neodc) disk"
 # checking if the files from scihub exist in RSLC or SLC folders..
-rm tmp_processed.txt 2>/dev/null
-rm tmp_existing.txt 2>/dev/null
+rm -f tmp_processed.txt # 2>/dev/null
+rm -f tmp_existing.txt # 2>/dev/null
 pom=0
 for rslcdir in RSLC SLC $curdir/$tr/$frame/RSLC; do
  if [ -d $rslcdir ]; then
@@ -192,7 +192,7 @@ for rslcdir in RSLC SLC $curdir/$tr/$frame/RSLC; do
  fi
 done
 if [ $pom -eq 1 ]; then
- cp tmp_processed.txt tmp_tmp; sort -u tmp_tmp > tmp_processed.txt; rm tmp_tmp
+ cp tmp_processed.txt tmp_tmp; sort -u tmp_tmp > tmp_processed.txt; rm -f tmp_tmp
  #cp tmp_existing.txt tmp_tmp; sort -u tmp_tmp > tmp_existing.txt; rm tmp_tmp
  #if [ -d geo ]; then
  # master=`ls geo/20??????.hgt | cut -d '/' -f2 | cut -d '.' -f1`
