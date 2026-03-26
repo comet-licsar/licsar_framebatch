@@ -32,6 +32,7 @@ if [ -z $2 ]; then
  echo "optional parameter -c: will do only check if data are ingested in licsar db"
  echo "optional parameter -A: will not check for max number of images to download: max number is "$MAXIMAGES
  echo "optional temporary parameter -f: will try CDSE when needed. By default use only ASF since CDSE was ultra slow"
+ echo "03/2026 - now use always since ASF seems lacking S1D data. Please make sure you have ~/.cdse_credentials"
  exit
 fi
 
@@ -46,8 +47,8 @@ while getopts ":cAf" option; do
       echo "overriding check for max images";
       #shift
       ;;
-  f ) trycdse=1;
-      use_cdse=1;
+  f ) trycdse=1;  # this will enable cdse if credentials exist
+      use_cdse=1;  # this should be not set if using trycdse...
       echo "overriding CDSE blocker. Download might take long";
       #shift
       ;;
@@ -66,12 +67,16 @@ else
  enddate=`date -d 'tomorrow' +'%Y-%m-%d'`;
 fi
 
+# enabling CDSE for 2025+ data (S1C)
+if [ `echo $enddate | cut -d '-' -f 1` -gt 2024 ]; then use_cdse=1; trycdse=1; fi
 # setting CDSE for dates since 'yesterday' including (should be enough?... ok, setting also day before)
  if [ `datediff $enddate` -lt 3 ]; then
  #if [ `date -d $enddate +'%Y%m%d'` -gt `date +'%Y%m%d'` ]; then enddate=`date +'%Y-%m-%d'`; fi
  #if [ $enddate == `date +'%Y-%m-%d'` ] || [ `date -d $enddate +'%Y%m%d'` -gt `date +'%Y%m%d'` ] || [ $enddate == `date -d 'tomorrow' +'%Y-%m-%d'` ] || [ $enddate == `date -d 'yesterday' +'%Y-%m-%d'` ]; then
   if [ $trycdse == 1 ]; then
-    if [ -f ~/.cdse_credentials ]; then use_cdse=1; echo "using CDSE"; fi
+    if [ -f ~/.cdse_credentials ]; then use_cdse=1; echo "using CDSE"; else
+        echo "WARNING - CDSE credentials do not exist - please create your ~/.cdse_credentials";
+        echo "check comet-licsar.github.io New User or contact Milan"; fi
   else
     echo "WARNING - issues with CDSE download speed - not using CDSE but WE SHOULD HERE. Temporary solution. To force CDSE, rerun framebatch_data_refill.sh with -f"
   fi
