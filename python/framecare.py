@@ -143,7 +143,9 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True, return_alphas = 
         except:
             print('error getting first_common_time for epoch '+e+'. Setting to 0 and skipping.')
             Bperps.append(0)
-            central_etimes.append(np.nan)
+            central_etimes.append(epochtime)
+            if return_alphas:
+                alphas.append(0)
             continue
         epdbt = (int(eb.split('_')[-1]) - int(
             pb.split('_')[-1])) * 0.1  # difference in seconds from first prime (frame) burst. Coarse info!
