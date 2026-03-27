@@ -157,7 +157,9 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True, return_alphas = 
             except:
                 print('... this also did not work. Skipping')
                 Bperps.append(0)
-                central_etimes.append(np.nan)
+                central_etimes.append(epochtime)
+                if return_alphas:
+                    alphas.append(0)
                 continue
         eorbitxr = load_eof(eorbit)
         #
