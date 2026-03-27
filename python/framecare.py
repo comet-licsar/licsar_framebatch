@@ -172,7 +172,15 @@ def estimate_bperps(frame, epochs = None, return_epochsdt=True, return_alphas = 
         #
         # same for epochtime
         # eloc = get_coords_in_time(eorbitxr, epochtime, method='cubic', return_as_nv = True)
-        eloc, etime = get_satpos_observing_point(eorbitxr, ecp, epochtime)
+        try:
+            eloc, etime = get_satpos_observing_point(eorbitxr, ecp, epochtime)
+        except:
+            print('error getting location and time for '+str(epochtime)+'. Setting zeroes')
+            Bperps.append(0)
+            central_etimes.append(epochtime)
+            if return_alphas:
+                alphas.append(0)
+            continue
         # print(eloc, etime)
         #
         # calculate Bperp (based on doris manual, and some own thinking)
