@@ -192,8 +192,15 @@ for x in `cat coreg_its/tmp_reprocess.slc.sorted`; do
  if [ -f LUT/$x/$mstr'_'$x.slc.mli.lt ]; then
    doit=1;
  elif [ -f $LiCSAR_procdir/$track/$frame/LUT/$x.7z ]; then
-   mkdir -p LUT; cd LUT; rm -r $x 2>/dev/null
-   7za x $LiCSAR_procdir/$track/$frame/LUT/$x.7z 2>/dev/null
+   mkdir -p LUT; rm -r LUT/$x 2>/dev/null
+   if [ -d LUT ]; then
+    cd LUT
+    7za x $LiCSAR_procdir/$track/$frame/LUT/$x.7z 2>/dev/null
+    cd ..
+   else
+     echo "WARNING - seems we cannot write to this folder - cancelling"
+     exit
+   fi
     if [ -f LUT/$x/$mstr'_'$x.slc.mli.lt ]; then doit=1;
       else echo "WARNING - seems like some wrong LUT for epoch "$x; rm -r $x 2>/dev/null
     fi
