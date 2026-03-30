@@ -189,6 +189,15 @@ maxj=0
 
 for x in `cat coreg_its/tmp_reprocess.slc.sorted`; do
  doit=0
+ if [ -f LUT/$x/$mstr'_'$x.slc.mli.lt ]; then
+   doit=1;
+ elif [ -f $LiCSAR_procdir/$track/$frame/LUT/$x.7z ]; then
+   mkdir -p LUT; cd LUT; rm -r $x 2>/dev/null
+   7za x $LiCSAR_procdir/$track/$frame/LUT/$x.7z 2>/dev/null
+    if [ -f LUT/$x/$mstr'_'$x.slc.mli.lt ]; then doit=1;
+      else echo "WARNING - seems like some wrong LUT for epoch "$x; rm -r $x 2>/dev/null
+    fi
+ fi;
  if [ $force == 0 ]; then
   cp coreg_its/tmp.rslc coreg_its/tmp.rslc.tmp
   echo $x >> coreg_its/tmp.rslc.tmp
