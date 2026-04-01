@@ -1915,8 +1915,9 @@ def get_frames_from_txtfile(txtfile):
     for frame in frames:
         a = frame2geopandas(frame)
         if type(a) != type(None):
-            framesgpd = framesgpd.append(a)
+            framesgpd = pd.concat([framesgpd, a])  #framesgpd.append(a)
     framesgpd = framesgpd.set_geometry('geometry')
+    framesgpd = framesgpd.reset_index(drop=True)
     return framesgpd
 
 
@@ -1940,7 +1941,7 @@ def get_all_frames(only_initialised = False, merge = False):
                     continue
             a = frame2geopandas(frame)
             if type(a) != type(None):
-                desc_gpd = desc_gpd.append(a)
+                desc_gpd = pd.concat([desc_gpd, a]) #desc_gpd.append(a)
         #ascending
         frames = lq.get_frames_in_orbit(i, 'A')
         frames = lq.sqlout2list(frames)
@@ -1950,11 +1951,11 @@ def get_all_frames(only_initialised = False, merge = False):
                     continue
             a = frame2geopandas(frame)
             if type(a) != type(None):
-                asc_gpd = asc_gpd.append(a)
+                asc_gpd = pd.concat([asc_gpd, a])  #asc_gpd.append(a)
     asc_gpd = asc_gpd.set_geometry('geometry')
     desc_gpd = desc_gpd.set_geometry('geometry')
     if merge:
-        framesgpd = asc_gpd.append(desc_gpd)
+        framesgpd = pd.concat([asc_gpd, desc_gpd])  #asc_gpd.append(desc_gpd)
         framesgpd = framesgpd.reset_index(drop=True)
         return framesgpd
     else:
