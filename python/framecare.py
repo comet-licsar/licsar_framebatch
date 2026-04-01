@@ -1520,8 +1520,11 @@ def store_frame_geometry(framesgpd):
         res = lq.store_frame_geometry(framename, geom)
     return res
 
+
 def export_geopandas_to_kml(gpan, outfile):
-    gpan.to_file(outfile, driver='KML', NameField='frameID')
+    gpan = gpan.rename(columns={"frameID":"Name"})
+    gpan.to_file(outfile, driver='KML') #, NameField='frameID')
+
 
 def add_bursts_along_track(frame, upbids = [0, 0, 0], downbids = [0, 0, 0]):
     '''Will find bursts along the track and add to the list of bursts (bidtanx IDs) for given frame. Relorb number change not implemented!
