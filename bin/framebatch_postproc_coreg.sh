@@ -249,6 +249,7 @@ for x in `cat coreg_its/tmp_reprocess.slc.sorted`; do
   echo "ln -s RSLC/"$mstr"/"$mstr".rslc.mli "$mstr".rmli" >> coreg_its/coreg.$x.sh
   echo "ln -s RSLC/"$mstr"/"$mstr".rslc.mli.par "$mstr".rmli.par" >> coreg_its/coreg.$x.sh
   echo "ln -s "`pwd`"/geo" >> coreg_its/coreg.$x.sh
+  echo "ln -s "`pwd`"/LUT" >> coreg_its/coreg.$x.sh
   echo "time OMP_NUM_THREADS=1 LiCSAR_02_coreg.py -f "$frame" -d . -m "$mstr" -i -k -l "`pwd`"/coreg_its/coreg."$x $extracoregparms >> coreg_its/coreg.$x.sh
   echo "rm RSLC/"$x"/$x.lock 2>/dev/null" >> coreg_its/coreg.$x.sh
   echo "rmdir RSLC/"$x" 2>/dev/null" >> coreg_its/coreg.$x.sh
