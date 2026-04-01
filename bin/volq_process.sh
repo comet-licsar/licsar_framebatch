@@ -167,6 +167,7 @@ for subfr in `ls $vidpath`; do
   fi
   chmod 777 $procpath/l2l.sh
   subset_mk_ifgs.sh $extra -s $procpath/l2l.sh -N $vidpath/$subfr $sdate $edate
+  echo "subset_mk_ifgs.sh $extra -s $procpath/l2l.sh -N $vidpath/$subfr $sdate $edate" > $procpath/cmds.history
   cd -
   # subset_mk_ifgs.sh $extra $vidpath/$subfr
 done

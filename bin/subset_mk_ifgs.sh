@@ -4,8 +4,8 @@
 # just run in the subsets dir
 
 if [ -z $1 ]; then
- echo "Usage e.g.: subset_mk_ifgs.sh [-P] [-s foo.sh] [-i ifgs.list] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [startdate] [enddate]"
- echo "parameter -P will run through comet queue"
+ echo "Usage e.g.: subset_mk_ifgs.sh [-s foo.sh] [-i ifgs.list] $LiCSAR_procdir/subsets/Levee_Ramsey/165A [startdate] [enddate]"
+ # echo "parameter -P will run through comet queue"
  echo "parameter -s foo.sh .. will run foo.sh script after end of generation of ifgs"
  echo "parameter -N will skip standard unwrapping (useful if reunw is planned)"
  echo "parameter -R will add rg offset tracking to processing"
