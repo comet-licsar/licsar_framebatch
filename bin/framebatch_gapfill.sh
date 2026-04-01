@@ -650,13 +650,17 @@ fi
 
 
 if [ $dobovl -eq 1 ]; then
+ rm gapfill_job/tmp_rslcs2soi 2>/dev/null
  sort -u gapfill_job/tmp_ifg_all -o gapfill_job/tmp_bovl_todo
  for x in `ls GEOC/*/*.cc.tif 2>/dev/null | cut -d '/' -f2`; do
   if [ -f GEOC/$x/$x.geo.sbovldiff.adf.mm.tif ]; then
    sed -i '/'$x'/d' gapfill_job/tmp_bovl_todo
   fi
  done
- for x in `cat gapfill_job/tmp_bovl_todo | sed 's/_/ /'`; do echo $x >> gapfill_job/tmp_rslcs2copy; done
+ for x in `cat gapfill_job/tmp_bovl_todo | sed 's/_/ /'`; do
+   echo $x >> gapfill_job/tmp_rslcs2copy;
+   echo $x >> gapfill_job/tmp_rslcs2soi;
+ done
 fi
 
 
@@ -679,7 +683,16 @@ sed 's/_/ /' gapfill_job/tmp_ifg_all > gapfill_job/tmp_ifg_todo
 
 #rm gapfill_job/tmp_rslcs2copy 2>/dev/null
 for x in `cat gapfill_job/tmp_ifg_todo`; do echo $x >> gapfill_job/tmp_rslcs2copy; done
-sort -u gapfill_job/tmp_rslcs2copy -o gapfill_job/tmp_rslcs2copy 2>/dev/null
+mv gapfill_job/tmp_rslcs2copy gapfill_job/tmp_rslcs2copy.todel 2>/dev/null
+sort -u gapfill_job/tmp_rslcs2copy.todel -o gapfill_job/tmp_rslcs2copy 2>/dev/null
+rm gapfill_job/tmp_rslcs2copy.todel 2>/dev/null
+
+# actually should do similar to soi list:
+if [ -f gapfill_job/tmp_rslcs2soi ]; then
+  mv gapfill_job/tmp_rslcs2soi gapfill_job/tmp_rslcs2soi.todel
+  sort -u gapfill_job/tmp_rslcs2soi.todel -o gapfill_job/tmp_rslcs2soi
+  rm gapfill_job/tmp_rslcs2soi.todel
+fi
 sort -u gapfill_job/tmp_ifg_all -o gapfill_job/tmp_unw_todo
 #for x in `ls IFG/*/*.cc 2>/dev/null | cut -d '/' -f2`; do if [ ! -f IFG/$x/$x.unw ]; then echo $x >> gapfill_job/tmp_unw_todo; fi; done
 for x in `ls GEOC/*/*.cc.tif 2>/dev/null | cut -d '/' -f2`; do if [ ! -f GEOC/$x/$x.geo.unw.tif ]; then echo $x >> gapfill_job/tmp_unw_todo; fi; done
@@ -1055,7 +1068,7 @@ for corestr in ifg unw bovl offsets; do
     if [ $corestr == 'bovl' ]; then maxmem=16384; exptimemax=$NBATCH; # assuming 1 bovl per hour  # TODO: wait for create_soi ... or do it differently
       # bsub2slurm.sh -q $bsubquery -n 1 -W 23:00 -M 16000 -J $frame"_soi_00" create_soi_00.py >/dev/null
       if [ $dosoi == 1 ]; then
-        JOBIDSOI=$(sbatch $l2wait --account=nceo_geohazards --time=23:00:00 --job-name=$frame'_soi_00' --output=gapfill_job/soi_00.out --error=gapfill_job/soi_00.err --wrap="create_soi_00.py --n_para 1" --mem=16384 --partition=standard --qos=standard --parsable)
+        JOBIDSOI=$(sbatch $l2wait --account=nceo_geohazards --time=23:00:00 --job-name=$frame'_soi_00' --output=gapfill_job/soi_00.out --error=gapfill_job/soi_00.err --wrap="create_soi_00.py --n_para 1 --epoch_list gapfill_job/tmp_rslcs2soi" --mem=16384 --partition=standard --qos=standard --parsable)
         l2wait='-d afterany:'$JOBIDSOI
       fi
     fi
