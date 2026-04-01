@@ -650,7 +650,7 @@ fi
 
 
 if [ $dobovl -eq 1 ]; then
- cp gapfill_job/tmp_ifg_all gapfill_job/tmp_bovl_todo
+ sort -u gapfill_job/tmp_ifg_all -o gapfill_job/tmp_bovl_todo
  for x in `ls GEOC/*/*.cc.tif 2>/dev/null | cut -d '/' -f2`; do
   if [ -f GEOC/$x/$x.geo.sbovldiff.adf.mm.tif ]; then
    sed -i '/'$x'/d' gapfill_job/tmp_bovl_todo
@@ -663,7 +663,7 @@ fi
 if [ $dorgo -gt 0 ]; then
   # setting it here, as we will want to apply also on ifgs already existing (if the offsets do not exist)
   rm gapfill_job/tmp_rgo_todo 2>/dev/null
-  for pair in `cat gapfill_job/tmp_ifg_all`; do if [ ! -f GEOC/$pair/$pair.geo.rng.tif ]; then echo $pair >> gapfill_job/tmp_rgo_todo; fi; done
+  for pair in `sort -u gapfill_job/tmp_ifg_all`; do if [ ! -f GEOC/$pair/$pair.geo.rng.tif ]; then echo $pair >> gapfill_job/tmp_rgo_todo; fi; done
   # also prep script
   offsetsh=`pwd`/offsetrack.sh
   echo "licsar_offset_tracking_pair.sh \$1 --noderamp --novr 1 --awin 24 --rwin 48 --rstep $rlks --astep "$azlks > $offsetsh
@@ -680,7 +680,7 @@ sed 's/_/ /' gapfill_job/tmp_ifg_all > gapfill_job/tmp_ifg_todo
 #rm gapfill_job/tmp_rslcs2copy 2>/dev/null
 for x in `cat gapfill_job/tmp_ifg_todo`; do echo $x >> gapfill_job/tmp_rslcs2copy; done
 sort -u gapfill_job/tmp_rslcs2copy -o gapfill_job/tmp_rslcs2copy 2>/dev/null
-mv gapfill_job/tmp_ifg_all gapfill_job/tmp_unw_todo
+sort -u gapfill_job/tmp_ifg_all -o gapfill_job/tmp_unw_todo
 #for x in `ls IFG/*/*.cc 2>/dev/null | cut -d '/' -f2`; do if [ ! -f IFG/$x/$x.unw ]; then echo $x >> gapfill_job/tmp_unw_todo; fi; done
 for x in `ls GEOC/*/*.cc.tif 2>/dev/null | cut -d '/' -f2`; do if [ ! -f GEOC/$x/$x.geo.unw.tif ]; then echo $x >> gapfill_job/tmp_unw_todo; fi; done
 #if [ $dobovl -eq 1 ]; then
