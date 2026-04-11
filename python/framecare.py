@@ -1166,7 +1166,8 @@ def get_master(frame, asfilenames = False, asdate = False, asdatetime = False, m
 
 
 def get_frame_master_s1ab(frame, metafile = None):
-    """ Gets information if the reference epoch of given frame is S1 'A' or 'B'.
+    """ Gets information if the reference epoch of given frame is S1 'A' or 'B'. It would actually return also 'C' or 'D'
+    In case of unknown value, it will become 'X'
     
     Args:
         frame (str): frame id
@@ -1883,7 +1884,7 @@ def export_all_frames_to_framecsv(outcsv = '/gws/ssde/j25a/nceo_geohazards/vol1/
     return rc
 
 
-def get_satids_of_burst(burstid, expected = ['S1A','S1B']):
+def get_satids_of_burst(burstid, expected = ['S1A','S1B','S1C','S1D']):
     a = lq.get_filenames_from_burst(burstid)
     a = lq.sqlout2list(a)
     b = pd.DataFrame(expected)

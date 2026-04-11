@@ -236,6 +236,7 @@ if [ $DOSUBSETS -eq 1 ]; then
     echo "subset "$subset
     cornersclip=$frameDir/subsets/$subset/corners_clip.$frame
     subdir=$frameDir/subsets/$subset
+   if [ -d $subdir ]; then
     if [ -f $cornersclip ]; then
        # getting the clip coords
        azi1=`cat $cornersclip | rev | gawk {'print $1'} | rev | sort -n | head -n1`
@@ -247,22 +248,32 @@ if [ $DOSUBSETS -eq 1 ]; then
        # running the clipping
        for sdate in `ls $frame/RSLC/20?????? -d | cut -d '/' -f3`; do
        #for x in `ls RSLC | grep 20`; do 
-        if [ -f $frame/RSLC/$sdate/$sdate.rslc ]; then
+       if [ -s $frame/RSLC/$sdate/$sdate.rslc ]; then    # -s means if exists AND has non-zero size
         if [ ! -d $subdir/RSLC/$sdate ]; then
           subsetsupdated=1
           echo "clipping "$sdate
           mkdir -p $subdir/RSLC/$sdate;
           SLC_copy $frame/RSLC/$sdate/$sdate.rslc $frame/RSLC/$sdate/$sdate.rslc.par $subdir/RSLC/$sdate/$sdate.rslc $subdir/RSLC/$sdate/$sdate.rslc.par - - $rg1 $rgdiff $azi1 $azidiff - - >/dev/null 2>/dev/null
           chmod -R 775 $subdir/RSLC/$sdate
+          # in case of no data in the mosaic, the rslc would be empty, so...
+          if [ ! -s $subdir/RSLC/$sdate/$sdate.rslc ]; then
+            echo "clipping for "$sdate" resulted in empty file - cleaning"
+            rm -rf $subdir/RSLC/$sdate
+          fi
           # no need for multilooking here?... 
           #multi_look $outdir/RSLC/$x/$x.rslc $outdir/RSLC/$x/$x.rslc.par $outdir/RSLC/$x/$x.rslc.mli $outdir/RSLC/$x/$x.rslc.mli.par $rgl $azl >/dev/null 2>/dev/null
           # create_geoctiffs_to_pub.sh -M `pwd` $x >/dev/null   # to be improved
         fi
-        fi
+       else
+         echo "the RSLC mosaic for "$sdate" is empty (or does not exist)"
+       fi
        done
     else
        echo "corners clip file does not exist - the subset was not initialised correctly"
     fi
+   else
+     echo "ERROR: "$subdir" does not exist"
+   fi
   done
  fi
 fi
