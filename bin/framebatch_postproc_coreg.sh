@@ -35,15 +35,41 @@ done
 shift $((OPTIND -1))
 
 frame=$1
-if [ `echo $frame | cut -d '_' -f2` == 'SM' ]; then
-  # echo "Stripmap - might not work ..better just rerun licsar_make_frame"
-  # force=1;
-  extracoregparms='-E'; # maybe not needed?
-  #exit
-fi
 if [ ! -z $2 ]; then 
   #this is a hidden switch. it means that after the last coreg job, we will run second iteration of licsar_make_frame. testing..
   autocont=1
+fi
+
+if [ ! -d $BATCH_CACHE_DIR/$frame ]; then echo "this frame is not in your processing, cancelling"; exit; fi
+cd $BATCH_CACHE_DIR/$frame
+
+mstr=`get_master`
+if [ -z $mstr ]; then
+  echo "ERROR getting reference epoch - some missing files in geo folder - please check (maybe removed from scratch)"
+  exit
+fi
+if [ ! -f geo/$mstr.hgt ]; then
+  echo "ERROR - relevant file not found in geo folder - maybe data lost from scratch?"
+  exit
+fi
+
+if [ `echo $frame | cut -d '_' -f2` == 'SM' ]; then
+  echo "the frame is a stripmap"
+  # echo "Stripmap - might not work ..better just rerun licsar_make_frame"
+  # force=1;
+  # extracoregparms='-E'; # maybe not needed?
+  #exit
+  echo "stripmaps are fast - processing directly here"
+  if [ `ls SLC | wc -l ` -gt 1 ]; then
+   LiCSAR_02_coreg.py -f $frame -d . -m $mstr -i
+  else
+    echo "but there is nothing to process actually"
+  fi
+  if [ $autocont -gt 0 ]; then
+    echo "proceeding to ifg gapfilling routine"
+    ./framebatch_05_gap_filling.nowait.sh
+  fi
+  exit
 fi
 
 burstsnum=`get_burstsno_frame $frame 2>/dev/null`
@@ -57,8 +83,7 @@ if [ $burstsnum -gt 40 ]; then maxmem=32768; T="04:30"; fi
 if [ $burstsnum -ge 90 ]; then maxmem=48000; T="05:30"; fi
 if [ $burstsnum -ge 120 ]; then maxmem=65535; T="07:00"; fi
 
-if [ ! -d $BATCH_CACHE_DIR/$frame ]; then echo "this frame is not in your processing, cancelling"; exit; fi
-cd $BATCH_CACHE_DIR/$frame
+
 if [ `ls SLC | wc -l` -lt 2 ]; then
  echo "nothing to process"
  if [ $autocont -eq 1 ]; then
@@ -78,7 +103,6 @@ mkdir -p coreg_its
 
 # if [ `grep -c comet framebatch_02_coreg.nowait.sh` -gt 0 ]; then que='comet'; else que='short-serial'; fi
 que='short-serial'
-mstr=`get_master`
 # fix empty slc file
 m=$mstr
 track=`track_from_frame $frame`
@@ -184,9 +208,12 @@ fi
 largestiw=`du -c SLC/$mstr/$mstr.IW?.slc | grep slc | sort | tail -n 1 | rev | cut -d '.' -f 2 | rev`
 # msize=`du -c SLC/$mstr/$mstr.IW?.slc | grep slc | gawk {'print $1'} | sort | tail -n 1`
 msize=`ls -al SLC/$mstr/$mstr.$largestiw.slc | gawk {'print $5'}`
+if [ -z $msize ]; then
+  echo "error - no IW files for reference epoch - maybe data lost on scratch? please check"
+  exit
+fi
 
 maxj=0
-
 for x in `cat coreg_its/tmp_reprocess.slc.sorted`; do
  doit=0
  if [ -f LUT/$x/$mstr'_'$x.slc.mli.lt ]; then
@@ -201,8 +228,12 @@ for x in `cat coreg_its/tmp_reprocess.slc.sorted`; do
      echo "WARNING - seems we cannot write to this folder - cancelling"
      exit
    fi
-    if [ -f LUT/$x/$mstr'_'$x.slc.mli.lt ]; then doit=1;
-      else echo "WARNING - seems like some wrong LUT for epoch "$x; rm -r $x 2>/dev/null
+    if [ -f LUT/$x/$mstr'_'$x.slc.mli.lt ]; then
+      doit=1;
+    else
+      echo "WARNING - seems like some wrong LUT for epoch "$x;
+      rm -r LUT/$x  2>/dev/null
+      echo $LiCSAR_procdir/$track/$frame/LUT/$x.7z >> $LiCSAR_procdir/check_errors_corrupted_files.txt
     fi
  fi;
  if [ $force == 0 ]; then
