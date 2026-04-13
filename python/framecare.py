@@ -1149,7 +1149,7 @@ def get_master(frame, asfilenames = False, asdate = False, asdatetime = False, m
     if asdate:
         a = masterdate
         masterdate = dt.date(int(a[:4]),int(a[4:6]),int(a[6:8]))
-        masterdate = masterdate.astimezone(dt.timezone.utc)
+        masterdate = masterdate.replace(tzinfo=dt.timezone.utc)
     if asdatetime:
         a = masterdate
         centime = misc.grep1line('center_time',metafile)
@@ -1161,7 +1161,7 @@ def get_master(frame, asfilenames = False, asdate = False, asdatetime = False, m
                         int(centime.split(':')[0]),
                         int(centime.split(':')[1]),
                         int(centime.split(':')[2]))
-        masterdate = masterdate.astimezone(dt.timezone.utc)
+        masterdate = masterdate.replace(tzinfo=dt.timezone.utc)
     return masterdate
 
 
