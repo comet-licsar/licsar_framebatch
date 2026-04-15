@@ -106,16 +106,30 @@ else
           done
         done
       if [ ! -z $postprocflag ]; then
-        echo "there is a large gap - try running:"
+        # echo "there is a large gap - try running:"
         if [ $firstrslc -lt $firstslc ]; then fdate=$firstrslc; else fdate=$firstslc; fi
         if [ $lastrslc -gt $lastslc ]; then ldate=$lastrslc; else ldate=$lastslc; fi
-        echo "framebatch_update_frame.sh -U "$frame gapfill ${fdate:0:4}-${fdate:4:2}-${fdate:6:2} ${ldate:0:4}-${ldate:4:2}-${ldate:6:2}
+        # echo "framebatch_update_frame.sh -U "$frame gapfill ${fdate:0:4}-${fdate:4:2}-${fdate:6:2} ${ldate:0:4}-${ldate:4:2}-${ldate:6:2}
         lutdir=$LiCSAR_procdir/`track_from_frame $frame`/$frame/LUT
-        lut=`ls $lutdir | grep '.7z' | cut -d '.' -f1 | tail -n 1`
-        if [ ! -z $lut ]; then
-          #if [ $lut -gt $fdate ]; then
-           echo "(note the last LUT for the frame is "$lut" )"
-          #fi
+        # lut=`ls $lutdir | grep '.7z' | cut -d '.' -f1 | tail -n 1`
+        # if [ ! -z $lut ]; then
+        #  #if [ $lut -gt $fdate ]; then
+        #   echo "(note the last LUT for the frame is "$lut" )"
+        #  #fi
+        #fi
+        nolut=1
+        for slcc in `ls $frame/SLC`; do
+          if [ -f $lutdir/$slcc.7z ]; then
+            echo "following LUT exists for slc "$slcc
+            nolut=0
+          fi
+        done
+        if [ $nolut -lt 1 ]; then
+          echo "postproc coreg should help here:"
+          echo "framebatch_postproc_coreg.sh "$frame 1
+        else
+          echo "there is a large gap - try running:"
+          echo "framebatch_update_frame.sh -U "$frame gapfill ${fdate:0:4}-${fdate:4:2}-${fdate:6:2} ${ldate:0:4}-${ldate:4:2}-${ldate:6:2}
         fi
       fi
       if [ $PROC == 1 ]; then
