@@ -180,6 +180,7 @@ else
         unwdates=`ls $frame/GEOC/*/*.geo.unw.tif | wc -l`
         if [ $unwdates != $ifgdates ]; then
           echo "this frame has missing unws and needs gapfilling: "$frame
+          echo "no of unws / ifgs: "$unwdates"/"$ifgdates
           if [ $PROC == 1 ]; then
            #batchcachedir_reprocess_ifgs.sh $frame
            cd $frame; ./framebatch_05_gap_filling.nowait.sh; cd -
