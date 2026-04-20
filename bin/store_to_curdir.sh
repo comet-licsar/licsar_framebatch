@@ -29,6 +29,7 @@ list_added=/gws/ssde/j25a/nceo_geohazards/vol1/public/LiCSAR_products/updates/`d
 if [ -f $list_added'.lock' ]; then
  numprevlines=`ls -al $list_added | gawk {'print $5'}`
  echo "the store process is locked, trying again in 5 seconds"
+ ls -alh $list_added'.lock'
  sleep 5
  numpostlines=`ls -al $list_added | gawk {'print $5'}`
  while [ ! $numpostlines == $numprevlines ]; do
