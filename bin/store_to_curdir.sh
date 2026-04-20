@@ -611,7 +611,7 @@ then
  fi
  echo "Deleting the frame folder "$frame
  rm -rf $frame
-
+ rm -rf $LiCSAR_temp/$frame'_envs'
 #echo "Expiring NLA requests (if any)"
 #for nlareqid in `nla.py requests | grep $frame | gawk {'print $1'} 2>/dev/null`; do
 # nla.py expire $nlareqid
