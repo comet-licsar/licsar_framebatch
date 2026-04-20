@@ -358,19 +358,19 @@ if [ $autocont -eq 1 ]; then
    echo "framebatch_postproc_coreg.sh "$extrac2 $frame" 1" > postproc_coreg.sh;
    #extraw='-Ep ./postproc_coreg.sh'
   else
-   echo "some SLCs could not be coregistered - checking if these have missing bursts (would move them to SLC.missingbursts folder)"
-   mkdir -p SLC.missingbursts
+   echo "some SLCs could not be coregistered - checking if these have missing bursts" # (would move them to SLC.missingbursts folder)"
+   # mkdir -p SLC.missingbursts
    msizetol=`echo $msize-1024*1024*100 | bc` # tolerate 100 MB difference
    for x in `ls SLC`; do
       # check if the slc has similar size as master slc
       ssize=`ls -al SLC/$x/$x.$largestiw.slc 2>/dev/null | gawk {'print $5'}`
       if [ -z $ssize ]; then ssize=0; fi
       if [ $ssize -lt $msizetol ]; then
-        echo $x" has missing bursts"
-        mv SLC/$x SLC.missingbursts/$x
+        echo $x" has missing bursts filesize: "$ssize
+        # mv SLC/$x SLC.missingbursts/$x
       fi
    done
-   rmdir SLC.missingbursts 2>/dev/null # in case it is empty
+   # rmdir SLC.missingbursts 2>/dev/null # in case it is empty
    echo "./framebatch_x_postcoreg_iteration.nowait.sh" > postproc_coreg.sh
    #extraw='-Ep ./framebatch_x_second_iteration.nowait.sh'
   fi
