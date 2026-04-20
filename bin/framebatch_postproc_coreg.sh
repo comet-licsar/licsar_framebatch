@@ -366,7 +366,7 @@ if [ $autocont -eq 1 ]; then
       ssize=`ls -al SLC/$x/$x.$largestiw.slc 2>/dev/null | gawk {'print $5'}`
       if [ -z $ssize ]; then ssize=0; fi
       if [ $ssize -lt $msizetol ]; then
-        echo $x" has missing bursts filesize: "$ssize
+        echo $x" has missing bursts filesize: "`echo $ssize/1024/1024/1024 | bc`" GB"
         # mv SLC/$x SLC.missingbursts/$x
       fi
    done
