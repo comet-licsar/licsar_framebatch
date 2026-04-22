@@ -261,13 +261,16 @@ if [ $DOSUBSETS -eq 1 ]; then
             rm -rf $subdir/RSLC/$sdate
           else
             # ok, compress it then and clean
-            7za a $subdir/RSLC/$sdate/$sdate.rslc.zip $subdir/RSLC/$sdate/$sdate.rslc >/dev/null 2>/dev/null
-            if [ -s $subdir/RSLC/$sdate/$sdate.rslc.zip ]; then
-              rm $subdir/RSLC/$sdate/$sdate.rslc
+            pomdir=`pwd`
+            cd $subdir/RSLC/$sdate
+            7za a $sdate.rslc.zip $sdate.rslc >/dev/null 2>/dev/null
+            if [ -s $sdate.rslc.zip ]; then
+              rm $sdate.rslc
             else
               echo "ERROR compressing to zip file - leaving the rslc clip, trying verbosed:"
-              7za a $subdir/RSLC/$sdate/$sdate.rslc.zip $subdir/RSLC/$sdate/$sdate.rslc
+              7za a $sdate.rslc.zip $sdate.rslc
             fi
+            cd $pomdir
             chmod -R 775 $subdir/RSLC/$sdate
           fi
           # no need for multilooking here?... 
