@@ -80,11 +80,27 @@ if [ ! -d GEOC/geo ]; then cp -r $subsetpath/GEOC.meta.$resol_m'm' GEOC/geo; cp 
 
 echo "copying existing clipped RSLCs"
 #for ddir in SLC RSLC; do
-ddir=RSLC
-rsync -r -u -l $subsetpath/$ddir/$m $ddir/.;
-for r in `ls $subsetpath/$ddir`; do
+#ddir=RSLC
+if [ ! -f RSLC/$m/$m.rslc ]; then
+  mkdir -p RSLC/$m
+  if [ -f $subsetpath/RSLC/$m/$m.rslc.zip ]; then
+    7za x -oRSLC/$m $subsetpath/RSLC/$m/$m.rslc.zip >/dev/null 2>/dev/null
+  else
+    cp $subsetpath/RSLC/$m/$m.rslc $subsetpath/RSLC/$m/$m.rslc.par RSLC/$m/.
+  fi
+fi
+# rsync -r -u -l $subsetpath/$ddir/$m $ddir/.;
+for r in `ls $subsetpath/RSLC`; do
   if [ $r -ge $sdate ] && [ $r -le $edate ]; then
-    rsync -r -u -l $subsetpath/$ddir/$r $ddir/.;
+   if [ ! -f RSLC/$r/$r.rslc ]; then
+    mkdir -p RSLC/$r
+    if [ -f $subsetpath/RSLC/$r/$r.rslc.zip ]; then
+      7za x -oRSLC/$r $subsetpath/RSLC/$r/$r.rslc.zip >/dev/null 2>/dev/null # CHECK
+    else
+      cp $subsetpath/RSLC/$r/$r.rslc $subsetpath/RSLC/$r/$r.rslc.par RSLC/$r/.
+    fi
+    #rsync -r -u -l $subsetpath/$ddir/$r $ddir/.;
+   fi
   fi
 done
 # fix issue with different multilooking of ref epoch:

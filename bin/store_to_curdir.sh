@@ -255,11 +255,20 @@ if [ $DOSUBSETS -eq 1 ]; then
           echo "clipping "$sdate
           mkdir -p $subdir/RSLC/$sdate;
           SLC_copy $frame/RSLC/$sdate/$sdate.rslc $frame/RSLC/$sdate/$sdate.rslc.par $subdir/RSLC/$sdate/$sdate.rslc $subdir/RSLC/$sdate/$sdate.rslc.par - - $rg1 $rgdiff $azi1 $azidiff - - >/dev/null 2>/dev/null
-          chmod -R 775 $subdir/RSLC/$sdate
           # in case of no data in the mosaic, the rslc would be empty, so...
           if [ ! -s $subdir/RSLC/$sdate/$sdate.rslc ]; then
             echo "clipping for "$sdate" resulted in empty file - cleaning"
             rm -rf $subdir/RSLC/$sdate
+          else
+            # ok, compress it then and clean
+            7za a $subdir/RSLC/$sdate/$sdate.rslc.zip $subdir/RSLC/$sdate/$sdate.rslc >/dev/null 2>/dev/null
+            if [ -s $subdir/RSLC/$sdate/$sdate.rslc.zip ]; then
+              rm $subdir/RSLC/$sdate/$sdate.rslc
+            else
+              echo "ERROR compressing to zip file - leaving the rslc clip, trying verbosed:"
+              7za a $subdir/RSLC/$sdate/$sdate.rslc.zip $subdir/RSLC/$sdate/$sdate.rslc
+            fi
+            chmod -R 775 $subdir/RSLC/$sdate
           fi
           # no need for multilooking here?... 
           #multi_look $outdir/RSLC/$x/$x.rslc $outdir/RSLC/$x/$x.rslc.par $outdir/RSLC/$x/$x.rslc.mli $outdir/RSLC/$x/$x.rslc.mli.par $rgl $azl >/dev/null 2>/dev/null
