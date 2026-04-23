@@ -233,7 +233,7 @@ except:
     print('warning - exception in get_ifgs_from_lics')
 
 
-existing_ifgs = fnmatch.filter(os.listdir(cacheDir+'/'+frame+'/GEOC'), '20??????_20??????')
+existing_ifgs = fnmatch.filter(os.listdir(cacheDir+'/'+frame+'/IFG'), '20??????_20??????') # old way.. ok
 ifgids = get_all_ifgs(polyid)
 unwids = get_all_unws(polyid)
 for ifg in existing_ifgs:
@@ -244,11 +244,11 @@ for ifg in existing_ifgs:
     if not i.empty:
         ifgID = int(i.ifg_id)
         set_ifg_status(ifgID,0)
-        if os.path.exists(os.path.join(cacheDir,frame,'GEOC',ifg,ifg+'.geo.unw.tif')):
-            u = unwids.loc[(unwids['acq_date_1'].dt.date == dt.datetime.strptime(rslcA,'%Y%m%d').date())\
-                & (unwids['acq_date_2'].dt.date == dt.datetime.strptime(rslcB,'%Y%m%d').date()) ]
-            unwID = int(u.unw_id)
-            set_unw_status(unwID,0)
+        # if os.path.exists(os.path.join(cacheDir,frame,'GEOC',ifg,ifg+'.geo.unw.tif')):  # not relevant in 2026
+        u = unwids.loc[(unwids['acq_date_1'].dt.date == dt.datetime.strptime(rslcA,'%Y%m%d').date())\
+            & (unwids['acq_date_2'].dt.date == dt.datetime.strptime(rslcB,'%Y%m%d').date()) ]
+        unwID = int(u.unw_id)
+        set_unw_status(unwID,0)
 
 batch_link_slcs_to_new_jobs(polyid,user,slcs,batchN)
 #the rslcs job linking should be improved, but it is ok this way..
