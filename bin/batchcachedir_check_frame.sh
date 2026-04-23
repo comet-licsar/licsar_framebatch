@@ -29,17 +29,21 @@ if [ `pwd` == $LiCSAR_procdir ]; then echo "NO.."; exit; fi
 if [ -d $frame/geo ]; then
  if [ `ls $frame/geo | wc -l` == 0 ]; then
    if [ `ls $frame/*LC | wc -l` -gt 2 ]; then
-     echo "WARNING, empty geo folder - check manually in todelete folder";
-     if [ -d todelete/$frame ]; then rm -r todelete/$frame; fi;
-     mv $frame todelete/.;
+     if [ $PROC == 1 ]; then
+      batchcachedir_fix_partly_deleted_frame.sh $frame
+     else
+      echo "WARNING, empty geo folder - should run batchcachedir_fix_partly_deleted_frame.sh "$frame;
+      #if [ -d todelete/$frame ]; then rm -r todelete/$frame; fi;
+      #mv $frame todelete/.;
+     fi
    else
-     echo "empty frame, deleting"; rm -rf $frame;
+     echo "empty frame, deleting"; rm -rf $frame; exit;
    fi;
-   exit;
  fi
 elif [ -d $frame ]; then
- echo "no geo folder inside the frame directory - moving to todelete directory"
- mkdir -p todelete; if [ -d todelete/$frame ]; then rm -r todelete/$frame; fi; mv $frame todelete/.; exit
+ echo "no geo folder inside the frame directory - maybe under processing - cancelling"
+ # mkdir -p todelete; if [ -d todelete/$frame ]; then rm -r todelete/$frame; fi; mv $frame todelete/.; exit
+ exit
 else
  echo "no such frame dir, cancel"
  exit
