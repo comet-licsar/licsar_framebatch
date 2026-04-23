@@ -703,9 +703,11 @@ fi
 
 if [ $NORUN -eq 0 ]; then
  #./framebatch_x_second_iteration.wait.sh
- echo 'setting post-proc coreg' # (new functionality - this will also auto inactivate the frame and run gapfilling afterwards. store script is run through gapfilling)'
- # ./framebatch_x_coreg_iteration.wait.sh
- sbatch -d afterany:$PREVJID --account=nceo_geohazards --time=00:45:00 --job-name=$frame.it2_coreg --output=LOGS/it2_coreg.out --error=LOGS/it2_coreg.err --wrap=" framebatch_postproc_coreg.sh "$frame" 1 " --mem=16384 --partition=standard --qos=standard
+ if [ $SM -lt 1 ]; then
+  echo 'setting post-proc coreg' # (new functionality - this will also auto inactivate the frame and run gapfilling afterwards. store script is run through gapfilling)'
+  # ./framebatch_x_coreg_iteration.wait.sh
+  sbatch -d afterany:$PREVJID --account=nceo_geohazards --time=00:45:00 --job-name=$frame.it2_coreg --output=LOGS/it2_coreg.out --error=LOGS/it2_coreg.err --wrap=" framebatch_postproc_coreg.sh "$frame" 1 " --mem=16384 --partition=standard --qos=standard
+ fi
 fi
 
 
