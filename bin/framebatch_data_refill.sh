@@ -30,7 +30,7 @@ if [ -z $2 ]; then
  echo "Parameters are: FRAME STARTDATE [ENDDATE]"
  echo "e.g. 007D_05286_131310 2014-10-10"
  echo "optional parameter -c: will do only check if data are ingested in licsar db"
- echo "optional parameter -A: will not check for max number of images to download: max number is "$MAXIMAGES
+ echo "optional parameter -A (or -D): will not check for max number of images to download: max number is "$MAXIMAGES
  echo "optional temporary parameter -f: will try CDSE when needed. By default use only ASF since CDSE was ultra slow"
  echo "03/2026 - now use always since ASF seems lacking S1D data. Please make sure you have ~/.cdse_credentials"
  exit
@@ -46,6 +46,8 @@ while getopts ":cAf" option; do
   A ) NOCHECKMAX=1;
       echo "overriding check for max images";
       #shift
+      ;;
+  D ) NOCHECKMAX=1;
       ;;
   f ) trycdse=1;  # this will enable cdse if credentials exist
       use_cdse=1;  # this should be not set if using trycdse...
@@ -172,14 +174,19 @@ touch ${frame}_db_query.list 2>/dev/null
  echo "*******"
 #fi
 echo "checking existence of identified files"
-cp ${frame}_db_query.list.todown $frame'_todown' # 2>/dev/null
+cp ${frame}_db_query.list.todown $frame'_todown' 2>/dev/null
  for fl in `cat ${frame}_db_query.list ${frame}_db_query.list.notrequested | sort -u `; do
    if [ ! -f $fl ]; then echo $fl >> $frame'_todown'; fi;
  done
  #sort -o ${frame}_db_query2.list ${frame}_db_query.list
  #mv ${frame}_db_query2.list ${frame}_db_query.list
  # diff  ${frame}_scihub.list ${frame}_db_query.list | grep '^<' | cut -c 3- > ${frame}_todown
- echo "There are "`cat ${frame}_todown | wc -l`" extra images, not currently existing on CEMS (neodc) disk"
+if [ -s ${frame}_todown ]; then
+  echo "There are "`cat ${frame}_todown | wc -l`" extra images, not currently existing on CEMS (neodc) disk"
+else
+  echo "Congratulations - all "`cat ${frame}_db_query.list | wc -l`"requested files should already exist and are ingested in db (nothing to download)"
+  exit
+fi
 # checking if the files from scihub exist in RSLC or SLC folders..
 rm -f tmp_processed.txt # 2>/dev/null
 rm -f tmp_existing.txt # 2>/dev/null

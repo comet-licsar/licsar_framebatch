@@ -3,6 +3,7 @@
 # in case the requested dataset is not connected within 180 days..:
 
 continue_anyway = True
+check_btemp = True
 
 ################################################################################
 #imports
@@ -31,6 +32,9 @@ import pandas as pd
 ################################################################################
 frame = sys.argv[1]
 batchN = int(sys.argv[2])
+if frame.split('_')[1] == 'SM':
+    print('stripmap batch jobs')
+    check_btemp = False
 
 #something extra - assuming that 3rd argument would be starting date:
 startdate = dt.datetime.strptime('2014-10-01','%Y-%m-%d')
@@ -126,63 +130,65 @@ try:
 except:
     existing_luts = []
 
-# if the closest epoch to the master is >6 months, then check if it has lut. if not, then find file with closest lut (or in existing_ lists) and update the start/end date
-rlsc3_limit = 180
-if min(abs(acq_imgs.btemp)).days > rlsc3_limit:
-    possible_acqs = existing_acq + existing_acq_lics + existing_luts
-    possible_acqs = list(set(possible_acqs))
-    def todt(x): return pd.Timestamp(x)
-    try:
-        possible_acqs_dt = list(map(todt,possible_acqs))
-    except:
-        possible_acqs_dt = []
-    isinposs = False
-    for x in acq_imgs.acq_date.values:
+
+if check_btemp:
+    # if the closest epoch to the master is >6 months, then check if it has lut. if not, then find file with closest lut (or in existing_ lists) and update the start/end date
+    rlsc3_limit = 180
+    if min(abs(acq_imgs.btemp)).days > rlsc3_limit:
+        possible_acqs = existing_acq + existing_acq_lics + existing_luts
+        possible_acqs = list(set(possible_acqs))
+        def todt(x): return pd.Timestamp(x)
+        try:
+            possible_acqs_dt = list(map(todt,possible_acqs))
+        except:
+            possible_acqs_dt = []
+        isinposs = False
+        for x in acq_imgs.acq_date.values:
+            if not isinposs:
+                if x in possible_acqs_dt:
+                    isinposs = True
         if not isinposs:
-            if x in possible_acqs_dt:
-                isinposs = True
-    if not isinposs:
-        # need to change the dates:
-        print('WARNING: the dates did not contain Btemp connection towards the frame. Updating the dates')
-        print('will not start until this is fixed')
-        # if it is empty, we need to choose some closer to master:
-        if not possible_acqs_dt:
-            fromstart = (startdate - mstrDate).days
-            fromend = (enddate - mstrDate).days
-            tdelta_limit = rlsc3_limit - 25  # will include few more - at least two
-            td = pd.Timedelta(days=tdelta_limit)
-            if fromstart < fromend:
-                startdate = mstrDate + td
-                print('updated startdate = '+startdate.strftime('%Y-%m-%d'))
+            # need to change the dates:
+            print('WARNING: the dates did not contain Btemp connection towards the frame. Updating the dates')
+            # if it is empty, we need to choose some closer to master:
+            if not possible_acqs_dt:
+                fromstart = (startdate - mstrDate).days
+                fromend = (enddate - mstrDate).days
+                tdelta_limit = rlsc3_limit - 25  # will include few more - at least two
+                td = pd.Timedelta(days=tdelta_limit)
+                if fromstart < fromend:
+                    startdate = mstrDate + td
+                    print('updated startdate = '+startdate.strftime('%Y-%m-%d'))
+                else:
+                    enddate = mstrDate - td
+                    print('updated enddate = ' +enddate.strftime('%Y-%m-%d'))
             else:
-                enddate = mstrDate - td
-                print('updated enddate = ' +enddate.strftime('%Y-%m-%d'))
-        else:
-            pomfirst = acq_imgs['acq_date'].sort_values().values[0]
-            pomlast = acq_imgs['acq_date'].sort_values().values[-1]
-            possible_acqs_pd = pd.DataFrame(possible_acqs_dt)
-            possible_acqs_pd = possible_acqs_pd.sort_values(0)
-            pomfirstlen = min(abs(pomfirst - possible_acqs_pd[0]))
-            pomlastlen = min(abs(pomlast - possible_acqs_pd[0]))
-            if pomfirstlen < pomlastlen:
-                possible_acqs_pd['btemp'] = abs(pomfirst - possible_acqs_pd[0])
-                # also adding a bit longer time
-                startdate = (possible_acqs_pd.sort_values('btemp').iloc[0][0] - pd.Timedelta(days=25)).to_pydatetime()
-                print('updated startdate = ' +startdate.strftime('%Y-%m-%d'))
-            else:
-                possible_acqs_pd['btemp'] = abs(pomlast - possible_acqs_pd[0])
-                enddate = (possible_acqs_pd.sort_values('btemp').iloc[0][0] + pd.Timedelta(days=25)).to_pydatetime()
-                print('updated enddate = '+enddate.strftime('%Y-%m-%d'))
-        print('please rerun with the new dates')
-        if not continue_anyway:
-            exit()
-        # repeat the acq_images adding - not the best as it expects ingested data - thus will do this twice, see licsar_make_frame.sh
-        #acq_imgs = add_acq_images(polyid, startdate.date(), enddate.date(), mstrDate.date())
-        #acq_imgs = acq_imgs.sort_values('acq_date').reset_index(drop=True)
-        #mstrline = acq_imgs[acq_imgs['acq_date']==mstrDate]
-        #acq_imgs['btemp'] = acq_imgs.acq_date.apply(lambda x: abs(x - mstrDate)) #mstrline['acq_date']))
-        #acq_imgs = acq_imgs.sort_values('btemp')
-        #acq_imgs = acq_imgs[acq_imgs['acq_date']!=mstrDate]
+                pomfirst = acq_imgs['acq_date'].sort_values().values[0]
+                pomlast = acq_imgs['acq_date'].sort_values().values[-1]
+                possible_acqs_pd = pd.DataFrame(possible_acqs_dt)
+                possible_acqs_pd = possible_acqs_pd.sort_values(0)
+                pomfirstlen = min(abs(pomfirst - possible_acqs_pd[0]))
+                pomlastlen = min(abs(pomlast - possible_acqs_pd[0]))
+                if pomfirstlen < pomlastlen:
+                    possible_acqs_pd['btemp'] = abs(pomfirst - possible_acqs_pd[0])
+                    # also adding a bit longer time
+                    startdate = (possible_acqs_pd.sort_values('btemp').iloc[0][0] - pd.Timedelta(days=25)).to_pydatetime()
+                    print('updated startdate = ' +startdate.strftime('%Y-%m-%d'))
+                else:
+                    possible_acqs_pd['btemp'] = abs(pomlast - possible_acqs_pd[0])
+                    enddate = (possible_acqs_pd.sort_values('btemp').iloc[0][0] + pd.Timedelta(days=25)).to_pydatetime()
+                    print('updated enddate = '+enddate.strftime('%Y-%m-%d'))
+            print('please rerun with the new dates')
+            if not continue_anyway:
+                print('will not start until this is fixed')
+                exit()
+            # repeat the acq_images adding - not the best as it expects ingested data - thus will do this twice, see licsar_make_frame.sh
+            #acq_imgs = add_acq_images(polyid, startdate.date(), enddate.date(), mstrDate.date())
+            #acq_imgs = acq_imgs.sort_values('acq_date').reset_index(drop=True)
+            #mstrline = acq_imgs[acq_imgs['acq_date']==mstrDate]
+            #acq_imgs['btemp'] = acq_imgs.acq_date.apply(lambda x: abs(x - mstrDate)) #mstrline['acq_date']))
+            #acq_imgs = acq_imgs.sort_values('btemp')
+            #acq_imgs = acq_imgs[acq_imgs['acq_date']!=mstrDate]
 
 
 #acq_imgs2 = acq_imgs
@@ -227,7 +233,7 @@ except:
     print('warning - exception in get_ifgs_from_lics')
 
 
-existing_ifgs = fnmatch.filter(os.listdir(cacheDir+'/'+frame+'/IFG'), '20??????_20??????')
+existing_ifgs = fnmatch.filter(os.listdir(cacheDir+'/'+frame+'/GEOC'), '20??????_20??????')
 ifgids = get_all_ifgs(polyid)
 unwids = get_all_unws(polyid)
 for ifg in existing_ifgs:
@@ -238,7 +244,7 @@ for ifg in existing_ifgs:
     if not i.empty:
         ifgID = int(i.ifg_id)
         set_ifg_status(ifgID,0)
-        if os.path.exists(os.path.join(cacheDir,frame,'IFG',ifg,ifg+'.unw')):
+        if os.path.exists(os.path.join(cacheDir,frame,'GEOC',ifg,ifg+'.geo.unw.tif')):
             u = unwids.loc[(unwids['acq_date_1'].dt.date == dt.datetime.strptime(rslcA,'%Y%m%d').date())\
                 & (unwids['acq_date_2'].dt.date == dt.datetime.strptime(rslcB,'%Y%m%d').date()) ]
             unwID = int(u.unw_id)
