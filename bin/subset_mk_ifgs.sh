@@ -68,7 +68,7 @@ echo "copying needed core files"
 # fix the master SLC
 m=`ls $subsetpath/SLC | grep 20 | head -n1`
 mkdir -p SLC/$m
-cd SLC/$m; for x in slc slc.mli slc.mli.par slc.par; do if [ ! -f $m.$x ]; then ln -s $tempdir/RSLC/$m/$m.r$x $m.$x; fi; done;
+cd SLC/$m; for x in slc slc.mli slc.mli.par slc.par; do if [ ! -f $m.$x ]; then rm $m.$x 2>/dev/null; ln -s $tempdir/RSLC/$m/$m.r$x $m.$x; fi; done;
 cd $tempdir
 #done
 cp $subsetpath/local_config.py .
