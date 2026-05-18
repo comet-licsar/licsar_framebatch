@@ -205,7 +205,7 @@ if [ -f coreg_its/noncoreg ]; then
  fi
 fi
 
-largestiw=`du -c SLC/$mstr/$mstr.IW?.slc | grep slc | sort | tail -n 1 | rev | cut -d '.' -f 2 | rev`
+largestiw=`du -c SLC/$mstr/$mstr.IW?.slc | grep slc | sort -n | tail -n 1 | rev | cut -d '.' -f 2 | rev`
 # msize=`du -c SLC/$mstr/$mstr.IW?.slc | grep slc | gawk {'print $1'} | sort | tail -n 1`
 msize=`ls -al SLC/$mstr/$mstr.$largestiw.slc | gawk {'print $5'}`
 if [ -z $msize ]; then
@@ -364,9 +364,9 @@ if [ $autocont -eq 1 ]; then
    for x in `ls SLC | sed '/'$mstr'/d'`; do
       # check if the slc has similar size as master slc
       ssize=`ls -al SLC/$x/$x.$largestiw.slc 2>/dev/null | gawk {'print $5'}`
-      if [ -z $ssize ]; then ssize=0; fi
+      if [ -z $ssize ]; then ssize=0; ls -alh SLC/$x/$x.$largestiw.slc; fi
       if [ $ssize -lt $msize ]; then
-        echo $x" has missing bursts filesize: "`echo $ssize/1024/1024/1024 | bc`" GB"
+        echo $x" has missing bursts. filesize: "`echo $ssize/1024/1024/1024 | bc -l | cut -c -5`" GB"
       fi
       if [ $ssize -lt $msizetol ]; then
         echo "moving to SLC.missingbursts"
