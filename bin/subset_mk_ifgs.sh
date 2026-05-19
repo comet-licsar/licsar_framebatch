@@ -86,8 +86,9 @@ if [ ! -f RSLC/$m/$m.rslc ]; then
   if [ -f $subsetpath/RSLC/$m/$m.rslc.zip ]; then
     7za x -oRSLC/$m $subsetpath/RSLC/$m/$m.rslc.zip >/dev/null 2>/dev/null
   else
-    cp $subsetpath/RSLC/$m/$m.rslc $subsetpath/RSLC/$m/$m.rslc.par RSLC/$m/.
+    cp $subsetpath/RSLC/$m/$m.rslc RSLC/$m/.
   fi
+  cp $subsetpath/RSLC/$m/$m.rslc.par RSLC/$m/.
 fi
 # rsync -r -u -l $subsetpath/$ddir/$m $ddir/.;
 for r in `ls $subsetpath/RSLC`; do
@@ -97,8 +98,9 @@ for r in `ls $subsetpath/RSLC`; do
     if [ -f $subsetpath/RSLC/$r/$r.rslc.zip ]; then
       7za x -oRSLC/$r $subsetpath/RSLC/$r/$r.rslc.zip >/dev/null 2>/dev/null # CHECK
     else
-      cp $subsetpath/RSLC/$r/$r.rslc $subsetpath/RSLC/$r/$r.rslc.par RSLC/$r/.
+      cp $subsetpath/RSLC/$r/$r.rslc RSLC/$r/.
     fi
+    cp $subsetpath/RSLC/$r/$r.rslc.par RSLC/$r/.
     #rsync -r -u -l $subsetpath/$ddir/$r $ddir/.;
    fi
   fi
