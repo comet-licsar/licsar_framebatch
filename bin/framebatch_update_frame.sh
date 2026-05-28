@@ -146,7 +146,7 @@ if [ $trynla == 1 ]; then
    #in case of upfilling, we should request only files older than 3 months
    #this request will however include also files that are already processed..
    if [ $nlamaxdateshort -gt $lastepoch ]; then
-    if [ `datediff $nlamaxdateshort $lastepoch` -gt $DAYSTOLERANCE ]; then
+    if [ `datediff $lastepoch $nlamaxdateshort` -gt $DAYSTOLERANCE ]; then
      nla_start=1
     fi
    fi
