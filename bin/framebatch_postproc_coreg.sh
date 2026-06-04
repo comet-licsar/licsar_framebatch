@@ -4,10 +4,10 @@ source $LiCSARpath/lib/LiCSAR_bash_lib.sh
 if [ -z $1 ]; then 
  echo "set parameter: frame [1]";
  echo "this script will run jobs to coregister SLCs in the frame folder"  #prepare coreg jobs to help against iterations - it might get messy, do not use it routinely";
- echo "by running with the optional parameter 1, it would perform iterative processing to hopefully coregister all SLCs"
+ echo "by running with the optional parameter 1, it would perform iterative processing (autocontinue) to hopefully coregister all SLCs"
  echo "other parameters:"
  echo "-f ..... force override the 180 days gap limitation (that could cause wrong SD estimate)"
- echo "-F ..... full-force override (not recommended due to azimuth errors)"
+ echo "-F ..... full-force override (not recommended due to azimuth errors) - if with -f and autocontinue, it will be applied in the next iteration after -f"
  echo "-b ..... for force-override solution (best with the iterative processing) setting the first SLC backwards in time"
  exit; fi
 
@@ -354,7 +354,8 @@ if [ $autocont -eq 1 ]; then
 # if [ $x == $lastslc ]; then
   echo "setting the post-coreg iteration"
   if [ ! $diffprev == 0 ]; then   # so if there are still some SLCs left to coreg, run the iteration...
-   if [ $ignorezero == 1 ]; then extrac2='-F'; else extrac2=''; fi
+   extrac2=''
+   if [ $force == 1 ]; then if [ $ignorezero == 1 ]; then extrac2='-F'; fi; fi
    echo "framebatch_postproc_coreg.sh "$extrac2 $frame" 1" > postproc_coreg.sh;
    #extraw='-Ep ./postproc_coreg.sh'
   else
