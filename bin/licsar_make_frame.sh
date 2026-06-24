@@ -278,6 +278,10 @@ if [ -f $LiCSAR_procdir/$track/$frame/local_config.py ]; then
  if [ `grep -c bovl $LiCSAR_procdir/$track/$frame/local_config.py` -gt 0 ]; then
    bovls=`grep ^bovl $LiCSAR_procdir/$track/$frame/local_config.py | cut -d '=' -f2 | sed 's/ //g'`
  fi
+ # or offsets
+ if [ `grep -c rgoff $LiCSAR_procdir/$track/$frame/local_config.py` -gt 0 ]; then
+   rgoff=`grep ^rgoff $LiCSAR_procdir/$track/$frame/local_config.py | cut -d '=' -f2 | sed 's/ //g'`
+ fi
 fi
 #if [ `bugroup | grep $USER | gawk {'print $1'} | grep -c cpom_comet` -eq 1 ]; then
 #  bsubquery='cpom-comet'
