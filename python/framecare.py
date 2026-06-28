@@ -1937,7 +1937,7 @@ def get_all_frames(only_initialised = False, merge = False):
     asc_gpd = gpd.geodataframe.GeoDataFrame()
     desc_gpd = gpd.geodataframe.GeoDataFrame()
     for i in range(1,175+1):
-        print('preparing frames from track {}'.format(i))
+        print('preparing descending frames from track {}'.format(i))
         #descending:
         frames = lq.get_frames_in_orbit(i, 'D')
         frames = lq.sqlout2list(frames)
@@ -1948,6 +1948,10 @@ def get_all_frames(only_initialised = False, merge = False):
             a = frame2geopandas(frame)
             if type(a) != type(None):
                 desc_gpd = pd.concat([desc_gpd, a]) #desc_gpd.append(a)
+    print('sleeping 30 seconds to avoid ban from the database')
+    time.sleep(30)
+    for i in range(1, 175 + 1):
+        print('preparing ascending frames from track {}'.format(i))
         #ascending
         frames = lq.get_frames_in_orbit(i, 'A')
         frames = lq.sqlout2list(frames)
