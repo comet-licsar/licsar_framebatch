@@ -557,6 +557,10 @@ if [ $updatedframe == 1 ]; then
    echo "ERROR - wanted to update framelist.txt but it seems in a parallel process, cancelling"
   fi
  fi
+
+ # update dazdrg file
+ echo "updating dazdrg csv file "
+ update_dazes_frame.py $frame
 fi
 #echo "WARNING - we do not deactivate the frame now..."
 #echo "Deactivating the frame after its storing to db"
