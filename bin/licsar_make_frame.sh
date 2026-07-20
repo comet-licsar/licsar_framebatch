@@ -652,7 +652,7 @@ waiting_string=`echo $waiting_str | cut -c 4-`
 # 2023/06: but this might fail / jobs not found if they finish too early. so adding only nowait gapfill
 echo "setFrameInactive.py "$frame"; ./framebatch_05_gap_filling.nowait.sh" > framebatch_x_postcoreg_iteration.nowait.sh
 echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:30 -n 1 -J postcoreg."$frame" -o LOGS/postcoreg.out -e LOGS/postcoreg.err ./framebatch_x_postcoreg_iteration.nowait.sh" > framebatch_x_postcoreg_iteration.wait.sh
-echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:45 -n 1 -J it2_coreg."$frame" -o LOGS/it2_coreg.out -e LOGS/it2_coreg.err framebatch_postproc_coreg.sh "$frame" 1" > framebatch_x_coreg_iteration.wait.sh
+echo "bsub2slurm.sh -w '"$waiting_string"' -q "$bsubquery" -W 00:45 -n 1 -J it2_coreg."$frame" -o LOGS/it2_coreg.out -e LOGS/it2_coreg.err framebatch_postproc_coreg.sh -f "$frame" 1" > framebatch_x_coreg_iteration.wait.sh
 chmod 770 framebatch_x_postcoreg_iteration.wait.sh framebatch_x_postcoreg_iteration.nowait.sh framebatch_x_coreg_iteration.wait.sh
 
 
