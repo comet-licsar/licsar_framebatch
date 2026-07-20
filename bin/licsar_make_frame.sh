@@ -61,6 +61,7 @@ bovls=1
 echo "warning: setting bovls ON by default"
 terminal=0
 deleteafterstore=0
+skip_consistent_check=0
 #
 #if [ $USER == 'earmla' ]; then
 # prioritise=1
@@ -72,7 +73,7 @@ extradatarefill=''
 rgoff=0
 # fi
 
-while getopts ":cnSEfNPRGAbBDTd" option; do
+while getopts ":cnSEfFNPRGAbBDTd" option; do
  case "${option}" in
   D) extradatarefill='-A';
      ;;
@@ -97,8 +98,11 @@ while getopts ":cnSEfNPRGAbBDTd" option; do
      ;;
   E) EQR=1; echo "option to make it ready for Earthquake Responder";
      prioritise_nrt=1; #make it through comet_responder
+     skip_consistent_check=1;
      ;;
   f) force=1; echo "bypassing check of existing processing of the frame";
+     ;;
+  F) skip_consistent_check=1; echo "skipping check for coregistration consistence";
      ;;
   P) prioritise=1; echo "prioritising - using comet queue in all steps";
      ;;
@@ -530,6 +534,9 @@ setFrameActive.py $frame
  # 2021-11-15: createFrameCache will now output also updated startdate and enddate to tmp_jobid.txt
 if [ $SM -lt 1 ]; then
 if [ `grep -c ^updated tmp_jobid.txt` -gt 0 ]; then
+if [ $skip_consistent_check -gt 0 ]; then
+  echo "The dataset would be extended to allow SD, but you force it not to - expect daz errors"
+else
 if [ $neodc_check -gt 0 ] || [ $fillgaps -eq 1 ]; then
   echo "updated dates to make coregistration possible"
   if [ `grep ^updated tmp_jobid.txt | gawk {'print $2'}` == 'enddate' ]; then
@@ -559,6 +566,7 @@ if [ $neodc_check -gt 0 ] || [ $fillgaps -eq 1 ]; then
  fi
 else
   echo "Warning, your data are out of temporal limit for standard SD estimation. Either you know what you are doing, or you better add either -c or enable autodownload"
+fi
 fi
 fi
 fi
