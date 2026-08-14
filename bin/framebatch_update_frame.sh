@@ -17,13 +17,14 @@ if [ -z $2 ]; then echo "parameters are frame and code (code is either upfill or
     echo "param -U for autodownload only, avoiding nla (it will override the limits of autodownloader - use with caution)"
     echo "param -D would override limits of autodownloader that will run after the NLA"
     echo "param -A would automatically delete data after storing (some checks are in place so ok for automatic processing chain..) "
+    echo "param -n will not run processing (useful if you want only nla request/autodownload)"
     #echo "parameter -N will run licsar_make_frame with -N (process only if newer data exists)" # we will have it on by default for upfill
     #echo "hidden params: -E, -R for EIDP and to include range offsets"
     exit; fi
 
 storeparam='-S -G'
 extra=''
-while getopts ":kEuUPRdDA" option; do
+while getopts ":kEuUPRdDAn" option; do
  case "${option}" in
   k) storeparam=' ';
      ;;
@@ -39,6 +40,9 @@ while getopts ":kEuUPRdDA" option; do
   d) extra=$extra' -c';
      trynla=0;
      autodown=0;
+     ;;
+  n) PROCESSING=0;
+     extra=$extra' -n';
      ;;
   U) autodown=1;
      trynla=0;
