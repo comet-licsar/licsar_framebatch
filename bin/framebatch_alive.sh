@@ -8,7 +8,7 @@ forcee='-f' # set to '' if we don't want to force-process (only when onlyPOD==0)
 #extrafup='-d '
 #echo "Warning, setting the update to not perform any download or nla request. Might need tweaking"
 extrafup=''
-extrafup='-U '
+extrafup='-U -D -A '
 echo "Settting extra param to fr update that will set only autodownloader on. Might be ok but.."
 doparallel=1
 echo "WARNING, NOT PARALLELISING NOW FOR DEC UPDATE -- THIS IS ONLY FOR MANUAL RUN, DO NOT USE WITH LOTUSED JOB"
