@@ -214,6 +214,17 @@ done
          ls $frame/*LC
       fi
    else
+     # if there are no more SLCs, check SLC.missingbursts and force coreg them
+     if [ `ls SLC.missingbursts 2>/dev/null | wc -l` -gt 0 ]; then
+       echo "there are files in SLC.missingbursts:"
+       ls SLC.missingbursts
+       if [ $PROC == 1 ]; then
+         echo "we will force coregister them now"
+         mv SLC.missingbursts/* SLC/.
+         framebatch_postproc_coreg.sh -F $frame 1
+         exit
+       fi
+     fi
     if [ $rslcdates -lt 2 ]; then todel=1;
     else
      #if [ ! -d $frame/IFG ]; then echo "this frame has no ifgs: "$frame;

@@ -130,6 +130,9 @@ if [ $ignorezero -lt 1 ]; then
        exit
     fi
   fi
+else
+  # if to force, forget about previous attempts
+  rm -f coreg_its/noncore* 2>/dev/null
 fi
 #clean first
 for x in `ls RSLC | sed '/'$mstr'/d'`; do 
