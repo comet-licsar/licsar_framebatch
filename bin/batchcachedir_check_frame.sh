@@ -19,7 +19,7 @@ rm -f $frame/check_lotus_jobs 2>/dev/null
 bjobs | grep $frame > $frame/check_lotus_jobs
 
 echo "checking frame "$frame
-if [ `cat $frame/check_lotus_jobs | wc -l` -gt 0 ]; then
+if [ `cat $frame/check_lotus_jobs | wc -l` -gt 1 ]; then   # gt 1 -> allowing one job that might be the only one as copyjob (postproc)
   echo "WARNING - this frame is under processing already - better check manually";
   if [ $PROC -gt 0 ]; then
     echo "setting autoprocessor OFF (only checking)"
