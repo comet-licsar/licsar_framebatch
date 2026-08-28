@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# 2026/08: attempt to fix paths issue -- but it seems already fixed - great!
+#  echo "Warning, loading testing version of licsar"
+# module load licsar_framebatch_testing
+# source /gws/smf/j04/nceo_geohazards/software/mambalics/load_mambalics.rc
+
 inputfile=$1
 #onlyPOD should be 1 for 21 days delay or 0 for having up-to-today updates (using restituted orbits)
 onlyPOD=$2

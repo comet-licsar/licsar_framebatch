@@ -63,6 +63,11 @@ else
  exit
 fi
 
+# ensure bcf works for any batchdir:
+export BATCH_CACHE_DIR=`pwd`
+export LiCSAR_temp=$BATCH_CACHE_DIR/LiCSAR_temp
+mkdir -p $LiCSAR_temp
+
 rmdir $frame/SLC/* 2>/dev/null
 #first check - bad SLC - too large, i.e. over 30 GB:
 for x in `ls $frame/SLC`; do
