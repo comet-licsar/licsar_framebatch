@@ -239,7 +239,17 @@ done
      #      batchcachedir_reprocess_ifgs.sh $frame
      #    fi
      #else
+      # clear empty dirs
       rmdir $frame/GEOC/* 2>/dev/null
+      # fix the tmp.tif problem:
+      for pr in `ls $frame/GEOC | grep ^20`; do
+        if [ ! -f $frame/GEOC/$pr/$pr.geo.unw.tif ]; then
+          if [ -f $frame/GEOC/$pr/$pr.geo.unw.tif.tmp.tif ]; then
+            echo "fixing unw.tmp.tif of "$pr
+            mv $frame/GEOC/$pr/$pr.geo.unw.tif.tmp.tif $frame/GEOC/$pr/$pr.geo.unw.tif
+          fi
+        fi
+      done
       ifgdates=`ls $frame/GEOC | grep ^20 | wc -l`
       let expifgdates=4*$rslcdates'-4-4-3-2-1-1'  # -4 due to ref epoch in RSLC folder, -4 for the last RSLC, etc., last -1 only to allow -lt
       if [ ! -s $frame/framebatch_05_gap_filling.nowait.sh ]; then echo "framebatch_gapfill.sh -S 1" > $frame/framebatch_05_gap_filling.nowait.sh; chmod 777 $frame/framebatch_05_gap_filling.nowait.sh; fi
