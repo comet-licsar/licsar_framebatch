@@ -4,8 +4,8 @@ curdir=$LiCSAR_procdir
 SLCdir=$LiCSAR_SLC
 
 if [ -d $XFCPATH/SLC ]; then
-  # is there at least 2TB left from this disk?
-  if [ `pan_df $XFCPATH | tail -n 1 | gawk {'print $3'}` -gt 2000000000 ]; then
+  # is there at least 5TB left from this disk?
+  if [ `pan_df $XFCPATH | tail -n 1 | gawk {'print $3'}` -gt 5000000000 ]; then
     SLCdir=$XFCPATH/SLC
   else
     echo "The XFC disk is almost full - reverting to using \$LiCSAR_SLC instead"
