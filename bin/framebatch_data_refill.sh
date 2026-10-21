@@ -1,11 +1,16 @@
 #!/bin/bash
 #procdir=$BATCH_CACHE_DIR
 curdir=$LiCSAR_procdir
+SLCdir=$LiCSAR_SLC
 
 if [ -d $XFCPATH/SLC ]; then
-  SLCdir=$XFCPATH/SLC
-else
-  SLCdir=$LiCSAR_SLC
+  # is there at least 2TB left from this disk?
+  if [ `pan_df $XFCPATH | tail -n 1 | gawk {'print $3'}` -gt 2000000000 ]; then
+    SLCdir=$XFCPATH/SLC
+  else
+    echo "The XFC disk is almost full - reverting to using \$LiCSAR_SLC instead"
+    pan_df -h $XFCPATH
+    echo "Please clean your downloaded files, e.g. using clean_SLC_autodownload_folder.sh"
 fi
 
 #if [ $USER == 'earmla' ]; then
