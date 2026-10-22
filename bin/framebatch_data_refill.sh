@@ -11,6 +11,7 @@ if [ -d $XFCPATH/SLC ]; then
     echo "The XFC disk is almost full - reverting to using \$LiCSAR_SLC instead"
     pan_df -h $XFCPATH
     echo "Please clean your downloaded files, e.g. using clean_SLC_autodownload_folder.sh"
+  fi
 fi
 
 #if [ $USER == 'earmla' ]; then
