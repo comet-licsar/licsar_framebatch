@@ -9,6 +9,7 @@ if [ -z $1 ]; then
  echo "-f ..... force override the 180 days gap limitation (that could cause wrong SD estimate)"
  echo "-F ..... full-force override (not recommended due to azimuth errors) - if with -f and autocontinue, it will be applied in the next iteration after -f"
  echo "-b ..... for force-override solution (best with the iterative processing) setting the first SLC backwards in time"
+ echo "-R ..... re-do coreg instead of using LUT files (if exist)"
  exit; fi
 
 PREVJID=''
@@ -21,14 +22,16 @@ while getopts ":fFb" option; do
  case "${option}" in
   f) force=1;
      #autocont=1;
-     extracoregparms='-E';
+     extracoregparms=$extracoregparms'-E';
      #shift
      ;;
-  F) extracoregparms='-E';
+  F) extracoregparms=$extracoregparms'-E';
      ignorezero=1;
      #shift
      ;;
   b) backfill=1;
+     ;;
+  R) extracoregparms=$extracoregparms' -R';
      ;;
  esac
 done
